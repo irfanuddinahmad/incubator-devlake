@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-name: Build and Deploy Release
+name: Build Release Images
 
 on:
   push:
@@ -23,7 +23,8 @@ on:
       - 'v*'
 
 jobs:
-  build-and-push:
+  build-backend:
+    name: Build DevLake Backend
     runs-on: ubuntu-latest
     steps:
       - name: Free Disk Space
@@ -55,7 +56,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and Push devlake image
+      - name: Build and Push devlake backend image
         uses: docker/build-push-action@v5
         with:
           context: ./backend
@@ -69,21 +70,42 @@ jobs:
             TAG=${{ steps.vars.outputs.TAG }}
             SHA=${{ steps.vars.outputs.SHORT_SHA }}
 
-  deploy:
-    needs: build-and-push
+  build-config-ui:
+    name: Build DevLake Config UI
     runs-on: ubuntu-latest
     steps:
-      - name: SSH Deploy
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          DEPLOY_VERSION: ${{ github.ref_name }}
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          docker system prune -af
+          docker volume prune -f
+
+      - uses: actions/checkout@v4
+
+      - name: Extract tag
+        id: vars
+        run: |
+          echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: DEPLOY_VERSION
-          script: |
-            cd /opt/devlake
-            sed -i "s/^APP_VERSION=.*/APP_VERSION=${DEPLOY_VERSION}/" .env
-            docker pull jawad4khan/devlake:${DEPLOY_VERSION}
-            ./deploy.sh
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push config-ui image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./config-ui
+          push: true
+          tags: jawad4khan/devlake-config-ui:${{ steps.vars.outputs.TAG }}
+          platforms: linux/amd64
