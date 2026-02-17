@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-name: Build Release Image
+name: Build and Deploy Release
 
 on:
   push:
@@ -23,15 +23,25 @@ on:
       - 'v*'
 
 jobs:
-  build-image:
+  build-and-push:
     runs-on: ubuntu-latest
-
     steps:
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          docker system prune -af
+          docker volume prune -f
+
       - uses: actions/checkout@v4
 
       - name: Extract tag
         id: vars
-        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        run: |
+          echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -45,10 +55,35 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and Push Image
+      - name: Build and Push devlake image
         uses: docker/build-push-action@v5
         with:
           context: ./backend
           push: true
-          platforms: linux/amd64
           tags: jawad4khan/devlake:${{ steps.vars.outputs.TAG }}
+          platforms: linux/amd64
+          cache-from: |
+            apache/devlake:amd64-builder
+            apache/devlake:base
+          build-args: |
+            TAG=${{ steps.vars.outputs.TAG }}
+            SHA=${{ steps.vars.outputs.SHORT_SHA }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DEPLOY_VERSION: ${{ github.ref_name }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: DEPLOY_VERSION
+          script: |
+            cd /opt/devlake
+            sed -i "s/^APP_VERSION=.*/APP_VERSION=${DEPLOY_VERSION}/" .env
+            docker pull jawad4khan/devlake:${DEPLOY_VERSION}
+            ./deploy.sh
