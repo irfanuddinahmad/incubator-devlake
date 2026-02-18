@@ -15,29 +15,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package api
+package migrationscripts
 
 import (
-	"github.com/apache/incubator-devlake/core/context"
-	"github.com/apache/incubator-devlake/core/log"
 	"github.com/apache/incubator-devlake/core/plugin"
-	"github.com/apache/incubator-devlake/helpers/apikeyhelper"
-	"github.com/apache/incubator-devlake/helpers/pluginhelper/api"
-	"github.com/go-playground/validator/v10"
 )
 
-const pluginName = "developer_telemetry"
-
-var basicRes context.BasicRes
-var connectionHelper *api.ConnectionApiHelper
-var apiKeyHelper *apikeyhelper.ApiKeyHelper
-var vld *validator.Validate
-var logger log.Logger
-
-func Init(br context.BasicRes, pm plugin.PluginMeta) {
-	basicRes = br
-	logger = basicRes.GetLogger()
-	vld = validator.New()
-	connectionHelper = api.NewConnectionHelper(br, vld, pm.Name())
-	apiKeyHelper = apikeyhelper.NewApiKeyHelper(basicRes, logger)
+// All return all the migration scripts
+func All() []plugin.MigrationScript {
+	return []plugin.MigrationScript{
+		new(addInitTables),
+		new(addUserPhotoUrl),
+		new(addMissingTables),
+		new(addTaskTransformationFields),
+		new(addScopeConfigIssueTypeFields),
+	}
 }

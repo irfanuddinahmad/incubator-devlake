@@ -15,29 +15,37 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package api
+package migrationscripts
 
 import (
 	"github.com/apache/incubator-devlake/core/context"
-	"github.com/apache/incubator-devlake/core/log"
+	"github.com/apache/incubator-devlake/core/errors"
 	"github.com/apache/incubator-devlake/core/plugin"
-	"github.com/apache/incubator-devlake/helpers/apikeyhelper"
-	"github.com/apache/incubator-devlake/helpers/pluginhelper/api"
-	"github.com/go-playground/validator/v10"
 )
 
-const pluginName = "developer_telemetry"
+var _ plugin.MigrationScript = (*addScopeConfigIssueTypeFields)(nil)
 
-var basicRes context.BasicRes
-var connectionHelper *api.ConnectionApiHelper
-var apiKeyHelper *apikeyhelper.ApiKeyHelper
-var vld *validator.Validate
-var logger log.Logger
+type addScopeConfigIssueTypeFields struct{}
 
-func Init(br context.BasicRes, pm plugin.PluginMeta) {
-	basicRes = br
-	logger = basicRes.GetLogger()
-	vld = validator.New()
-	connectionHelper = api.NewConnectionHelper(br, vld, pm.Name())
-	apiKeyHelper = apikeyhelper.NewApiKeyHelper(basicRes, logger)
+type asanaScopeConfig20250212v2 struct {
+	IssueTypeRequirement string `gorm:"type:varchar(255)"`
+	IssueTypeBug         string `gorm:"type:varchar(255)"`
+	IssueTypeIncident    string `gorm:"type:varchar(255)"`
+}
+
+func (asanaScopeConfig20250212v2) TableName() string {
+	return "_tool_asana_scope_configs"
+}
+
+func (*addScopeConfigIssueTypeFields) Up(basicRes context.BasicRes) errors.Error {
+	db := basicRes.GetDal()
+	return db.AutoMigrate(&asanaScopeConfig20250212v2{})
+}
+
+func (*addScopeConfigIssueTypeFields) Version() uint64 {
+	return 20250212000004
+}
+
+func (*addScopeConfigIssueTypeFields) Name() string {
+	return "asana add issue type fields to scope config"
 }

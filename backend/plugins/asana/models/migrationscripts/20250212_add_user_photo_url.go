@@ -15,29 +15,37 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package api
+package migrationscripts
 
 import (
 	"github.com/apache/incubator-devlake/core/context"
-	"github.com/apache/incubator-devlake/core/log"
+	"github.com/apache/incubator-devlake/core/errors"
 	"github.com/apache/incubator-devlake/core/plugin"
-	"github.com/apache/incubator-devlake/helpers/apikeyhelper"
-	"github.com/apache/incubator-devlake/helpers/pluginhelper/api"
-	"github.com/go-playground/validator/v10"
 )
 
-const pluginName = "developer_telemetry"
+var _ plugin.MigrationScript = (*addUserPhotoUrl)(nil)
 
-var basicRes context.BasicRes
-var connectionHelper *api.ConnectionApiHelper
-var apiKeyHelper *apikeyhelper.ApiKeyHelper
-var vld *validator.Validate
-var logger log.Logger
+type addUserPhotoUrl struct{}
 
-func Init(br context.BasicRes, pm plugin.PluginMeta) {
-	basicRes = br
-	logger = basicRes.GetLogger()
-	vld = validator.New()
-	connectionHelper = api.NewConnectionHelper(br, vld, pm.Name())
-	apiKeyHelper = apikeyhelper.NewApiKeyHelper(basicRes, logger)
+type asanaUser20250212 struct {
+	PhotoUrl      string `gorm:"type:varchar(512)"`
+	WorkspaceGids string `gorm:"type:text"`
+}
+
+func (asanaUser20250212) TableName() string {
+	return "_tool_asana_users"
+}
+
+func (*addUserPhotoUrl) Up(basicRes context.BasicRes) errors.Error {
+	db := basicRes.GetDal()
+	// Add photo_url and workspace_gids columns to _tool_asana_users table
+	return db.AutoMigrate(&asanaUser20250212{})
+}
+
+func (*addUserPhotoUrl) Version() uint64 {
+	return 20250212000001
+}
+
+func (*addUserPhotoUrl) Name() string {
+	return "asana add photo_url and workspace_gids to users table"
 }

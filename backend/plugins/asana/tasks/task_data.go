@@ -15,29 +15,35 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package api
+package tasks
 
 import (
-	"github.com/apache/incubator-devlake/core/context"
-	"github.com/apache/incubator-devlake/core/log"
 	"github.com/apache/incubator-devlake/core/plugin"
-	"github.com/apache/incubator-devlake/helpers/apikeyhelper"
 	"github.com/apache/incubator-devlake/helpers/pluginhelper/api"
-	"github.com/go-playground/validator/v10"
+	"github.com/apache/incubator-devlake/plugins/asana/models"
 )
 
-const pluginName = "developer_telemetry"
+func CreateRawDataSubTaskArgs(taskCtx plugin.SubTaskContext, rawTable string) (*api.RawDataSubTaskArgs, *AsanaTaskData) {
+	data := taskCtx.GetData().(*AsanaTaskData)
+	params := models.AsanaApiParams{
+		ConnectionId: data.Options.ConnectionId,
+		ProjectId:    data.Options.ProjectId,
+	}
+	return &api.RawDataSubTaskArgs{
+		Ctx:    taskCtx,
+		Params: params,
+		Table:  rawTable,
+	}, data
+}
 
-var basicRes context.BasicRes
-var connectionHelper *api.ConnectionApiHelper
-var apiKeyHelper *apikeyhelper.ApiKeyHelper
-var vld *validator.Validate
-var logger log.Logger
+type AsanaOptions struct {
+	ConnectionId  uint64 `json:"connectionId" mapstructure:"connectionId"`
+	ProjectId     string `json:"projectId" mapstructure:"projectId"`
+	ScopeConfigId uint64 `json:"scopeConfigId" mapstructure:"scopeConfigId,omitempty"`
+}
 
-func Init(br context.BasicRes, pm plugin.PluginMeta) {
-	basicRes = br
-	logger = basicRes.GetLogger()
-	vld = validator.New()
-	connectionHelper = api.NewConnectionHelper(br, vld, pm.Name())
-	apiKeyHelper = apikeyhelper.NewApiKeyHelper(basicRes, logger)
+type AsanaTaskData struct {
+	Options   *AsanaOptions
+	ApiClient *api.ApiAsyncClient
+	Project   *models.AsanaProject
 }
