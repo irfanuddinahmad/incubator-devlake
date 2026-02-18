@@ -27,6 +27,7 @@ import { PATHS } from '@/config';
 import { useAppSelector } from '@/hooks';
 import { getPluginConfig, ConnectionStatus, ConnectionForm } from '@/plugins';
 import { WebHookConnection } from '@/plugins/register/webhook';
+import { DeveloperTelemetryConnection } from '@/plugins/register/developer-telemetry';
 
 const ModalTitle = styled.div`
   display: flex;
@@ -65,6 +66,10 @@ export const ConnectionList = ({ plugin, onCreate }: Props) => {
 
   if (plugin === 'webhook') {
     return <WebHookConnection />;
+  }
+
+  if (plugin === 'developer_telemetry') {
+    return <DeveloperTelemetryConnection />;
   }
 
   const handleShowForm = (id: ID) => {
