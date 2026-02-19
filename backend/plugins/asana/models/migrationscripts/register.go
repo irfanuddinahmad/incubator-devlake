@@ -29,5 +29,6 @@ func All() []plugin.MigrationScript {
 		new(addMissingTables),
 		new(addTaskTransformationFields),
 		new(addScopeConfigIssueTypeFields),
+		new(addConnectionIdToAsanaScopeConfigs),
 	}
 }
