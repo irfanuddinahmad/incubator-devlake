@@ -44,10 +44,9 @@ type TelemetryReportRequest struct {
 type TelemetryMetrics struct {
 	ActiveHours         int                  `json:"active_hours" mapstructure:"active_hours"`
 	ToolsUsed           []string             `json:"tools_used" mapstructure:"tools_used"`
-	Commands            map[string]int       `json:"commands,omitempty" mapstructure:"commands"` // DEPRECATED: keeping for backward compatibility
 	Projects            []string             `json:"projects" mapstructure:"projects"`
-	GitActivity         *GitActivity         `json:"git_activity,omitempty" mapstructure:"git_activity"`                 // NEW
-	DevelopmentActivity *DevelopmentActivity `json:"development_activity,omitempty" mapstructure:"development_activity"` // NEW
+	GitActivity         *GitActivity         `json:"git_activity,omitempty" mapstructure:"git_activity"`
+	DevelopmentActivity *DevelopmentActivity `json:"development_activity,omitempty" mapstructure:"development_activity"`
 }
 
 type GitActivity struct {
