@@ -42,10 +42,34 @@ type TelemetryReportRequest struct {
 }
 
 type TelemetryMetrics struct {
-	ActiveHours int            `json:"active_hours" mapstructure:"active_hours"`
-	ToolsUsed   []string       `json:"tools_used" mapstructure:"tools_used"`
-	Commands    map[string]int `json:"commands" mapstructure:"commands"`
-	Projects    []string       `json:"projects" mapstructure:"projects"`
+	ActiveHours         int                  `json:"active_hours" mapstructure:"active_hours"`
+	ToolsUsed           []string             `json:"tools_used" mapstructure:"tools_used"`
+	Projects            []string             `json:"projects" mapstructure:"projects"`
+	GitActivity         *GitActivity         `json:"git_activity,omitempty" mapstructure:"git_activity"`
+	DevelopmentActivity *DevelopmentActivity `json:"development_activity,omitempty" mapstructure:"development_activity"`
+}
+
+type GitActivity struct {
+	TotalCommits      int          `json:"total_commits" mapstructure:"total_commits"`
+	TotalLinesAdded   int          `json:"total_lines_added" mapstructure:"total_lines_added"`
+	TotalLinesDeleted int          `json:"total_lines_deleted" mapstructure:"total_lines_deleted"`
+	TotalFilesChanged int          `json:"total_files_changed" mapstructure:"total_files_changed"`
+	Repositories      []Repository `json:"repositories" mapstructure:"repositories"`
+}
+
+type Repository struct {
+	Name           string   `json:"name" mapstructure:"name"`
+	Path           string   `json:"path" mapstructure:"path"`
+	Commits        int      `json:"commits" mapstructure:"commits"`
+	LinesAdded     int      `json:"lines_added" mapstructure:"lines_added"`
+	LinesDeleted   int      `json:"lines_deleted" mapstructure:"lines_deleted"`
+	FilesChanged   int      `json:"files_changed" mapstructure:"files_changed"`
+	BranchesWorked []string `json:"branches_worked" mapstructure:"branches_worked"`
+}
+
+type DevelopmentActivity struct {
+	TestRunsDetected int `json:"test_runs_detected" mapstructure:"test_runs_detected"`
+	BuildsDetected   int `json:"build_commands_detected" mapstructure:"build_commands_detected"`
 }
 
 func PostReport(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput, errors.Error) {
@@ -90,20 +114,22 @@ func PostReport(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput, erro
 
 	toolsUsedJSON, _ := json.Marshal(report.Metrics.ToolsUsed)
 	projectsJSON, _ := json.Marshal(report.Metrics.Projects)
-	commandsJSON, _ := json.Marshal(report.Metrics.Commands)
+	gitActivityJSON, _ := json.Marshal(report.Metrics.GitActivity)
+	developmentActivityJSON, _ := json.Marshal(report.Metrics.DevelopmentActivity)
 
 	metric := &models.DeveloperMetrics{
-		ConnectionId:   connectionId,
-		DeveloperId:    report.Developer,
-		Date:           reportDate,
-		Email:          report.Email,
-		Name:           report.Name,
-		Hostname:       report.Hostname,
-		ActiveHours:    report.Metrics.ActiveHours,
-		ToolsUsed:      string(toolsUsedJSON),
-		ProjectContext: string(projectsJSON),
-		CommandCounts:  string(commandsJSON),
-		OsInfo:         "",
+		ConnectionId:        connectionId,
+		DeveloperId:         report.Developer,
+		Date:                reportDate,
+		Email:               report.Email,
+		Name:                report.Name,
+		Hostname:            report.Hostname,
+		ActiveHours:         report.Metrics.ActiveHours,
+		ToolsUsed:           string(toolsUsedJSON),
+		ProjectContext:      string(projectsJSON),
+		GitActivity:         string(gitActivityJSON),
+		DevelopmentActivity: string(developmentActivityJSON),
+		OsInfo:              "",
 	}
 
 	// Check if record exists using Count
@@ -131,7 +157,9 @@ func PostReport(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput, erro
 			{ColumnName: "active_hours", Value: metric.ActiveHours},
 			{ColumnName: "tools_used", Value: metric.ToolsUsed},
 			{ColumnName: "project_context", Value: metric.ProjectContext},
-			{ColumnName: "command_counts", Value: metric.CommandCounts},
+
+			{ColumnName: "git_activity", Value: metric.GitActivity},
+			{ColumnName: "development_activity", Value: metric.DevelopmentActivity},
 			{ColumnName: "os_info", Value: metric.OsInfo},
 		}, dal.Where("connection_id = ? AND developer_id = ? AND date = ?",
 			connectionId, report.Developer, dateStr))
