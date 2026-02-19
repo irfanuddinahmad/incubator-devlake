@@ -78,10 +78,11 @@ func (*initSchema) Up(basicRes context.BasicRes) errors.Error {
 	}
 
 	// Create fresh tables with new schema
-	err = db.AutoMigrate(
-		&developerTelemetryConnection20260219{},
-		&developerMetrics20260219{},
-	)
+	err = db.AutoMigrate(&developerTelemetryConnection20260219{})
+	if err != nil {
+		return err
+	}
+	err = db.AutoMigrate(&developerMetrics20260219{})
 	if err != nil {
 		return err
 	}

@@ -114,7 +114,6 @@ func PostReport(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput, erro
 
 	toolsUsedJSON, _ := json.Marshal(report.Metrics.ToolsUsed)
 	projectsJSON, _ := json.Marshal(report.Metrics.Projects)
-	commandsJSON, _ := json.Marshal(report.Metrics.Commands)
 	gitActivityJSON, _ := json.Marshal(report.Metrics.GitActivity)
 	developmentActivityJSON, _ := json.Marshal(report.Metrics.DevelopmentActivity)
 
@@ -128,7 +127,6 @@ func PostReport(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput, erro
 		ActiveHours:         report.Metrics.ActiveHours,
 		ToolsUsed:           string(toolsUsedJSON),
 		ProjectContext:      string(projectsJSON),
-		CommandCounts:       string(commandsJSON),
 		GitActivity:         string(gitActivityJSON),
 		DevelopmentActivity: string(developmentActivityJSON),
 		OsInfo:              "",
@@ -159,7 +157,7 @@ func PostReport(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput, erro
 			{ColumnName: "active_hours", Value: metric.ActiveHours},
 			{ColumnName: "tools_used", Value: metric.ToolsUsed},
 			{ColumnName: "project_context", Value: metric.ProjectContext},
-			{ColumnName: "command_counts", Value: metric.CommandCounts},
+
 			{ColumnName: "git_activity", Value: metric.GitActivity},
 			{ColumnName: "development_activity", Value: metric.DevelopmentActivity},
 			{ColumnName: "os_info", Value: metric.OsInfo},

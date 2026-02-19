@@ -56,11 +56,10 @@ type DeveloperMetrics struct {
 	Name                string    `gorm:"type:varchar(255);column:name" json:"name"`
 	Hostname            string    `gorm:"type:varchar(255);column:hostname" json:"hostname"`
 	ActiveHours         int       `gorm:"column:active_hours" json:"active_hours"`
-	ToolsUsed           string    `gorm:"type:text;column:tools_used" json:"tools_used"`                       // JSON array stored as text
-	ProjectContext      string    `gorm:"type:text;column:project_context" json:"project_context"`             // JSON array stored as text
-	GitActivity         string    `gorm:"type:text;column:git_activity" json:"git_activity"`                   // JSON object stored as text - NEW
-	DevelopmentActivity string    `gorm:"type:text;column:development_activity" json:"development_activity"`   // JSON object stored as text - NEW
-	CommandCounts       string    `gorm:"type:text;column:command_counts" json:"command_counts,omitempty"`     // JSON object stored as text - DEPRECATED
+	ToolsUsed           string    `gorm:"type:text;column:tools_used" json:"tools_used"`                     // JSON array stored as text
+	ProjectContext      string    `gorm:"type:text;column:project_context" json:"project_context"`           // JSON array stored as text
+	GitActivity         string    `gorm:"type:text;column:git_activity" json:"git_activity"`                 // JSON object stored as text
+	DevelopmentActivity string    `gorm:"type:text;column:development_activity" json:"development_activity"` // JSON object stored as text
 	OsInfo              string    `gorm:"type:varchar(255);column:os_info" json:"os_info"`
 	CreatedAt           time.Time `gorm:"column:created_at" json:"createdAt"`
 	UpdatedAt           time.Time `gorm:"column:updated_at" json:"updatedAt"`
