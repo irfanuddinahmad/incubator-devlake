@@ -23,11 +23,11 @@ import (
 
 // GitActivity represents git activity metrics for a developer
 type GitActivity struct {
-	TotalCommits       int          `json:"total_commits"`
-	TotalLinesAdded    int          `json:"total_lines_added"`
-	TotalLinesDeleted  int          `json:"total_lines_deleted"`
-	TotalFilesChanged  int          `json:"total_files_changed"`
-	Repositories       []Repository `json:"repositories"`
+	TotalCommits      int          `json:"total_commits"`
+	TotalLinesAdded   int          `json:"total_lines_added"`
+	TotalLinesDeleted int          `json:"total_lines_deleted"`
+	TotalFilesChanged int          `json:"total_files_changed"`
+	Repositories      []Repository `json:"repositories"`
 }
 
 // Repository represents per-repository git metrics
@@ -43,8 +43,8 @@ type Repository struct {
 
 // DevelopmentActivity represents detected development activity patterns
 type DevelopmentActivity struct {
-	TestRunsDetected  int `json:"test_runs_detected"`
-	BuildsDetected    int `json:"build_commands_detected"`
+	TestRunsDetected int `json:"test_runs_detected"`
+	BuildsDetected   int `json:"build_commands_detected"`
 }
 
 // DeveloperMetrics represents the tool layer table for developer telemetry data
