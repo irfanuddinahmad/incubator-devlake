@@ -24,7 +24,6 @@ import (
 // All return all the migration scripts
 func All() []plugin.MigrationScript {
 	return []plugin.MigrationScript{
-		new(addInitTables),
-		new(addGitActivityFields),
+		new(initSchema),
 	}
 }
