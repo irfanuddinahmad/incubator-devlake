@@ -44,33 +44,33 @@ type TelemetryReportRequest struct {
 type TelemetryMetrics struct {
 	ActiveHours         int                  `json:"active_hours" mapstructure:"active_hours"`
 	ToolsUsed           []string             `json:"tools_used" mapstructure:"tools_used"`
-	Commands            map[string]int       `json:"commands,omitempty" mapstructure:"commands"`               // DEPRECATED: keeping for backward compatibility
+	Commands            map[string]int       `json:"commands,omitempty" mapstructure:"commands"` // DEPRECATED: keeping for backward compatibility
 	Projects            []string             `json:"projects" mapstructure:"projects"`
-	GitActivity         *GitActivity         `json:"git_activity,omitempty" mapstructure:"git_activity"`       // NEW
+	GitActivity         *GitActivity         `json:"git_activity,omitempty" mapstructure:"git_activity"`                 // NEW
 	DevelopmentActivity *DevelopmentActivity `json:"development_activity,omitempty" mapstructure:"development_activity"` // NEW
 }
 
 type GitActivity struct {
-	TotalCommits      int          `json:"total_commits"`
-	TotalLinesAdded   int          `json:"total_lines_added"`
-	TotalLinesDeleted int          `json:"total_lines_deleted"`
-	TotalFilesChanged int          `json:"total_files_changed"`
-	Repositories      []Repository `json:"repositories"`
+	TotalCommits      int          `json:"total_commits" mapstructure:"total_commits"`
+	TotalLinesAdded   int          `json:"total_lines_added" mapstructure:"total_lines_added"`
+	TotalLinesDeleted int          `json:"total_lines_deleted" mapstructure:"total_lines_deleted"`
+	TotalFilesChanged int          `json:"total_files_changed" mapstructure:"total_files_changed"`
+	Repositories      []Repository `json:"repositories" mapstructure:"repositories"`
 }
 
 type Repository struct {
-	Name           string   `json:"name"`
-	Path           string   `json:"path"`
-	Commits        int      `json:"commits"`
-	LinesAdded     int      `json:"lines_added"`
-	LinesDeleted   int      `json:"lines_deleted"`
-	FilesChanged   int      `json:"files_changed"`
-	BranchesWorked []string `json:"branches_worked"`
+	Name           string   `json:"name" mapstructure:"name"`
+	Path           string   `json:"path" mapstructure:"path"`
+	Commits        int      `json:"commits" mapstructure:"commits"`
+	LinesAdded     int      `json:"lines_added" mapstructure:"lines_added"`
+	LinesDeleted   int      `json:"lines_deleted" mapstructure:"lines_deleted"`
+	FilesChanged   int      `json:"files_changed" mapstructure:"files_changed"`
+	BranchesWorked []string `json:"branches_worked" mapstructure:"branches_worked"`
 }
 
 type DevelopmentActivity struct {
-	TestRunsDetected int `json:"test_runs_detected"`
-	BuildsDetected   int `json:"build_commands_detected"`
+	TestRunsDetected int `json:"test_runs_detected" mapstructure:"test_runs_detected"`
+	BuildsDetected   int `json:"build_commands_detected" mapstructure:"build_commands_detected"`
 }
 
 func PostReport(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput, errors.Error) {
