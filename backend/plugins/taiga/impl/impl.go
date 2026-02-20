@@ -36,6 +36,7 @@ var _ interface {
 	plugin.PluginMeta
 	plugin.PluginInit
 	plugin.PluginTask
+	plugin.PluginApi
 	plugin.PluginModel
 	plugin.PluginMigration
 	plugin.DataSourcePluginBlueprintV200
