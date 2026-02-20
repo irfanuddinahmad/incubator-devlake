@@ -21,7 +21,7 @@ import (
 	"github.com/apache/incubator-devlake/core/context"
 	"github.com/apache/incubator-devlake/core/plugin"
 	"github.com/apache/incubator-devlake/helpers/pluginhelper/api"
-	"github.com/irfanuddinahmad/taiga-devlake-plugin/plugins/taiga/models"
+	"github.com/apache/incubator-devlake/plugins/taiga/models"
 	"github.com/go-playground/validator/v10"
 )
 

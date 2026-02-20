@@ -26,10 +26,10 @@ import (
 	coreModels "github.com/apache/incubator-devlake/core/models"
 	"github.com/apache/incubator-devlake/core/plugin"
 	helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
-	"github.com/irfanuddinahmad/taiga-devlake-plugin/plugins/taiga/api"
-	"github.com/irfanuddinahmad/taiga-devlake-plugin/plugins/taiga/models"
-	"github.com/irfanuddinahmad/taiga-devlake-plugin/plugins/taiga/models/migrationscripts"
-	"github.com/irfanuddinahmad/taiga-devlake-plugin/plugins/taiga/tasks"
+	"github.com/apache/incubator-devlake/plugins/taiga/api"
+	"github.com/apache/incubator-devlake/plugins/taiga/models"
+	"github.com/apache/incubator-devlake/plugins/taiga/models/migrationscripts"
+	"github.com/apache/incubator-devlake/plugins/taiga/tasks"
 )
 
 var _ interface {
@@ -96,16 +96,16 @@ func (p Taiga) PrepareTaskData(taskCtx plugin.TaskContext, options map[string]in
 	var err errors.Error
 	logger := taskCtx.GetLogger()
 	logger.Debug("%v", options)
-	
+
 	err = helper.Decode(options, &op, nil)
 	if err != nil {
 		return nil, errors.Default.Wrap(err, "could not decode Taiga options")
 	}
-	
+
 	if op.ConnectionId == 0 {
 		return nil, errors.BadInput.New("taiga connectionId is invalid")
 	}
-	
+
 	connection := &models.TaigaConnection{}
 	connectionHelper := helper.NewConnectionHelper(
 		taskCtx,
@@ -116,7 +116,7 @@ func (p Taiga) PrepareTaskData(taskCtx plugin.TaskContext, options map[string]in
 	if err != nil {
 		return nil, errors.Default.Wrap(err, "unable to get Taiga connection")
 	}
-	
+
 	taigaApiClient, err := tasks.NewTaigaApiClient(taskCtx, connection)
 	if err != nil {
 		return nil, errors.Default.Wrap(err, "failed to create taiga api client")
@@ -138,7 +138,7 @@ func (p Taiga) PrepareTaskData(taskCtx plugin.TaskContext, options map[string]in
 			op.ScopeConfigId = scope.ScopeConfigId
 		}
 	}
-	
+
 	if op.ScopeConfig == nil && op.ScopeConfigId != 0 {
 		var scopeConfig models.TaigaScopeConfig
 		db := taskCtx.GetDal()
@@ -151,7 +151,7 @@ func (p Taiga) PrepareTaskData(taskCtx plugin.TaskContext, options map[string]in
 			return nil, errors.BadInput.Wrap(err, "fail to make scopeConfig")
 		}
 	}
-	
+
 	if op.ScopeConfig == nil && op.ScopeConfigId == 0 {
 		op.ScopeConfig = new(models.TaigaScopeConfig)
 	}
@@ -177,7 +177,7 @@ func (p Taiga) MakeDataSourcePipelinePlanV200(
 }
 
 func (p Taiga) RootPkgPath() string {
-	return "github.com/irfanuddinahmad/taiga-devlake-plugin/plugins/taiga"
+	return "github.com/apache/incubator-devlake/plugins/taiga"
 }
 
 func (p Taiga) MigrationScripts() []plugin.MigrationScript {

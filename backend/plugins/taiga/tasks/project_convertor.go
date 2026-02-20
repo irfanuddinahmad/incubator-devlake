@@ -27,7 +27,7 @@ import (
 	"github.com/apache/incubator-devlake/core/models/domainlayer/ticket"
 	"github.com/apache/incubator-devlake/core/plugin"
 	"github.com/apache/incubator-devlake/helpers/pluginhelper/api"
-	"github.com/irfanuddinahmad/taiga-devlake-plugin/plugins/taiga/models"
+	"github.com/apache/incubator-devlake/plugins/taiga/models"
 )
 
 var ConvertProjectsMeta = plugin.SubTaskMeta{
