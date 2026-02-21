@@ -70,7 +70,7 @@ func ConvertUserStories(subtaskCtx plugin.SubTaskContext) errors.Error {
 		},
 		Convert: func(userStory *models.TaigaUserStory) ([]interface{}, errors.Error) {
 			var result []interface{}
-			
+
 			issue := &ticket.Issue{
 				DomainEntity: domainlayer.DomainEntity{
 					Id: issueIdGen.Generate(userStory.ConnectionId, userStory.UserStoryId),
@@ -82,19 +82,19 @@ func ConvertUserStories(subtaskCtx plugin.SubTaskContext) errors.Error {
 				Status:         userStory.Status,
 				OriginalStatus: userStory.Status,
 			}
-			
+
 			if userStory.TotalPoints > 0 {
 				issue.StoryPoint = &userStory.TotalPoints
 			}
-			
+
 			result = append(result, issue)
-			
+
 			boardIssue := &ticket.BoardIssue{
 				BoardId: boardId,
 				IssueId: issue.Id,
 			}
 			result = append(result, boardIssue)
-			
+
 			logger.Debug("converted user story %d", userStory.UserStoryId)
 			return result, nil
 		},
