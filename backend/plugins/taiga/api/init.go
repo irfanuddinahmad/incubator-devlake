@@ -30,7 +30,6 @@ var basicRes context.BasicRes
 var dsHelper *api.DsHelper[models.TaigaConnection, models.TaigaProject, models.TaigaScopeConfig]
 var raProxy *api.DsRemoteApiProxyHelper[models.TaigaConnection]
 var raScopeList *api.DsRemoteApiScopeListHelper[models.TaigaConnection, models.TaigaProject, TaigaRemotePagination]
-var raScopeSearch *api.DsRemoteApiScopeSearchHelper[models.TaigaConnection, models.TaigaProject]
 
 func Init(br context.BasicRes, p plugin.PluginMeta) {
 	basicRes = br
@@ -51,5 +50,4 @@ func Init(br context.BasicRes, p plugin.PluginMeta) {
 	)
 	raProxy = api.NewDsRemoteApiProxyHelper[models.TaigaConnection](dsHelper.ConnApi.ModelApiHelper)
 	raScopeList = api.NewDsRemoteApiScopeListHelper[models.TaigaConnection, models.TaigaProject, TaigaRemotePagination](raProxy, listTaigaRemoteScopes)
-	raScopeSearch = api.NewDsRemoteApiScopeSearchHelper[models.TaigaConnection, models.TaigaProject](raProxy, searchTaigaRemoteProjects)
 }

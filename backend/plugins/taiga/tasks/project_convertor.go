@@ -43,7 +43,7 @@ func ConvertProjects(taskCtx plugin.SubTaskContext) errors.Error {
 	logger := taskCtx.GetLogger()
 	db := taskCtx.GetDal()
 	logger.Info("convert project:%d", data.Options.ProjectId)
-	
+
 	idGen := didgen.NewDomainIdGenerator(&models.TaigaProject{})
 	clauses := []dal.Clause{
 		dal.Select("*"),
@@ -55,7 +55,7 @@ func ConvertProjects(taskCtx plugin.SubTaskContext) errors.Error {
 		return err
 	}
 	defer cursor.Close()
-	
+
 	converter, err := api.NewDataConverter(api.DataConverterArgs{
 		RawDataSubTaskArgs: api.RawDataSubTaskArgs{
 			Ctx: taskCtx,

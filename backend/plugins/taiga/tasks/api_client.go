@@ -18,8 +18,6 @@ limitations under the License.
 package tasks
 
 import (
-	"net/http"
-
 	"github.com/apache/incubator-devlake/core/errors"
 	"github.com/apache/incubator-devlake/core/plugin"
 	"github.com/apache/incubator-devlake/helpers/pluginhelper/api"
@@ -37,7 +35,7 @@ func NewTaigaApiClient(taskCtx plugin.TaskContext, connection *models.TaigaConne
 	rateLimiter := &api.ApiRateLimitCalculator{
 		UserRateLimitPerHour: connection.RateLimitPerHour,
 	}
-	
+
 	asyncApiClient, err := api.CreateAsyncApiClient(
 		taskCtx,
 		apiClient,
@@ -48,21 +46,4 @@ func NewTaigaApiClient(taskCtx plugin.TaskContext, connection *models.TaigaConne
 	}
 
 	return asyncApiClient, nil
-}
-
-func ignoreHTTPStatus404(res *http.Response) errors.Error {
-	if res.StatusCode == http.StatusUnauthorized {
-		return errors.Unauthorized.New("authentication failed, please check your Bearer Token")
-	}
-	if res.StatusCode == http.StatusNotFound {
-		return api.ErrIgnoreAndContinue
-	}
-	return nil
-}
-
-func ignoreHTTPStatus400(res *http.Response) errors.Error {
-	if res.StatusCode == http.StatusBadRequest {
-		return api.ErrIgnoreAndContinue
-	}
-	return nil
 }

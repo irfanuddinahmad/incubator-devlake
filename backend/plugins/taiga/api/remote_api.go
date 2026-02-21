@@ -130,21 +130,3 @@ func listTaigaRemoteScopes(
 func RemoteScopes(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput, errors.Error) {
 	return raScopeList.Get(input)
 }
-
-func searchTaigaRemoteProjects(
-	apiClient plugin.ApiClient,
-	params *dsmodels.DsRemoteApiScopeSearchParams,
-) (
-	children []dsmodels.DsRemoteApiScopeListEntry[models.TaigaProject],
-	err errors.Error,
-) {
-	if params.Page == 0 {
-		params.Page = 1
-	}
-	page := TaigaRemotePagination{
-		PageSize: params.PageSize,
-		Page:     params.Page,
-	}
-	children, _, err = queryTaigaProjects(apiClient, params.Search, page)
-	return
-}

@@ -26,26 +26,26 @@ import (
 // TaigaUserStory represents a user story in Taiga
 type TaigaUserStory struct {
 	common.NoPKModel
-	ConnectionId  uint64     `gorm:"primaryKey"`
-	ProjectId     uint64     `gorm:"index"`
-	UserStoryId   uint64     `gorm:"primaryKey;autoIncrement:false" json:"id"`
-	Ref           int        `json:"ref"`
-	Subject       string     `gorm:"type:varchar(255)" json:"subject"`
-	Description   string     `gorm:"type:text" json:"description"`
-	Status        string     `gorm:"type:varchar(100)" json:"status"`
-	StatusColor   string     `gorm:"type:varchar(20)" json:"statusColor"`
-	IsClosed      bool       `json:"isClosed"`
-	CreatedDate   *time.Time `json:"createdDate"`
-	ModifiedDate  *time.Time `json:"modifiedDate"`
-	FinishedDate  *time.Time `json:"finishedDate"`
-	AssignedTo    uint64     `json:"assignedTo"`
-	AssignedToName string    `gorm:"type:varchar(255)" json:"assignedToName"`
-	TotalPoints   float64    `json:"totalPoints"`
-	MilestoneId   uint64     `json:"milestoneId"`
-	MilestoneName string     `gorm:"type:varchar(255)" json:"milestoneName"`
-	Priority      int        `json:"priority"`
-	IsBlocked     bool       `json:"isBlocked"`
-	BlockedNote   string     `gorm:"type:text" json:"blockedNote"`
+	ConnectionId   uint64     `gorm:"primaryKey"`
+	ProjectId      uint64     `gorm:"index"`
+	UserStoryId    uint64     `gorm:"primaryKey;autoIncrement:false" json:"id"`
+	Ref            int        `json:"ref"`
+	Subject        string     `gorm:"type:varchar(255)" json:"subject"`
+	Description    string     `gorm:"type:text" json:"description"`
+	Status         string     `gorm:"type:varchar(100)" json:"status"`
+	StatusColor    string     `gorm:"type:varchar(20)" json:"statusColor"`
+	IsClosed       bool       `json:"isClosed"`
+	CreatedDate    *time.Time `json:"createdDate"`
+	ModifiedDate   *time.Time `json:"modifiedDate"`
+	FinishedDate   *time.Time `json:"finishedDate"`
+	AssignedTo     uint64     `json:"assignedTo"`
+	AssignedToName string     `gorm:"type:varchar(255)" json:"assignedToName"`
+	TotalPoints    float64    `json:"totalPoints"`
+	MilestoneId    uint64     `json:"milestoneId"`
+	MilestoneName  string     `gorm:"type:varchar(255)" json:"milestoneName"`
+	Priority       int        `json:"priority"`
+	IsBlocked      bool       `json:"isBlocked"`
+	BlockedNote    string     `gorm:"type:text" json:"blockedNote"`
 }
 
 func (TaigaUserStory) TableName() string {
