@@ -49,27 +49,27 @@ func ExtractUserStories(taskCtx plugin.SubTaskContext) errors.Error {
 		},
 		Extract: func(row *api.RawData) ([]interface{}, errors.Error) {
 			var apiUserStory struct {
-				Id              uint64  `json:"id"`
-				Ref             int     `json:"ref"`
-				Subject         string  `json:"subject"`
-				Status          uint64  `json:"status"`
+				Id              uint64 `json:"id"`
+				Ref             int    `json:"ref"`
+				Subject         string `json:"subject"`
+				Status          uint64 `json:"status"`
 				StatusExtraInfo struct {
 					Name string `json:"name"`
 				} `json:"status_extra_info"`
-				CreatedDate    string  `json:"created_date"`
-				ModifiedDate   string  `json:"modified_date"`
-				FinishDate     *string `json:"finish_date"`
-				AssignedTo     *uint64 `json:"assigned_to"`
-				TotalPoints    *float64 `json:"total_points"`
-				MilestoneId    *uint64 `json:"milestone"`
-				Priority       *int    `json:"priority"`
-				IsBlocked      bool    `json:"is_blocked"`
+				CreatedDate  string   `json:"created_date"`
+				ModifiedDate string   `json:"modified_date"`
+				FinishDate   *string  `json:"finish_date"`
+				AssignedTo   *uint64  `json:"assigned_to"`
+				TotalPoints  *float64 `json:"total_points"`
+				MilestoneId  *uint64  `json:"milestone"`
+				Priority     *int     `json:"priority"`
+				IsBlocked    bool     `json:"is_blocked"`
 			}
 			err := json.Unmarshal(row.Data, &apiUserStory)
 			if err != nil {
 				return nil, errors.Default.Wrap(err, "error unmarshalling user story")
 			}
-			
+
 			var assignedTo uint64
 			if apiUserStory.AssignedTo != nil {
 				assignedTo = *apiUserStory.AssignedTo
@@ -88,22 +88,23 @@ func ExtractUserStories(taskCtx plugin.SubTaskContext) errors.Error {
 			}
 
 			userStory := &models.TaigaUserStory{
-				ConnectionId:  data.Options.ConnectionId,
-				UserStoryId:   apiUserStory.Id,
-				Ref:           apiUserStory.Ref,
-				Subject:       apiUserStory.Subject,
-				Status:        apiUserStory.StatusExtraInfo.Name,
-				AssignedTo:    assignedTo,
-				TotalPoints:   totalPoints,
-				MilestoneId:   milestoneId,
-				Priority:      priority,
-				IsBlocked:     apiUserStory.IsBlocked,
+				ConnectionId: data.Options.ConnectionId,
+				ProjectId:    data.Options.ProjectId,
+				UserStoryId:  apiUserStory.Id,
+				Ref:          apiUserStory.Ref,
+				Subject:      apiUserStory.Subject,
+				Status:       apiUserStory.StatusExtraInfo.Name,
+				AssignedTo:   assignedTo,
+				TotalPoints:  totalPoints,
+				MilestoneId:  milestoneId,
+				Priority:     priority,
+				IsBlocked:    apiUserStory.IsBlocked,
 			}
-			
+
 			return []interface{}{userStory}, nil
 		},
 	})
-	
+
 	if err != nil {
 		return err
 	}

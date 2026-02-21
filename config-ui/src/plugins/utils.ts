@@ -43,6 +43,8 @@ export const getPluginScopeId = (plugin: string, scope: any) => {
       return `${scope.name}`;
     case 'asana':
       return `${scope.gid}`;
+    case 'taiga':
+      return `${scope.projectId}`;
     default:
       return `${scope.id}`;
   }

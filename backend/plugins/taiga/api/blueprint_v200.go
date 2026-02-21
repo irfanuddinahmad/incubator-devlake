@@ -89,7 +89,7 @@ func makeDataSourcePipelinePlanV200(
 			scopeConfig.Entities,
 			TaigaTaskOptions{
 				ConnectionId: scope.ConnectionId,
-				ProjectId:    scope.ProjectId,
+				ProjectId:    uint64(scope.ProjectId),
 			},
 		)
 		if err != nil {
@@ -114,15 +114,15 @@ func makeScopesV200(
 		project := scopeDetail.Scope
 
 		// add board to scopes
-			entities := scopeDetail.ScopeConfig.Entities
-			hasTicket := false
-			for _, entity := range entities {
-				if entity == plugin.DOMAIN_TYPE_TICKET {
-					hasTicket = true
-					break
-				}
+		entities := scopeDetail.ScopeConfig.Entities
+		hasTicket := false
+		for _, entity := range entities {
+			if entity == plugin.DOMAIN_TYPE_TICKET {
+				hasTicket = true
+				break
 			}
-			if hasTicket {
+		}
+		if hasTicket {
 			domainBoard := &ticket.Board{
 				DomainEntity: domainlayer.DomainEntity{
 					Id: idGen.Generate(connection.ID, project.ProjectId),

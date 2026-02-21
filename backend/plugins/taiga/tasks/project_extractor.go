@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 
 	"github.com/apache/incubator-devlake/core/errors"
+	"github.com/apache/incubator-devlake/core/models/common"
 	"github.com/apache/incubator-devlake/core/plugin"
 	"github.com/apache/incubator-devlake/helpers/pluginhelper/api"
 	"github.com/apache/incubator-devlake/plugins/taiga/models"
@@ -49,29 +50,32 @@ func ExtractProjects(taskCtx plugin.SubTaskContext) errors.Error {
 		},
 		Extract: func(row *api.RawData) ([]interface{}, errors.Error) {
 			var apiProject struct {
-				Id          uint64 `json:"id"`
-				Name        string `json:"name"`
-				Slug        string `json:"slug"`
-				Description string `json:"description"`
-				CreatedDate string `json:"created_date"`
+				Id           uint64 `json:"id"`
+				Name         string `json:"name"`
+				Slug         string `json:"slug"`
+				Description  string `json:"description"`
+				CreatedDate  string `json:"created_date"`
 				ModifiedDate string `json:"modified_date"`
 			}
 			err := json.Unmarshal(row.Data, &apiProject)
 			if err != nil {
 				return nil, errors.Default.Wrap(err, "error unmarshalling project")
 			}
-			
+
 			project := &models.TaigaProject{
-				ProjectId:    apiProject.Id,
-				Name:         apiProject.Name,
-				Slug:         apiProject.Slug,
-				Description:  apiProject.Description,
+				Scope: common.Scope{
+					ConnectionId: data.Options.ConnectionId,
+				},
+				ProjectId:   apiProject.Id,
+				Name:        apiProject.Name,
+				Slug:        apiProject.Slug,
+				Description: apiProject.Description,
 			}
-			
+
 			return []interface{}{project}, nil
 		},
 	})
-	
+
 	if err != nil {
 		return err
 	}

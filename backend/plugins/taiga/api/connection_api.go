@@ -37,10 +37,57 @@ type TaigaTestConnResponse struct {
 
 // testConnection tests the Taiga connection
 func testConnection(ctx context.Context, connection models.TaigaConnection) (*TaigaTestConnResponse, errors.Error) {
-	// validate
+	// If username and password are provided, authenticate to get a token
+	if connection.Username != "" && connection.Password != "" && connection.Token == "" {
+		// Create a temporary connection without token for authentication
+		tempConnection := connection
+		tempConnection.Token = ""
+
+		// Create a temporary API client to call the auth endpoint
+		tempApiClient, err := api.NewApiClientFromConnection(ctx, basicRes, &tempConnection)
+		if err != nil {
+			return nil, errors.Default.Wrap(err, "error creating API client")
+		}
+
+		// Prepare auth request body
+		authBody := map[string]interface{}{
+			"type":     "normal",
+			"username": connection.Username,
+			"password": connection.Password,
+		}
+
+		// Authenticate to get token
+		authResponse := struct {
+			AuthToken string `json:"auth_token"`
+		}{}
+
+		res, err := tempApiClient.Post("auth", nil, authBody, nil)
+		if err != nil {
+			return nil, errors.Default.Wrap(err, "error authenticating with Taiga")
+		}
+
+		if res.StatusCode == http.StatusUnauthorized || res.StatusCode == http.StatusBadRequest {
+			return nil, errors.HttpStatus(http.StatusBadRequest).New("authentication failed - please check your username and password")
+		}
+
+		if res.StatusCode != http.StatusOK {
+			return nil, errors.HttpStatus(res.StatusCode).New(fmt.Sprintf("unexpected status code during auth: %d", res.StatusCode))
+		}
+
+		// Parse the auth response
+		err = api.UnmarshalResponse(res, &authResponse)
+		if err != nil {
+			return nil, errors.Default.Wrap(err, "error parsing authentication response")
+		}
+
+		// Set the token for validation
+		connection.Token = authResponse.AuthToken
+	}
+
+	// validate - but make Token optional if we have username/password
 	if vld != nil {
-		if err := vld.Struct(connection); err != nil {
-			return nil, errors.Default.Wrap(err, "error validating target")
+		if connection.Token == "" && (connection.Username == "" || connection.Password == "") {
+			return nil, errors.Default.New("either token or username/password must be provided")
 		}
 	}
 
@@ -56,7 +103,7 @@ func testConnection(ctx context.Context, connection models.TaigaConnection) (*Ta
 	}
 
 	if res.StatusCode == http.StatusUnauthorized || res.StatusCode == http.StatusForbidden {
-		return nil, errors.HttpStatus(http.StatusBadRequest).New("StatusUnauthorized error when testing connection - please check your Bearer token")
+		return nil, errors.HttpStatus(http.StatusBadRequest).New("authentication error when testing connection - please check your credentials")
 	}
 
 	if res.StatusCode != http.StatusOK {

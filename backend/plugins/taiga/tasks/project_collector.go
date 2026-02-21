@@ -42,7 +42,7 @@ func CollectProjects(taskCtx plugin.SubTaskContext) errors.Error {
 	data := taskCtx.GetData().(*TaigaTaskData)
 	logger := taskCtx.GetLogger()
 	logger.Info("collect projects")
-	
+
 	collector, err := api.NewApiCollector(api.ApiCollectorArgs{
 		RawDataSubTaskArgs: api.RawDataSubTaskArgs{
 			Ctx: taskCtx,
@@ -53,7 +53,7 @@ func CollectProjects(taskCtx plugin.SubTaskContext) errors.Error {
 			Table: RAW_PROJECT_TABLE,
 		},
 		ApiClient:   data.ApiClient,
-		UrlTemplate: "api/v1/projects/{{ .Params.ProjectId }}",
+		UrlTemplate: "projects/{{ .Params.ProjectId }}",
 		ResponseParser: func(res *http.Response) ([]json.RawMessage, errors.Error) {
 			var result json.RawMessage
 			err := api.UnmarshalResponse(res, &result)

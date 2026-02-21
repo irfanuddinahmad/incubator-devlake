@@ -18,10 +18,11 @@ limitations under the License.
 package migrationscripts
 
 import (
+	"time"
+
 	"github.com/apache/incubator-devlake/core/context"
 	"github.com/apache/incubator-devlake/core/errors"
 	"github.com/apache/incubator-devlake/helpers/migrationhelper"
-	"time"
 )
 
 type TaigaConnection20250220 struct {
@@ -32,6 +33,7 @@ type TaigaConnection20250220 struct {
 	Endpoint         string    `json:"endpoint"`
 	Username         string    `json:"username"`
 	Password         string    `json:"password"`
+	Token            string    `json:"token"`
 	Proxy            string    `json:"proxy"`
 	RateLimitPerHour int       `json:"rateLimitPerHour"`
 }
@@ -41,13 +43,22 @@ func (TaigaConnection20250220) TableName() string {
 }
 
 type TaigaProject20250220 struct {
-	ConnectionId uint64     `gorm:"primaryKey"`
-	ProjectId    int64      `gorm:"primaryKey;type:varchar(255)"`
-	Name         string     `gorm:"type:varchar(255)"`
-	Description  string
-	CreatedDate  *time.Time
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ConnectionId     uint64 `gorm:"primaryKey"`
+	ProjectId        uint64 `gorm:"primaryKey;autoIncrement:false"`
+	Name             string `gorm:"type:varchar(255)"`
+	Slug             string `gorm:"type:varchar(255)"`
+	Description      string `gorm:"type:text"`
+	Url              string `gorm:"type:varchar(255)"`
+	IsPrivate        bool
+	TotalMilestones  int
+	TotalStoryPoints float64
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	RawDataParams    string `gorm:"column:_raw_data_params;type:varchar(255);index"`
+	RawDataTable     string `gorm:"column:_raw_data_table;type:varchar(255)"`
+	RawDataId        uint64 `gorm:"column:_raw_data_id"`
+	RawDataRemark    string `gorm:"column:_raw_data_remark"`
+	ScopeConfigId    uint64
 }
 
 func (TaigaProject20250220) TableName() string {
@@ -55,12 +66,12 @@ func (TaigaProject20250220) TableName() string {
 }
 
 type TaigaScopeConfig20250220 struct {
-	ConnectionId         uint64    `mapstructure:"connectionId" json:"connectionId" gorm:"primaryKey"`
-	ProjectId            int64     `mapstructure:"projectId" json:"projectId" gorm:"primaryKey;type:varchar(255)"`
-	Name                 string    `gorm:"type:varchar(255);index" json:"name"`
-	TransformationRuleId uint64    `mapstructure:"transformationRuleId,omitempty" json:"transformationRuleId,omitempty"`
-	CreatedAt            time.Time `json:"createdAt"`
-	UpdatedAt            time.Time `json:"updatedAt"`
+	ID           uint64    `gorm:"primaryKey;autoIncrement" json:"id"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+	ConnectionId uint64    `json:"connectionId" gorm:"index"`
+	Name         string    `gorm:"type:varchar(255);uniqueIndex" json:"name"`
+	Entities     string    `gorm:"type:json" json:"entities"`
 }
 
 func (TaigaScopeConfig20250220) TableName() string {
@@ -68,17 +79,32 @@ func (TaigaScopeConfig20250220) TableName() string {
 }
 
 type TaigaUserStory20250220 struct {
-	ConnectionId uint64     `gorm:"primaryKey"`
-	ProjectId    int64      `gorm:"index;type:varchar(255)"`
-	StoryId      int64      `gorm:"primaryKey"`
-	Subject      string     `gorm:"type:varchar(255)"`
-	Description  string     `gorm:"type:text"`
-	Status       string     `gorm:"type:varchar(100)"`
-	CreatedDate  *time.Time
-	ModifiedDate *time.Time
-	FinishDate   *time.Time
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ConnectionId   uint64 `gorm:"primaryKey"`
+	ProjectId      uint64 `gorm:"index"`
+	UserStoryId    uint64 `gorm:"primaryKey;autoIncrement:false"`
+	Ref            int
+	Subject        string `gorm:"type:varchar(255)"`
+	Description    string `gorm:"type:text"`
+	Status         string `gorm:"type:varchar(100)"`
+	StatusColor    string `gorm:"type:varchar(20)"`
+	IsClosed       bool
+	CreatedDate    *time.Time
+	ModifiedDate   *time.Time
+	FinishedDate   *time.Time
+	AssignedTo     uint64
+	AssignedToName string `gorm:"type:varchar(255)"`
+	TotalPoints    float64
+	MilestoneId    uint64
+	MilestoneName  string `gorm:"type:varchar(255)"`
+	Priority       int
+	IsBlocked      bool
+	BlockedNote    string `gorm:"type:text"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	RawDataParams  string `gorm:"column:_raw_data_params;type:varchar(255);index"`
+	RawDataTable   string `gorm:"column:_raw_data_table;type:varchar(255)"`
+	RawDataId      uint64 `gorm:"column:_raw_data_id"`
+	RawDataRemark  string `gorm:"column:_raw_data_remark"`
 }
 
 func (TaigaUserStory20250220) TableName() string {

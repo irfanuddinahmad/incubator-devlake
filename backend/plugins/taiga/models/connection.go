@@ -28,11 +28,14 @@ import (
 // TaigaConn holds the essential information to connect to the Taiga API
 type TaigaConn struct {
 	helper.RestConnection `mapstructure:",squash"`
-	helper.AccessToken    `mapstructure:",squash"`
+	helper.BasicAuth      `mapstructure:",squash"`
+	// Token is optional - can be provided directly or obtained via username/password auth
+	Token string `mapstructure:"token" json:"token" gorm:"serializer:encdec"`
 }
 
 func (tc *TaigaConn) Sanitize() TaigaConn {
-	tc.AccessToken.Token = utils.SanitizeString(tc.AccessToken.Token)
+	tc.Password = ""
+	tc.Token = utils.SanitizeString(tc.Token)
 	return *tc
 }
 
@@ -56,16 +59,23 @@ func (TaigaConnection) TableName() string {
 
 func (connection *TaigaConnection) MergeFromRequest(target *TaigaConnection, body map[string]interface{}) error {
 	token := target.Token
+	password := target.Password
 
 	if err := helper.DecodeMapStruct(body, target, true); err != nil {
 		return err
 	}
 
 	modifiedToken := target.Token
+	modifiedPassword := target.Password
 
 	// preserve existing token if not modified
 	if modifiedToken == "" || modifiedToken == utils.SanitizeString(token) {
 		target.Token = token
+	}
+
+	// preserve existing password if not modified
+	if modifiedPassword == "" || modifiedPassword == password {
+		target.Password = password
 	}
 
 	return nil

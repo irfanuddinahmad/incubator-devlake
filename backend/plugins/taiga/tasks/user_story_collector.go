@@ -44,7 +44,7 @@ func CollectUserStories(taskCtx plugin.SubTaskContext) errors.Error {
 	data := taskCtx.GetData().(*TaigaTaskData)
 	logger := taskCtx.GetLogger()
 	logger.Info("collect user stories")
-	
+
 	collector, err := api.NewApiCollector(api.ApiCollectorArgs{
 		RawDataSubTaskArgs: api.RawDataSubTaskArgs{
 			Ctx: taskCtx,
@@ -56,7 +56,7 @@ func CollectUserStories(taskCtx plugin.SubTaskContext) errors.Error {
 		},
 		ApiClient:   data.ApiClient,
 		PageSize:    1000, // Fetch all in one page - Taiga returns all user stories for a project
-		UrlTemplate: "api/v1/userstories",
+		UrlTemplate: "userstories",
 		Query: func(reqData *api.RequestData) (url.Values, errors.Error) {
 			query := url.Values{}
 			query.Set("project", fmt.Sprintf("%d", data.Options.ProjectId))

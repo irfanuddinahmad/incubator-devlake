@@ -64,7 +64,7 @@ func queryTaigaProjects(
 		query.Set("search", keyword)
 	}
 
-	res, err := apiClient.Get("api/v1/projects", query, nil)
+	res, err := apiClient.Get("projects", query, nil)
 	if err != nil {
 		return
 	}

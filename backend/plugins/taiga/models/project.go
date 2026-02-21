@@ -26,15 +26,15 @@ import (
 
 // TaigaProject represents a Taiga project (scope)
 type TaigaProject struct {
-	common.Scope       `mapstructure:",squash"`
-	ProjectId          uint64  `gorm:"primaryKey" json:"projectId"`
-	Name               string  `gorm:"type:varchar(255)" json:"name"`
-	Slug               string  `gorm:"type:varchar(255)" json:"slug"`
-	Description        string  `gorm:"type:text" json:"description"`
-	Url                string  `gorm:"type:varchar(255)" json:"url"`
-	IsPrivate          bool    `json:"isPrivate"`
-	TotalMilestones    int     `json:"totalMilestones"`
-	TotalStoryPoints   float64 `json:"totalStoryPoints"`
+	common.Scope     `mapstructure:",squash"`
+	ProjectId        uint64  `json:"projectId" gorm:"primaryKey;autoIncrement:false"`
+	Name             string  `gorm:"type:varchar(255)" json:"name"`
+	Slug             string  `gorm:"type:varchar(255)" json:"slug"`
+	Description      string  `gorm:"type:text" json:"description"`
+	Url              string  `gorm:"type:varchar(255)" json:"url"`
+	IsPrivate        bool    `json:"isPrivate"`
+	TotalMilestones  int     `json:"totalMilestones"`
+	TotalStoryPoints float64 `json:"totalStoryPoints"`
 }
 
 func (p TaigaProject) ScopeId() string {
