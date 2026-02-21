@@ -32,6 +32,7 @@ import { JenkinsConfig } from './jenkins';
 import { JiraConfig } from './jira';
 import { PagerDutyConfig } from './pagerduty';
 import { SonarQubeConfig } from './sonarqube';
+import { TaigaConfig } from './taiga';
 import { TAPDConfig } from './tapd';
 import { WebhookConfig } from './webhook';
 import { ZenTaoConfig } from './zentao';
@@ -59,6 +60,7 @@ export const pluginConfigs: IPluginConfig[] = [
   SlackConfig,
   QDevConfig,
   SonarQubeConfig,
+  TaigaConfig,
   TAPDConfig,
   TestmoConfig,
   ZenTaoConfig,
