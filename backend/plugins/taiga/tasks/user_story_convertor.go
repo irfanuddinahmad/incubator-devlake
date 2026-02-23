@@ -18,6 +18,8 @@ limitations under the License.
 package tasks
 
 import (
+	"fmt"
+
 	"github.com/apache/incubator-devlake/core/dal"
 	"github.com/apache/incubator-devlake/core/errors"
 	"github.com/apache/incubator-devlake/core/models/domainlayer"
@@ -71,20 +73,39 @@ func ConvertUserStories(subtaskCtx plugin.SubTaskContext) errors.Error {
 		Convert: func(userStory *models.TaigaUserStory) ([]interface{}, errors.Error) {
 			var result []interface{}
 
+			// Map Taiga is_closed to DevLake standard status
+			status := "TODO"
+			if userStory.IsClosed {
+				status = "DONE"
+			}
+
 			issue := &ticket.Issue{
 				DomainEntity: domainlayer.DomainEntity{
 					Id: issueIdGen.Generate(userStory.ConnectionId, userStory.UserStoryId),
 				},
-				IssueKey:       userStory.Subject,
+				IssueKey:       fmt.Sprintf("#%d", userStory.Ref),
 				Title:          userStory.Subject,
 				Type:           "USER_STORY",
 				OriginalType:   "User Story",
-				Status:         userStory.Status,
+				Status:         status,
 				OriginalStatus: userStory.Status,
+				CreatedDate:    userStory.CreatedDate,
+				UpdatedDate:    userStory.ModifiedDate,
+				ResolutionDate: userStory.FinishedDate,
+				AssigneeId:     fmt.Sprintf("%d", userStory.AssignedTo),
+				AssigneeName:   userStory.AssignedToName,
 			}
 
 			if userStory.TotalPoints > 0 {
 				issue.StoryPoint = &userStory.TotalPoints
+			}
+
+			// Calculate lead time: creation → resolution for closed stories
+			if userStory.IsClosed && issue.CreatedDate != nil && issue.ResolutionDate != nil {
+				leadTimeMinutes := uint(issue.ResolutionDate.Sub(*issue.CreatedDate).Minutes())
+				if leadTimeMinutes > 0 {
+					issue.LeadTimeMinutes = &leadTimeMinutes
+				}
 			}
 
 			result = append(result, issue)

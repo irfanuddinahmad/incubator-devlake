@@ -19,6 +19,7 @@ package tasks
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/apache/incubator-devlake/core/errors"
 	"github.com/apache/incubator-devlake/core/plugin"
@@ -56,14 +57,20 @@ func ExtractUserStories(taskCtx plugin.SubTaskContext) errors.Error {
 				StatusExtraInfo struct {
 					Name string `json:"name"`
 				} `json:"status_extra_info"`
-				CreatedDate  string   `json:"created_date"`
-				ModifiedDate string   `json:"modified_date"`
-				FinishDate   *string  `json:"finish_date"`
-				AssignedTo   *uint64  `json:"assigned_to"`
-				TotalPoints  *float64 `json:"total_points"`
-				MilestoneId  *uint64  `json:"milestone"`
-				Priority     *int     `json:"priority"`
-				IsBlocked    bool     `json:"is_blocked"`
+				IsClosed            bool       `json:"is_closed"`
+				CreatedDate         *time.Time `json:"created_date"`
+				ModifiedDate        *time.Time `json:"modified_date"`
+				FinishDate          *time.Time `json:"finish_date"`
+				AssignedTo          *uint64    `json:"assigned_to"`
+				AssignedToExtraInfo *struct {
+					FullNameDisplay string `json:"full_name_display"`
+				} `json:"assigned_to_extra_info"`
+				TotalPoints   *float64 `json:"total_points"`
+				MilestoneId   *uint64  `json:"milestone"`
+				MilestoneName *string  `json:"milestone_name"`
+				Priority      *int     `json:"priority"`
+				IsBlocked     bool     `json:"is_blocked"`
+				BlockedNote   string   `json:"blocked_note"`
 			}
 			err := json.Unmarshal(row.Data, &apiUserStory)
 			if err != nil {
@@ -71,8 +78,12 @@ func ExtractUserStories(taskCtx plugin.SubTaskContext) errors.Error {
 			}
 
 			var assignedTo uint64
+			var assignedToName string
 			if apiUserStory.AssignedTo != nil {
 				assignedTo = *apiUserStory.AssignedTo
+			}
+			if apiUserStory.AssignedToExtraInfo != nil {
+				assignedToName = apiUserStory.AssignedToExtraInfo.FullNameDisplay
 			}
 			var totalPoints float64
 			if apiUserStory.TotalPoints != nil {
@@ -82,23 +93,34 @@ func ExtractUserStories(taskCtx plugin.SubTaskContext) errors.Error {
 			if apiUserStory.MilestoneId != nil {
 				milestoneId = *apiUserStory.MilestoneId
 			}
+			var milestoneName string
+			if apiUserStory.MilestoneName != nil {
+				milestoneName = *apiUserStory.MilestoneName
+			}
 			var priority int
 			if apiUserStory.Priority != nil {
 				priority = *apiUserStory.Priority
 			}
 
 			userStory := &models.TaigaUserStory{
-				ConnectionId: data.Options.ConnectionId,
-				ProjectId:    data.Options.ProjectId,
-				UserStoryId:  apiUserStory.Id,
-				Ref:          apiUserStory.Ref,
-				Subject:      apiUserStory.Subject,
-				Status:       apiUserStory.StatusExtraInfo.Name,
-				AssignedTo:   assignedTo,
-				TotalPoints:  totalPoints,
-				MilestoneId:  milestoneId,
-				Priority:     priority,
-				IsBlocked:    apiUserStory.IsBlocked,
+				ConnectionId:   data.Options.ConnectionId,
+				ProjectId:      data.Options.ProjectId,
+				UserStoryId:    apiUserStory.Id,
+				Ref:            apiUserStory.Ref,
+				Subject:        apiUserStory.Subject,
+				Status:         apiUserStory.StatusExtraInfo.Name,
+				IsClosed:       apiUserStory.IsClosed,
+				CreatedDate:    apiUserStory.CreatedDate,
+				ModifiedDate:   apiUserStory.ModifiedDate,
+				FinishedDate:   apiUserStory.FinishDate,
+				AssignedTo:     assignedTo,
+				AssignedToName: assignedToName,
+				TotalPoints:    totalPoints,
+				MilestoneId:    milestoneId,
+				MilestoneName:  milestoneName,
+				Priority:       priority,
+				IsBlocked:      apiUserStory.IsBlocked,
+				BlockedNote:    apiUserStory.BlockedNote,
 			}
 
 			return []interface{}{userStory}, nil
