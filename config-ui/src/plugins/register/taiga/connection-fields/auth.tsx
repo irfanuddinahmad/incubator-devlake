@@ -16,7 +16,7 @@
  *
  */
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Input } from 'antd';
 
 interface Props {
@@ -72,7 +72,7 @@ export const Auth = ({ type, initialValues, values, setValues, setErrors }: Prop
         </label>
         <Input
           style={{ width: 386 }}
-          placeholder="https://api.taiga.io/"
+          placeholder="https://projects.example.com/api/v1/"
           value={values.endpoint}
           onChange={handleChangeEndpoint}
         />
@@ -85,7 +85,12 @@ export const Auth = ({ type, initialValues, values, setValues, setErrors }: Prop
           <span className="label">Username</span>
           <span className="required">*</span>
         </label>
-        <Input style={{ width: 386 }} placeholder="username" value={values.username} onChange={handleChangeUsername} />
+        <Input
+          style={{ width: 386 }}
+          placeholder="username or email"
+          value={values.username}
+          onChange={handleChangeUsername}
+        />
       </div>
       <div className="form-item">
         <label>
@@ -94,7 +99,7 @@ export const Auth = ({ type, initialValues, values, setValues, setErrors }: Prop
         </label>
         <Input.Password
           style={{ width: 386 }}
-          placeholder="password"
+          placeholder={type === 'update' ? '********' : 'password'}
           value={values.password}
           onChange={handleChangePassword}
         />

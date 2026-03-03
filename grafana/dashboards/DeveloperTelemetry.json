@@ -104,7 +104,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  date as time,\n  developer_id as metric,\n  active_hours as value\nFROM _tool_developer_metrics\nWHERE connection_id = 2\n  AND $__timeFilter(date)\nORDER BY date",
+          "rawSql": "SELECT\n  date as time,\n  developer_id as metric,\n  active_hours as value\nFROM _tool_developer_metrics\nWHERE connection_id = ${connection_id}\n  AND $__timeFilter(date)\nORDER BY date",
           "refId": "A",
           "sql": {
             "columns": [
@@ -209,7 +209,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  UNIX_TIMESTAMP(date) as time_sec,\n  developer_id as metric,\n  CAST(JSON_EXTRACT(git_activity, '$.total_commits') AS UNSIGNED) as value\nFROM _tool_developer_metrics\nWHERE connection_id = 2\n  AND $__timeFilter(date)\n  AND JSON_EXTRACT(git_activity, '$.total_commits') IS NOT NULL\nORDER BY time_sec",
+          "rawSql": "SELECT\n  UNIX_TIMESTAMP(date) as time_sec,\n  developer_id as metric,\n  CAST(JSON_EXTRACT(git_activity, '$.total_commits') AS UNSIGNED) as value\nFROM _tool_developer_metrics\nWHERE connection_id = ${connection_id}\n  AND $__timeFilter(date)\n  AND JSON_EXTRACT(git_activity, '$.total_commits') IS NOT NULL\nORDER BY time_sec",
           "refId": "A"
         }
       ],
@@ -285,7 +285,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  developer_id,\n  CAST(SUM(JSON_EXTRACT(git_activity, '$.total_lines_added')) AS UNSIGNED) as lines_added\nFROM _tool_developer_metrics\nWHERE connection_id = 2\n  AND $__timeFilter(date)\nGROUP BY developer_id\nORDER BY lines_added DESC",
+          "rawSql": "SELECT\n  developer_id,\n  CAST(SUM(JSON_EXTRACT(git_activity, '$.total_lines_added')) AS UNSIGNED) as lines_added\nFROM _tool_developer_metrics\nWHERE connection_id = ${connection_id}\n  AND $__timeFilter(date)\nGROUP BY developer_id\nORDER BY lines_added DESC",
           "refId": "A"
         }
       ],
@@ -381,7 +381,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  developer_id,\n  CAST(SUM(active_hours) AS UNSIGNED) as hours\nFROM _tool_developer_metrics\nWHERE connection_id = 2\n  AND $__timeFilter(date)\nGROUP BY developer_id\nORDER BY hours DESC\nLIMIT 15",
+          "rawSql": "SELECT\n  developer_id,\n  CAST(SUM(active_hours) AS UNSIGNED) as hours\nFROM _tool_developer_metrics\nWHERE connection_id = ${connection_id}\n  AND $__timeFilter(date)\nGROUP BY developer_id\nORDER BY hours DESC\nLIMIT 15",
           "refId": "A"
         }
       ],
@@ -468,7 +468,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  DAYNAME(date) as day_name,\n  AVG(active_hours) as avg_hours\nFROM _tool_developer_metrics\nWHERE connection_id = 2\n  AND $__timeFilter(date)\nGROUP BY DAYOFWEEK(date), DAYNAME(date)\nORDER BY DAYOFWEEK(date)",
+          "rawSql": "SELECT\n  DAYNAME(date) as day_name,\n  AVG(active_hours) as avg_hours\nFROM _tool_developer_metrics\nWHERE connection_id = ${connection_id}\n  AND $__timeFilter(date)\nGROUP BY DAYOFWEEK(date), DAYNAME(date)\nORDER BY DAYOFWEEK(date)",
           "refId": "A"
         }
       ],
@@ -507,7 +507,10 @@
       "id": 6,
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "table",
           "placement": "right",
           "showLegend": true
@@ -527,7 +530,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "WITH top_devs AS (\n  SELECT developer_id\n  FROM _tool_developer_metrics\n  WHERE connection_id = 2 AND $__timeFilter(date)\n  GROUP BY developer_id\n  ORDER BY SUM(CAST(JSON_EXTRACT(git_activity, '$.total_commits') AS UNSIGNED)) DESC\n  LIMIT 10\n)\nSELECT\n  UNIX_TIMESTAMP(date) as time_sec,\n  developer_id as metric,\n  CAST(JSON_EXTRACT(git_activity, '$.total_commits') AS UNSIGNED) as value\nFROM _tool_developer_metrics\nWHERE connection_id = 2\n  AND $__timeFilter(date)\n  AND developer_id IN (SELECT developer_id FROM top_devs)\nORDER BY time_sec",
+          "rawSql": "WITH top_devs AS (\n  SELECT developer_id\n  FROM _tool_developer_metrics\n  WHERE connection_id = ${connection_id} AND $__timeFilter(date)\n  GROUP BY developer_id\n  ORDER BY SUM(CAST(JSON_EXTRACT(git_activity, '$.total_commits') AS UNSIGNED)) DESC\n  LIMIT 10\n)\nSELECT\n  UNIX_TIMESTAMP(date) as time_sec,\n  developer_id as metric,\n  CAST(JSON_EXTRACT(git_activity, '$.total_commits') AS UNSIGNED) as value\nFROM _tool_developer_metrics\nWHERE connection_id = ${connection_id}\n  AND $__timeFilter(date)\n  AND developer_id IN (SELECT developer_id FROM top_devs)\nORDER BY time_sec",
           "refId": "A"
         }
       ],
@@ -650,7 +653,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  date as time,\n  'lines_added' as metric,\n  SUM(JSON_EXTRACT(git_activity, '$.total_lines_added')) as value\nFROM _tool_developer_metrics\nWHERE connection_id = 2\n  AND $__timeFilter(date)\nGROUP BY date\nUNION ALL\nSELECT\n  date as time,\n  'lines_deleted' as metric,\n  SUM(JSON_EXTRACT(git_activity, '$.total_lines_deleted')) as value\nFROM _tool_developer_metrics\nWHERE connection_id = 2\n  AND $__timeFilter(date)\nGROUP BY date\nORDER BY time",
+          "rawSql": "SELECT\n  date as time,\n  'lines_added' as metric,\n  SUM(JSON_EXTRACT(git_activity, '$.total_lines_added')) as value\nFROM _tool_developer_metrics\nWHERE connection_id = ${connection_id}\n  AND $__timeFilter(date)\nGROUP BY date\nUNION ALL\nSELECT\n  date as time,\n  'lines_deleted' as metric,\n  SUM(JSON_EXTRACT(git_activity, '$.total_lines_deleted')) as value\nFROM _tool_developer_metrics\nWHERE connection_id = ${connection_id}\n  AND $__timeFilter(date)\nGROUP BY date\nORDER BY time",
           "refId": "A"
         }
       ],
@@ -719,7 +722,9 @@
       "id": 8,
       "options": {
         "legend": {
-          "calcs": ["mean"],
+          "calcs": [
+            "mean"
+          ],
           "displayMode": "table",
           "placement": "right",
           "showLegend": true
@@ -738,7 +743,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  UNIX_TIMESTAMP(date) as time_sec,\n  developer_id as metric,\n  CAST(JSON_EXTRACT(development_activity, '$.test_runs_detected') AS UNSIGNED) as value\nFROM _tool_developer_metrics\nWHERE connection_id = 2\n  AND $__timeFilter(date)\n  AND JSON_EXTRACT(development_activity, '$.test_runs_detected') > 0\nORDER BY time_sec",
+          "rawSql": "SELECT\n  UNIX_TIMESTAMP(date) as time_sec,\n  developer_id as metric,\n  CAST(JSON_EXTRACT(development_activity, '$.test_runs_detected') AS UNSIGNED) as value\nFROM _tool_developer_metrics\nWHERE connection_id = ${connection_id}\n  AND $__timeFilter(date)\n  AND JSON_EXTRACT(development_activity, '$.test_runs_detected') > 0\nORDER BY time_sec",
           "refId": "A"
         }
       ],
@@ -827,7 +832,9 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "showHeader": true,
@@ -848,7 +855,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  developer_id,\n  name,\n  email,\n  SUM(JSON_EXTRACT(git_activity, '$.total_commits')) as total_commits,\n  SUM(JSON_EXTRACT(git_activity, '$.total_lines_added')) as total_lines_added,\n  SUM(JSON_EXTRACT(git_activity, '$.total_lines_deleted')) as total_lines_deleted,\n  AVG(active_hours) as avg_active_hours,\n  SUM(active_hours) as total_active_hours\nFROM _tool_developer_metrics\nWHERE connection_id = 2\n  AND $__timeFilter(date)\nGROUP BY developer_id, name, email\nORDER BY total_commits DESC",
+          "rawSql": "SELECT\n  developer_id,\n  name,\n  email,\n  SUM(JSON_EXTRACT(git_activity, '$.total_commits')) as total_commits,\n  SUM(JSON_EXTRACT(git_activity, '$.total_lines_added')) as total_lines_added,\n  SUM(JSON_EXTRACT(git_activity, '$.total_lines_deleted')) as total_lines_deleted,\n  AVG(active_hours) as avg_active_hours,\n  SUM(active_hours) as total_active_hours\nFROM _tool_developer_metrics\nWHERE connection_id = ${connection_id}\n  AND $__timeFilter(date)\nGROUP BY developer_id, name, email\nORDER BY total_commits DESC",
           "refId": "A"
         }
       ],
@@ -893,7 +900,9 @@
         "orientation": "auto",
         "reduceOptions": {
           "values": false,
-          "calcs": ["sum"],
+          "calcs": [
+            "sum"
+          ],
           "fields": ""
         },
         "textMode": "auto"
@@ -908,7 +917,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  SUM(JSON_EXTRACT(git_activity, '$.total_commits')) as total\nFROM _tool_developer_metrics\nWHERE connection_id = 2\n  AND $__timeFilter(date)",
+          "rawSql": "SELECT\n  SUM(JSON_EXTRACT(git_activity, '$.total_commits')) as total\nFROM _tool_developer_metrics\nWHERE connection_id = ${connection_id}\n  AND $__timeFilter(date)",
           "refId": "A"
         }
       ],
@@ -953,7 +962,9 @@
         "orientation": "auto",
         "reduceOptions": {
           "values": false,
-          "calcs": ["sum"],
+          "calcs": [
+            "sum"
+          ],
           "fields": ""
         },
         "textMode": "auto"
@@ -968,7 +979,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  SUM(active_hours) as total\nFROM _tool_developer_metrics\nWHERE connection_id = 2\n  AND $__timeFilter(date)",
+          "rawSql": "SELECT\n  SUM(active_hours) as total\nFROM _tool_developer_metrics\nWHERE connection_id = ${connection_id}\n  AND $__timeFilter(date)",
           "refId": "A"
         }
       ],
@@ -1013,7 +1024,9 @@
         "orientation": "auto",
         "reduceOptions": {
           "values": false,
-          "calcs": ["sum"],
+          "calcs": [
+            "sum"
+          ],
           "fields": ""
         },
         "textMode": "auto"
@@ -1028,7 +1041,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  SUM(JSON_EXTRACT(git_activity, '$.total_lines_added')) as total\nFROM _tool_developer_metrics\nWHERE connection_id = 2\n  AND $__timeFilter(date)",
+          "rawSql": "SELECT\n  SUM(JSON_EXTRACT(git_activity, '$.total_lines_added')) as total\nFROM _tool_developer_metrics\nWHERE connection_id = ${connection_id}\n  AND $__timeFilter(date)",
           "refId": "A"
         }
       ],
@@ -1073,7 +1086,9 @@
         "orientation": "auto",
         "reduceOptions": {
           "values": false,
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": ""
         },
         "textMode": "auto"
@@ -1088,7 +1103,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  COUNT(DISTINCT developer_id) as total\nFROM _tool_developer_metrics\nWHERE connection_id = 2\n  AND $__timeFilter(date)",
+          "rawSql": "SELECT\n  COUNT(DISTINCT developer_id) as total\nFROM _tool_developer_metrics\nWHERE connection_id = ${connection_id}\n  AND $__timeFilter(date)",
           "refId": "A"
         }
       ],
@@ -1099,9 +1114,38 @@
   "refresh": "",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["developer", "telemetry", "productivity"],
+  "tags": [
+    "developer",
+    "telemetry",
+    "productivity"
+  ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "4",
+          "value": "4"
+        },
+        "datasource": {
+          "type": "mysql",
+          "uid": "mysql"
+        },
+        "definition": "SELECT DISTINCT connection_id FROM _tool_developer_metrics ORDER BY connection_id",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Connection ID",
+        "multi": false,
+        "name": "connection_id",
+        "options": [],
+        "query": "SELECT DISTINCT connection_id FROM _tool_developer_metrics ORDER BY connection_id",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
   },
   "time": {
     "from": "now-6w",
