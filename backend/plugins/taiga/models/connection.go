@@ -18,7 +18,12 @@ limitations under the License.
 package models
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
+	"strings"
 
 	"github.com/apache/incubator-devlake/core/errors"
 	"github.com/apache/incubator-devlake/core/utils"
@@ -39,12 +44,63 @@ func (tc *TaigaConn) Sanitize() TaigaConn {
 	return *tc
 }
 
-// SetupAuthentication sets up the HTTP request with authentication
+// SetupAuthentication sets up the HTTP request with authentication.
+// If Token is set directly, use it. Otherwise exchange Username+Password for a token.
 func (tc *TaigaConn) SetupAuthentication(req *http.Request) errors.Error {
 	if tc.Token != "" {
 		req.Header.Set("Authorization", "Bearer "+tc.Token)
+		return nil
+	}
+	if tc.Username != "" && tc.Password != "" {
+		token, err := tc.fetchToken()
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
 	}
 	return nil
+}
+
+// fetchToken exchanges username+password for a Taiga auth token via POST /auth
+func (tc *TaigaConn) fetchToken() (string, errors.Error) {
+	endpoint := strings.TrimSuffix(tc.Endpoint, "/")
+	// strip /api/v1 suffix to get base, then re-add /api/v1/auth
+	authURL := endpoint + "/auth"
+
+	body, e := json.Marshal(map[string]string{
+		"type":     "normal",
+		"username": tc.Username,
+		"password": tc.Password,
+	})
+	if e != nil {
+		return "", errors.Default.WrapRaw(e)
+	}
+
+	resp, e := http.Post(authURL, "application/json", bytes.NewReader(body)) //nolint:noctx
+	if e != nil {
+		return "", errors.Default.WrapRaw(e)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.Default.New(fmt.Sprintf("taiga auth failed with status %d", resp.StatusCode))
+	}
+
+	var result map[string]interface{}
+	if e := json.NewDecoder(resp.Body).Decode(&result); e != nil {
+		return "", errors.Default.WrapRaw(e)
+	}
+	// Taiga returns auth_token (v5) or token (v6)
+	for _, key := range []string{"auth_token", "token"} {
+		if t, ok := result[key]; ok {
+			if token, ok := t.(string); ok && token != "" {
+				return token, nil
+			}
+		}
+	}
+	// fallback: read raw body hint
+	raw, _ := io.ReadAll(bytes.NewReader(body))
+	return "", errors.Default.New(fmt.Sprintf("taiga auth response missing token field, body: %s", string(raw)))
 }
 
 // TaigaConnection holds TaigaConn plus ID/Name for database storage
