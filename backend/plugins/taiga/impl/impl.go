@@ -69,6 +69,9 @@ func (p Taiga) GetTablesInfo() []dal.Tabler {
 		&models.TaigaConnection{},
 		&models.TaigaProject{},
 		&models.TaigaUserStory{},
+		&models.TaigaTask{},
+		&models.TaigaIssue{},
+		&models.TaigaEpic{},
 		&models.TaigaScopeConfig{},
 	}
 }
@@ -87,8 +90,17 @@ func (p Taiga) SubTaskMetas() []plugin.SubTaskMeta {
 		tasks.ExtractProjectsMeta,
 		tasks.CollectUserStoriesMeta,
 		tasks.ExtractUserStoriesMeta,
+		tasks.CollectTasksMeta,
+		tasks.ExtractTasksMeta,
+		tasks.CollectIssuesMeta,
+		tasks.ExtractIssuesMeta,
+		tasks.CollectEpicsMeta,
+		tasks.ExtractEpicsMeta,
 		tasks.ConvertProjectsMeta,
 		tasks.ConvertUserStoriesMeta,
+		tasks.ConvertTasksMeta,
+		tasks.ConvertIssuesMeta,
+		tasks.ConvertEpicsMeta,
 	}
 }
 

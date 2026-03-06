@@ -25,5 +25,6 @@ import (
 func All() []plugin.MigrationScript {
 	return []plugin.MigrationScript{
 		new(addInitTables20250220),
+		new(addTaskIssueEpicTables20260306),
 	}
 }
