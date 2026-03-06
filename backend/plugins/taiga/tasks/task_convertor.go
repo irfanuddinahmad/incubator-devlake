@@ -81,6 +81,9 @@ func ConvertTasks(subtaskCtx plugin.SubTaskContext) errors.Error {
 				OriginalType:   "Task",
 				Status:         task.Status,
 				OriginalStatus: task.Status,
+				CreatedDate:    task.CreatedDate,
+				UpdatedDate:    task.ModifiedDate,
+				ResolutionDate: task.FinishedDate,
 			}
 
 			result = append(result, issue)

@@ -106,6 +106,9 @@ func ConvertIssues(subtaskCtx plugin.SubTaskContext) errors.Error {
 				Status:         taigaIssue.Status,
 				OriginalStatus: taigaIssue.Status,
 				Priority:       taigaIssue.Priority,
+				CreatedDate:    taigaIssue.CreatedDate,
+				UpdatedDate:    taigaIssue.ModifiedDate,
+				ResolutionDate: taigaIssue.FinishedDate,
 			}
 
 			result = append(result, issue)

@@ -81,6 +81,8 @@ func ConvertEpics(subtaskCtx plugin.SubTaskContext) errors.Error {
 				OriginalType:   "Epic",
 				Status:         epic.Status,
 				OriginalStatus: epic.Status,
+				CreatedDate:    epic.CreatedDate,
+				UpdatedDate:    epic.ModifiedDate,
 			}
 
 			result = append(result, issue)
