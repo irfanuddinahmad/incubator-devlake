@@ -55,7 +55,7 @@ jobs:
           script: |
             cd /opt/devlake
             sed -i "s/^APP_VERSION=.*/APP_VERSION=${DEPLOY_VERSION}/" .env
-            sudo docker pull jawad4khan/devlake:${DEPLOY_VERSION}
-            sudo docker pull jawad4khan/devlake-config-ui:${DEPLOY_VERSION}
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/devlake:${DEPLOY_VERSION}
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/devlake-config-ui:${DEPLOY_VERSION}
             sudo ./deploy.sh
 
