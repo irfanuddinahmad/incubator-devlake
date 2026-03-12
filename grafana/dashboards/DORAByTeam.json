@@ -1177,6 +1177,31 @@
     "list": [
       {
         "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": "mysql",
+        "definition": "SELECT project_name FROM user_project_mapping WHERE user_login = '${__user.login}'",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Project",
+        "multi": true,
+        "name": "devlake_project",
+        "options": [],
+        "query": "SELECT project_name FROM user_project_mapping WHERE user_login = '${__user.login}'",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
           "selected": false,
           "text": "All",
           "value": "$__all"

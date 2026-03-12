@@ -141,5 +141,7 @@ func All() []plugin.MigrationScript {
 		new(addIssueFixVerion),
 		new(addPipelinePriority),
 		new(fixNullPriority),
+		new(modifyCicdDeploymentsToText),
+		new(addUserProjectMapping),
 	}
 }
