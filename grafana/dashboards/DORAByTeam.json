@@ -1191,7 +1191,7 @@
         "includeAll": true,
         "label": "Project",
         "multi": true,
-        "name": "devlake_project",
+        "name": "project",
         "options": [],
         "query": "SELECT project_name FROM user_project_mapping WHERE user_login = '${__user.login}'",
         "refresh": 1,
