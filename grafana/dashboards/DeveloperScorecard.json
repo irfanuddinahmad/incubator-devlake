@@ -205,11 +205,122 @@
           "format": "table",
           "queryType": "randomWalk",
           "rawQuery": true,
-          "rawSql": "WITH commit_stats AS (\n  SELECT c.author_name AS developer,\n    COUNT(DISTINCT c.sha)          AS commits,\n    SUM(c.additions + c.deletions) AS lines_changed\n  FROM commits c\n  JOIN repo_commits rc ON rc.commit_sha = c.sha\n  WHERE rc.repo_id IN (${repo_id})\n    AND $__timeFilter(c.authored_date)\n    AND c.author_name != ''\n  GROUP BY 1\n),\npr_stats AS (\n  SELECT pr.author_name AS developer,\n    COUNT(DISTINCT pr.id) AS prs_opened,\n    COUNT(DISTINCT CASE WHEN pr.status = 'MERGED' THEN pr.id END) AS prs_merged\n  FROM pull_requests pr\n  WHERE pr.base_repo_id IN (${repo_id})\n    AND $__timeFilter(pr.created_date)\n    AND pr.author_name != ''\n  GROUP BY 1\n),\nreview_stats AS (\n  SELECT COALESCE(NULLIF(prr.user_name,''), NULLIF(prr.name,'')) AS developer,\n    COUNT(DISTINCT prr.pull_request_id) AS prs_reviewed\n  FROM pull_request_reviewers prr\n  JOIN pull_requests pr ON pr.id = prr.pull_request_id\n  WHERE pr.base_repo_id IN (${repo_id})\n    AND $__timeFilter(pr.created_date)\n  GROUP BY 1\n),\nissue_stats AS (\n  SELECT i.assignee_name AS developer,\n    COUNT(DISTINCT CASE WHEN i.status = 'DONE' THEN i.id END) AS issues_done\n  FROM issues i\n  JOIN board_issues bi ON bi.issue_id = i.id\n  WHERE bi.board_id IN (${board_id})\n    AND $__timeFilter(i.resolution_date)\n    AND i.assignee_name != ''\n  GROUP BY 1\n),\nall_devs AS (\n  SELECT developer FROM commit_stats  WHERE developer IS NOT NULL\n  UNION\n  SELECT developer FROM pr_stats      WHERE developer IS NOT NULL\n  UNION\n  SELECT developer FROM review_stats  WHERE developer IS NOT NULL\n  UNION\n  SELECT developer FROM issue_stats   WHERE developer IS NOT NULL\n),\nnormed AS (\n  SELECT developer, REGEXP_REPLACE(LOWER(developer), '[^a-z]', '') AS norm\n  FROM all_devs WHERE developer IS NOT NULL AND developer != ''\n),\ncanonical AS (\n  SELECT\n    a.developer,\n    (SELECT b.developer FROM normed b\n     WHERE SOUNDEX(a.norm) = SOUNDEX(b.norm)\n       AND LEAST(LENGTH(a.norm), LENGTH(b.norm)) * 10 >= GREATEST(LENGTH(a.norm), LENGTH(b.norm)) * 8\n     ORDER BY LENGTH(b.norm) DESC, b.developer ASC LIMIT 1\n    ) AS canonical_name\n  FROM normed a\n)\nSELECT\n  c.canonical_name                         AS Developer,\n  COALESCE(SUM(cs.commits),       0)       AS Commits,\n  COALESCE(SUM(cs.lines_changed), 0)       AS `Lines Changed`,\n  COALESCE(SUM(ps.prs_merged),    0)       AS `PRs Merged`,\n  COALESCE(SUM(rs.prs_reviewed),  0)       AS `PRs Reviewed`,\n  COALESCE(SUM(iss.issues_done),  0)       AS `Issues Resolved`,\n  COALESCE(SUM(cs.commits), 0) * 1\n    + FLOOR(COALESCE(SUM(cs.lines_changed), 0) / 100)\n    + COALESCE(SUM(ps.prs_merged),   0) * 3\n    + COALESCE(SUM(rs.prs_reviewed), 0) * 2\n    + COALESCE(SUM(iss.issues_done), 0) * 2  AS Score\nFROM canonical c\nLEFT JOIN commit_stats  cs  ON cs.developer  = c.developer\nLEFT JOIN pr_stats      ps  ON ps.developer  = c.developer\nLEFT JOIN review_stats  rs  ON rs.developer  = c.developer\nLEFT JOIN issue_stats   iss ON iss.developer = c.developer\nGROUP BY c.canonical_name\nORDER BY Score DESC\nLIMIT 30",
+          "rawSql": "WITH commit_stats AS (\n  SELECT c.author_name AS developer,\n    COUNT(DISTINCT c.sha)          AS commits,\n    SUM(c.additions + c.deletions) AS lines_changed\n  FROM commits c\n  JOIN repo_commits rc ON rc.commit_sha = c.sha\n  WHERE rc.repo_id IN (${repo_id})\n    AND $__timeFilter(c.authored_date)\n    AND c.author_name != ''\n  GROUP BY 1\n),\npr_stats AS (\n  SELECT pr.author_name AS developer,\n    COUNT(DISTINCT CASE WHEN pr.status = 'MERGED' THEN pr.id END) AS prs_merged\n  FROM pull_requests pr\n  WHERE pr.base_repo_id IN (${repo_id})\n    AND $__timeFilter(pr.merged_date)\n    AND pr.author_name != ''\n  GROUP BY 1\n),\nreview_stats AS (\n  SELECT COALESCE(NULLIF(prr.user_name,''), NULLIF(prr.name,'')) AS developer,\n    COUNT(DISTINCT prr.pull_request_id) AS prs_reviewed\n  FROM pull_request_reviewers prr\n  JOIN pull_requests pr ON pr.id = prr.pull_request_id\n  WHERE pr.base_repo_id IN (${repo_id})\n    AND $__timeFilter(pr.created_date)\n  GROUP BY 1\n),\npr_metrics AS (\n  SELECT pr.author_name AS developer,\n    ROUND(AVG(prm.pr_cycle_time  / 1440.0), 1) AS avg_cycle_time_days,\n    ROUND(AVG(prm.pr_review_time / 1440.0), 1) AS avg_review_time_days,\n    ROUND(AVG(prm.pr_pickup_time / 1440.0), 1) AS avg_pickup_time_days\n  FROM pull_requests pr\n  JOIN project_pr_metrics prm ON pr.id = prm.id\n  WHERE pr.base_repo_id IN (${repo_id})\n    AND $__timeFilter(pr.merged_date)\n    AND pr.status = 'MERGED'\n    AND pr.author_name != ''\n  GROUP BY 1\n),\nreview_depth AS (\n  SELECT pr.author_name AS developer,\n    ROUND(AVG(cc.cnt), 1) AS avg_review_depth\n  FROM pull_requests pr\n  JOIN (\n    SELECT pull_request_id, COUNT(*) AS cnt\n    FROM pull_request_comments\n    GROUP BY pull_request_id\n  ) cc ON cc.pull_request_id = pr.id\n  WHERE pr.base_repo_id IN (${repo_id})\n    AND $__timeFilter(pr.merged_date)\n    AND pr.status = 'MERGED'\n    AND pr.author_name != ''\n  GROUP BY 1\n),\npr_size AS (\n  SELECT pr.author_name AS developer,\n    ROUND(AVG(COALESCE(c.additions, 0) + COALESCE(c.deletions, 0))) AS avg_pr_size_loc\n  FROM pull_requests pr\n  LEFT JOIN commits c ON pr.merge_commit_sha = c.sha\n  WHERE pr.base_repo_id IN (${repo_id})\n    AND $__timeFilter(pr.merged_date)\n    AND pr.status = 'MERGED'\n    AND pr.author_name != ''\n  GROUP BY 1\n),\nno_review AS (\n  SELECT pr.author_name AS developer,\n    SUM(CASE WHEN pr.id NOT IN (\n      SELECT DISTINCT pull_request_id FROM pull_request_comments\n    ) THEN 1 ELSE 0 END) AS prs_without_review\n  FROM pull_requests pr\n  WHERE pr.base_repo_id IN (${repo_id})\n    AND $__timeFilter(pr.merged_date)\n    AND pr.status = 'MERGED'\n    AND pr.author_name != ''\n  GROUP BY 1\n),\nall_devs AS (\n  SELECT developer FROM commit_stats WHERE developer IS NOT NULL\n  UNION SELECT developer FROM pr_stats      WHERE developer IS NOT NULL\n  UNION SELECT developer FROM review_stats  WHERE developer IS NOT NULL\n),\nnormed AS (\n  SELECT developer, REGEXP_REPLACE(LOWER(developer), '[^a-z]', '') AS norm\n  FROM all_devs WHERE developer IS NOT NULL AND developer != ''\n),\ncanonical AS (\n  SELECT\n    a.developer,\n    (SELECT b.developer FROM normed b\n     WHERE SOUNDEX(a.norm) = SOUNDEX(b.norm)\n       AND LEAST(LENGTH(a.norm), LENGTH(b.norm)) * 10 >= GREATEST(LENGTH(a.norm), LENGTH(b.norm)) * 8\n     ORDER BY LENGTH(b.norm) DESC, b.developer ASC LIMIT 1\n    ) AS canonical_name\n  FROM normed a\n)\nSELECT\n  c.canonical_name                               AS Developer,\n  COALESCE(SUM(cs.commits),       0)             AS Commits,\n  COALESCE(SUM(cs.lines_changed), 0)             AS `Lines Changed`,\n  COALESCE(SUM(ps.prs_merged),    0)             AS `PRs Merged`,\n  COALESCE(SUM(rs.prs_reviewed),  0)             AS `PRs Reviewed`,\n  ROUND(AVG(pm.avg_cycle_time_days),  1)         AS `Avg Cycle Time (d)`,\n  ROUND(AVG(pm.avg_review_time_days), 1)         AS `Avg Review Time (d)`,\n  ROUND(AVG(pm.avg_pickup_time_days), 1)         AS `Avg Pickup Time (d)`,\n  ROUND(AVG(rd.avg_review_depth),     1)         AS `Avg Review Depth`,\n  ROUND(AVG(pz.avg_pr_size_loc))                 AS `Avg PR Size (LOC)`,\n  COALESCE(SUM(nr.prs_without_review), 0)        AS `PRs w/o Review`,\n  COALESCE(SUM(cs.commits), 0) * 1\n    + FLOOR(COALESCE(SUM(cs.lines_changed), 0) / 100)\n    + COALESCE(SUM(ps.prs_merged),   0) * 3\n    + COALESCE(SUM(rs.prs_reviewed), 0) * 2      AS `GitHub Score`\nFROM canonical c\nLEFT JOIN commit_stats cs ON cs.developer = c.developer\nLEFT JOIN pr_stats     ps ON ps.developer = c.developer\nLEFT JOIN review_stats rs ON rs.developer = c.developer\nLEFT JOIN pr_metrics   pm ON pm.developer = c.developer\nLEFT JOIN review_depth rd ON rd.developer = c.developer\nLEFT JOIN pr_size      pz ON pz.developer = c.developer\nLEFT JOIN no_review    nr ON nr.developer = c.developer\nGROUP BY c.canonical_name\nORDER BY `GitHub Score` DESC\nLIMIT 30",
           "refId": "A"
         }
       ],
-      "title": "Developer Rankings [Activity in Selected Time Range]",
+      "title": "GitHub Developer Leaderboard [Activity in Selected Time Range]",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "mysql",
+        "uid": "${DS_MYSQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Jira Score"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 20
+                    },
+                    {
+                      "color": "orange",
+                      "value": 50
+                    },
+                    {
+                      "color": "red",
+                      "value": 100
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 6,
+      "options": {
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Jira Score"
+          }
+        ]
+      },
+      "pluginVersion": "10.2.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "mysql",
+            "uid": "${DS_MYSQL}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH issue_stats AS (\n  SELECT i.assignee_name AS developer,\n    COUNT(DISTINCT i.id)                                                          AS total_assigned,\n    COUNT(DISTINCT CASE WHEN i.status = 'DONE' THEN i.id END)                    AS issues_resolved,\n    COUNT(DISTINCT CASE WHEN i.status != 'DONE' THEN i.id END)                   AS issues_open,\n    ROUND(AVG(CASE\n      WHEN i.status = 'DONE'\n        AND i.resolution_date IS NOT NULL\n        AND i.created_date IS NOT NULL\n      THEN TIMESTAMPDIFF(DAY, i.created_date, i.resolution_date)\n    END), 1) AS avg_resolution_days\n  FROM issues i\n  JOIN board_issues bi ON bi.issue_id = i.id\n  WHERE bi.board_id IN (${board_id})\n    AND $__timeFilter(i.created_date)\n    AND i.assignee_name != ''\n  GROUP BY 1\n),\nall_devs AS (\n  SELECT developer FROM issue_stats WHERE developer IS NOT NULL AND developer != ''\n),\nnormed AS (\n  SELECT developer, REGEXP_REPLACE(LOWER(developer), '[^a-z]', '') AS norm\n  FROM all_devs\n),\ncanonical AS (\n  SELECT\n    a.developer,\n    (SELECT b.developer FROM normed b\n     WHERE SOUNDEX(a.norm) = SOUNDEX(b.norm)\n       AND LEAST(LENGTH(a.norm), LENGTH(b.norm)) * 10 >= GREATEST(LENGTH(a.norm), LENGTH(b.norm)) * 8\n     ORDER BY LENGTH(b.norm) DESC, b.developer ASC LIMIT 1\n    ) AS canonical_name\n  FROM normed a\n)\nSELECT\n  c.canonical_name                                AS Developer,\n  COALESCE(SUM(s.total_assigned),   0)           AS `Total Assigned`,\n  COALESCE(SUM(s.issues_resolved),  0)           AS `Issues Resolved`,\n  COALESCE(SUM(s.issues_open),      0)           AS `Issues Open`,\n  ROUND(AVG(s.avg_resolution_days), 1)           AS `Avg Resolution (d)`,\n  COALESCE(SUM(s.issues_resolved),  0) * 2       AS `Jira Score`\nFROM canonical c\nLEFT JOIN issue_stats s ON s.developer = c.developer\nGROUP BY c.canonical_name\nORDER BY `Jira Score` DESC\nLIMIT 30",
+          "refId": "A"
+        }
+      ],
+      "title": "Jira Developer Leaderboard [Activity in Selected Time Range]",
       "type": "table"
     },
     {
@@ -286,11 +397,11 @@
           "format": "table",
           "queryType": "randomWalk",
           "rawQuery": true,
-          "rawSql": "WITH commit_stats AS (\n  SELECT c.author_name AS developer,\n    COUNT(DISTINCT c.sha) AS commits,\n    SUM(c.additions + c.deletions) AS lines_changed\n  FROM commits c\n  JOIN repo_commits rc ON rc.commit_sha = c.sha\n  WHERE rc.repo_id IN (${repo_id})\n    AND $__timeFilter(c.authored_date) AND c.author_name != ''\n  GROUP BY 1\n),\npr_stats AS (\n  SELECT pr.author_name AS developer,\n    COUNT(DISTINCT CASE WHEN pr.status = 'MERGED' THEN pr.id END) AS prs_merged\n  FROM pull_requests pr\n  WHERE pr.base_repo_id IN (${repo_id})\n    AND $__timeFilter(pr.created_date) AND pr.author_name != ''\n  GROUP BY 1\n),\nreview_stats AS (\n  SELECT COALESCE(NULLIF(prr.user_name,''), NULLIF(prr.name,'')) AS developer,\n    COUNT(DISTINCT prr.pull_request_id) AS prs_reviewed\n  FROM pull_request_reviewers prr\n  JOIN pull_requests pr ON pr.id = prr.pull_request_id\n  WHERE pr.base_repo_id IN (${repo_id})\n    AND $__timeFilter(pr.created_date)\n  GROUP BY 1\n),\nissue_stats AS (\n  SELECT i.assignee_name AS developer,\n    COUNT(DISTINCT CASE WHEN i.status = 'DONE' THEN i.id END) AS issues_done\n  FROM issues i\n  JOIN board_issues bi ON bi.issue_id = i.id\n  WHERE bi.board_id IN (${board_id})\n    AND $__timeFilter(i.resolution_date) AND i.assignee_name != ''\n  GROUP BY 1\n),\nall_devs AS (\n  SELECT developer FROM commit_stats  WHERE developer IS NOT NULL\n  UNION SELECT developer FROM pr_stats      WHERE developer IS NOT NULL\n  UNION SELECT developer FROM review_stats  WHERE developer IS NOT NULL\n  UNION SELECT developer FROM issue_stats   WHERE developer IS NOT NULL\n),\nnormed AS (\n  SELECT developer, REGEXP_REPLACE(LOWER(developer), '[^a-z]', '') AS norm\n  FROM all_devs WHERE developer IS NOT NULL AND developer != ''\n),\ncanonical AS (\n  SELECT\n    a.developer,\n    (SELECT b.developer FROM normed b\n     WHERE SOUNDEX(a.norm) = SOUNDEX(b.norm)\n       AND LEAST(LENGTH(a.norm), LENGTH(b.norm)) * 10 >= GREATEST(LENGTH(a.norm), LENGTH(b.norm)) * 8\n     ORDER BY LENGTH(b.norm) DESC, b.developer ASC LIMIT 1\n    ) AS canonical_name\n  FROM normed a\n),\ncombined AS (\n  SELECT\n    c.canonical_name                         AS developer,\n    COALESCE(SUM(cs.commits),       0)       AS commits,\n    COALESCE(SUM(cs.lines_changed), 0)       AS lines_changed,\n    COALESCE(SUM(ps.prs_merged),    0)       AS prs_merged,\n    COALESCE(SUM(rs.prs_reviewed),  0)       AS prs_reviewed,\n    COALESCE(SUM(iss.issues_done),  0)       AS issues_done\n  FROM canonical c\n  LEFT JOIN commit_stats  cs  ON cs.developer  = c.developer\n  LEFT JOIN pr_stats      ps  ON ps.developer  = c.developer\n  LEFT JOIN review_stats  rs  ON rs.developer  = c.developer\n  LEFT JOIN issue_stats   iss ON iss.developer = c.developer\n  GROUP BY c.canonical_name\n),\nmaxvals AS (\n  SELECT NULLIF(MAX(commits),0) mx_c, NULLIF(MAX(lines_changed),0) mx_l,\n    NULLIF(MAX(prs_merged),0) mx_p, NULLIF(MAX(prs_reviewed),0) mx_r,\n    NULLIF(MAX(issues_done),0) mx_i\n  FROM combined\n)\nSELECT c.developer AS Developer,\n  ROUND(100 * c.commits       / m.mx_c)  AS `Commits (norm)`,\n  ROUND(100 * c.lines_changed / m.mx_l)  AS `Lines (norm)`,\n  ROUND(100 * c.prs_merged    / m.mx_p)  AS `PRs Merged (norm)`,\n  ROUND(100 * c.prs_reviewed  / m.mx_r)  AS `Reviews (norm)`,\n  ROUND(100 * c.issues_done   / m.mx_i)  AS `Issues Done (norm)`\nFROM combined c, maxvals m\nORDER BY (\n  COALESCE(c.commits/m.mx_c,0) + COALESCE(c.lines_changed/m.mx_l,0)\n  + COALESCE(c.prs_merged/m.mx_p,0) + COALESCE(c.prs_reviewed/m.mx_r,0)\n  + COALESCE(c.issues_done/m.mx_i,0)\n) DESC\nLIMIT 20",
+          "rawSql": "WITH commit_stats AS (\n  SELECT c.author_name AS developer,\n    COUNT(DISTINCT c.sha) AS commits,\n    SUM(c.additions + c.deletions) AS lines_changed\n  FROM commits c\n  JOIN repo_commits rc ON rc.commit_sha = c.sha\n  WHERE rc.repo_id IN (${repo_id})\n    AND $__timeFilter(c.authored_date) AND c.author_name != ''\n  GROUP BY 1\n),\npr_stats AS (\n  SELECT pr.author_name AS developer,\n    COUNT(DISTINCT CASE WHEN pr.status = 'MERGED' THEN pr.id END) AS prs_merged\n  FROM pull_requests pr\n  WHERE pr.base_repo_id IN (${repo_id})\n    AND $__timeFilter(pr.merged_date) AND pr.author_name != ''\n  GROUP BY 1\n),\nreview_stats AS (\n  SELECT COALESCE(NULLIF(prr.user_name,''), NULLIF(prr.name,'')) AS developer,\n    COUNT(DISTINCT prr.pull_request_id) AS prs_reviewed\n  FROM pull_request_reviewers prr\n  JOIN pull_requests pr ON pr.id = prr.pull_request_id\n  WHERE pr.base_repo_id IN (${repo_id})\n    AND $__timeFilter(pr.created_date)\n  GROUP BY 1\n),\nall_devs AS (\n  SELECT developer FROM commit_stats WHERE developer IS NOT NULL\n  UNION SELECT developer FROM pr_stats      WHERE developer IS NOT NULL\n  UNION SELECT developer FROM review_stats  WHERE developer IS NOT NULL\n),\nnormed AS (\n  SELECT developer, REGEXP_REPLACE(LOWER(developer), '[^a-z]', '') AS norm\n  FROM all_devs WHERE developer IS NOT NULL AND developer != ''\n),\ncanonical AS (\n  SELECT\n    a.developer,\n    (SELECT b.developer FROM normed b\n     WHERE SOUNDEX(a.norm) = SOUNDEX(b.norm)\n       AND LEAST(LENGTH(a.norm), LENGTH(b.norm)) * 10 >= GREATEST(LENGTH(a.norm), LENGTH(b.norm)) * 8\n     ORDER BY LENGTH(b.norm) DESC, b.developer ASC LIMIT 1\n    ) AS canonical_name\n  FROM normed a\n),\ncombined AS (\n  SELECT\n    c.canonical_name                         AS developer,\n    COALESCE(SUM(cs.commits),       0)       AS commits,\n    COALESCE(SUM(cs.lines_changed), 0)       AS lines_changed,\n    COALESCE(SUM(ps.prs_merged),    0)       AS prs_merged,\n    COALESCE(SUM(rs.prs_reviewed),  0)       AS prs_reviewed\n  FROM canonical c\n  LEFT JOIN commit_stats cs ON cs.developer = c.developer\n  LEFT JOIN pr_stats     ps ON ps.developer = c.developer\n  LEFT JOIN review_stats rs ON rs.developer = c.developer\n  GROUP BY c.canonical_name\n),\nmaxvals AS (\n  SELECT NULLIF(MAX(commits),0) mx_c, NULLIF(MAX(lines_changed),0) mx_l,\n    NULLIF(MAX(prs_merged),0) mx_p, NULLIF(MAX(prs_reviewed),0) mx_r\n  FROM combined\n)\nSELECT c.developer AS Developer,\n  ROUND(100 * c.commits       / m.mx_c) AS `Commits (norm)`,\n  ROUND(100 * c.lines_changed / m.mx_l) AS `Lines (norm)`,\n  ROUND(100 * c.prs_merged    / m.mx_p) AS `PRs Merged (norm)`,\n  ROUND(100 * c.prs_reviewed  / m.mx_r) AS `Reviews (norm)`\nFROM combined c, maxvals m\nORDER BY (\n  COALESCE(c.commits/m.mx_c,0) + COALESCE(c.lines_changed/m.mx_l,0)\n  + COALESCE(c.prs_merged/m.mx_p,0) + COALESCE(c.prs_reviewed/m.mx_r,0)\n) DESC\nLIMIT 20",
           "refId": "A"
         }
       ],
-      "title": "Relative Contribution per Dimension [Activity in Selected Time Range]",
+      "title": "GitHub Relative Contribution per Dimension [Activity in Selected Time Range]",
       "type": "barchart"
     }
   ],
