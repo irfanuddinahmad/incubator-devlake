@@ -63,7 +63,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "- **Developer Scorecard**: ranks contributors across GitHub (commits, PRs, code reviews) and Jira (issues resolved).\n- Identity is resolved via DevLake's `user_accounts` mapping when available; falls back to tool display names.\n- **Score formula**: Commits\u00d71 + Lines/100\u00d71 + PRs Merged\u00d73 + PRs Reviewed\u00d72 + Issues Resolved\u00d72\n- The bar chart shows each dimension normalized to 0-100 relative to the top contributor in that dimension.",
+        "content": "## Developer Scorecard\n\nThis dashboard ranks contributors separately per tool since GitHub and Jira use different identities with no common link.\n\n### GitHub Leaderboard\nScores developers on code contributions and code review activity from GitHub.\n- **Columns**: Commits, Lines Changed, PRs Merged, PRs Reviewed, Avg Cycle Time, Avg Review Time, Avg Pickup Time, Avg Review Depth, Avg PR Size (LOC), PRs w/o Review\n- **GitHub Score**: `Commits×1 + Lines÷100 + PRs Merged×3 + PRs Reviewed×2`\n\n### Jira Leaderboard\nScores developers on issue delivery from Jira.\n- **Columns**: Total Assigned, Issues Resolved, Issues Open, Avg Resolution (days)\n- **Jira Score**: `Issues Resolved×2`\n\n### Relative Contribution Chart\nNormalizes each GitHub dimension to 0–100 relative to the top contributor, making cross-developer comparison easy.\n\n> Fuzzy identity matching (SOUNDEX + 80% length ratio) merges slightly different display names of the same person (e.g. typos, GitHub handles vs real names).",
         "mode": "markdown"
       },
       "pluginVersion": "11.6.2",
