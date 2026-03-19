@@ -63,7 +63,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "## Developer Scorecard\n\nThis dashboard ranks contributors separately per tool since GitHub and Jira use different identities with no common link.\n\n### GitHub Leaderboard\nScores developers on code contributions and code review activity from GitHub.\n- **Columns**: Commits, Lines Changed, PRs Merged, PRs Reviewed, Avg Cycle Time, Avg Review Time, Avg Pickup Time, Avg Review Depth, Avg PR Size (LOC), PRs w/o Review\n- **GitHub Score**: `Commits×1 + Lines÷100 + PRs Merged×3 + PRs Reviewed×2 + Avg Review Depth×1`\n\n### Jira Leaderboard\nScores developers on issue delivery from Jira.\n- **Columns**: Total Assigned, Issues Resolved, Issues Open, Avg Resolution (days)\n- **Jira Score**: `Issues Resolved×2`\n\n### Relative Contribution Chart\nNormalizes each GitHub dimension to 0–100 relative to the top contributor, making cross-developer comparison easy.\n\n> Fuzzy identity matching (SOUNDEX + 80% length ratio) merges slightly different display names of the same person (e.g. typos, GitHub handles vs real names).",
+        "content": "## Developer Scorecard\n\nThis dashboard ranks contributors separately per tool since GitHub and Jira use different identities with no common link.\n\n### GitHub Leaderboard\nScores developers on code contributions and code review activity from GitHub.\n- **Columns**: Commits, Lines Changed, PRs Merged, PRs Reviewed, Avg Cycle Time, Avg Review Time, Avg Pickup Time, Avg Review Depth, Avg PR Size (LOC), PRs w/o Review\n- **GitHub Score**: `Commits\u00d71 + Lines\u00f7100 + PRs Merged\u00d73 + PRs Reviewed\u00d72 + Avg Review Depth\u00d71`\n\n### Jira Leaderboard\nScores developers on issue delivery from Jira.\n- **Columns**: Total Assigned, Issues Resolved, Issues Open, Avg Resolution (days)\n\n### Relative Contribution Chart\nNormalizes each GitHub dimension to 0\u2013100 relative to the top contributor, making cross-developer comparison easy.\n\n> Fuzzy identity matching (SOUNDEX + 80% length ratio) merges slightly different display names of the same person (e.g. typos, GitHub handles vs real names).",
         "mode": "markdown"
       },
       "pluginVersion": "11.6.2",
@@ -237,48 +237,7 @@
             ]
           }
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Jira Score"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 100
-              },
-              {
-                "id": "custom.displayMode",
-                "value": "color-background"
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    },
-                    {
-                      "color": "yellow",
-                      "value": 20
-                    },
-                    {
-                      "color": "orange",
-                      "value": 50
-                    },
-                    {
-                      "color": "red",
-                      "value": 100
-                    }
-                  ]
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 14,
@@ -300,7 +259,7 @@
         "sortBy": [
           {
             "desc": true,
-            "displayName": "Jira Score"
+            "displayName": "Issues Resolved"
           }
         ]
       },
@@ -310,7 +269,7 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH issue_stats AS (\n  SELECT i.assignee_name AS developer,\n    COUNT(DISTINCT i.id)                                                          AS total_assigned,\n    COUNT(DISTINCT CASE WHEN i.status = 'DONE' THEN i.id END)                    AS issues_resolved,\n    COUNT(DISTINCT CASE WHEN i.status != 'DONE' THEN i.id END)                   AS issues_open,\n    ROUND(AVG(CASE\n      WHEN i.status = 'DONE'\n        AND i.resolution_date IS NOT NULL\n        AND i.created_date IS NOT NULL\n      THEN TIMESTAMPDIFF(DAY, i.created_date, i.resolution_date)\n    END), 1) AS avg_resolution_days\n  FROM issues i\n  JOIN board_issues bi ON bi.issue_id = i.id\n  WHERE bi.board_id IN (${board_id})\n    AND $__timeFilter(i.created_date)\n    AND i.assignee_name != ''\n  GROUP BY 1\n),\nall_devs AS (\n  SELECT developer FROM issue_stats WHERE developer IS NOT NULL AND developer != ''\n),\nnormed AS (\n  SELECT developer, REGEXP_REPLACE(LOWER(developer), '[^a-z]', '') AS norm\n  FROM all_devs\n),\ncanonical AS (\n  SELECT\n    a.developer,\n    (SELECT b.developer FROM normed b\n     WHERE SOUNDEX(a.norm) = SOUNDEX(b.norm)\n       AND LEAST(LENGTH(a.norm), LENGTH(b.norm)) * 10 >= GREATEST(LENGTH(a.norm), LENGTH(b.norm)) * 8\n     ORDER BY LENGTH(b.norm) DESC, b.developer ASC LIMIT 1\n    ) AS canonical_name\n  FROM normed a\n)\nSELECT\n  c.canonical_name                                AS Developer,\n  COALESCE(SUM(s.total_assigned),   0)           AS `Total Assigned`,\n  COALESCE(SUM(s.issues_resolved),  0)           AS `Issues Resolved`,\n  COALESCE(SUM(s.issues_open),      0)           AS `Issues Open`,\n  ROUND(AVG(s.avg_resolution_days), 1)           AS `Avg Resolution (d)`,\n  COALESCE(SUM(s.issues_resolved),  0) * 2       AS `Jira Score`\nFROM canonical c\nLEFT JOIN issue_stats s ON s.developer = c.developer\nGROUP BY c.canonical_name\nORDER BY `Jira Score` DESC\nLIMIT 30",
+          "rawSql": "WITH issue_stats AS (\n  SELECT i.assignee_name AS developer,\n    COUNT(DISTINCT i.id)                                                          AS total_assigned,\n    COUNT(DISTINCT CASE WHEN i.status = 'DONE' THEN i.id END)                    AS issues_resolved,\n    COUNT(DISTINCT CASE WHEN i.status != 'DONE' THEN i.id END)                   AS issues_open,\n    ROUND(AVG(CASE\n      WHEN i.status = 'DONE'\n        AND i.resolution_date IS NOT NULL\n        AND i.created_date IS NOT NULL\n      THEN TIMESTAMPDIFF(DAY, i.created_date, i.resolution_date)\n    END), 1) AS avg_resolution_days\n  FROM issues i\n  JOIN board_issues bi ON bi.issue_id = i.id\n  WHERE bi.board_id IN (${board_id})\n    AND $__timeFilter(i.created_date)\n    AND i.assignee_name != ''\n  GROUP BY 1\n),\nall_devs AS (\n  SELECT developer FROM issue_stats WHERE developer IS NOT NULL AND developer != ''\n),\nnormed AS (\n  SELECT developer, REGEXP_REPLACE(LOWER(developer), '[^a-z]', '') AS norm\n  FROM all_devs\n),\ncanonical AS (\n  SELECT\n    a.developer,\n    (SELECT b.developer FROM normed b\n     WHERE SOUNDEX(a.norm) = SOUNDEX(b.norm)\n       AND LEAST(LENGTH(a.norm), LENGTH(b.norm)) * 10 >= GREATEST(LENGTH(a.norm), LENGTH(b.norm)) * 8\n     ORDER BY LENGTH(b.norm) DESC, b.developer ASC LIMIT 1\n    ) AS canonical_name\n  FROM normed a\n)\nSELECT\n  c.canonical_name                                AS Developer,\n  COALESCE(SUM(s.total_assigned),   0)           AS `Total Assigned`,\n  COALESCE(SUM(s.issues_resolved),  0)           AS `Issues Resolved`,\n  COALESCE(SUM(s.issues_open),      0)           AS `Issues Open`,\n  ROUND(AVG(s.avg_resolution_days), 1)           AS `Avg Resolution (d)`\nFROM canonical c\nLEFT JOIN issue_stats s ON s.developer = c.developer\nGROUP BY c.canonical_name\nORDER BY `Issues Resolved` DESC\nLIMIT 30",
           "refId": "A"
         }
       ],
