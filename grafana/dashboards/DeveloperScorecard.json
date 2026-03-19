@@ -213,10 +213,7 @@
       "type": "table"
     },
     {
-      "datasource": {
-        "type": "mysql",
-        "uid": "${DS_MYSQL}"
-      },
+      "datasource": "mysql",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -310,10 +307,7 @@
       "pluginVersion": "10.2.3",
       "targets": [
         {
-          "datasource": {
-            "type": "mysql",
-            "uid": "${DS_MYSQL}"
-          },
+          "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
           "rawSql": "WITH issue_stats AS (\n  SELECT i.assignee_name AS developer,\n    COUNT(DISTINCT i.id)                                                          AS total_assigned,\n    COUNT(DISTINCT CASE WHEN i.status = 'DONE' THEN i.id END)                    AS issues_resolved,\n    COUNT(DISTINCT CASE WHEN i.status != 'DONE' THEN i.id END)                   AS issues_open,\n    ROUND(AVG(CASE\n      WHEN i.status = 'DONE'\n        AND i.resolution_date IS NOT NULL\n        AND i.created_date IS NOT NULL\n      THEN TIMESTAMPDIFF(DAY, i.created_date, i.resolution_date)\n    END), 1) AS avg_resolution_days\n  FROM issues i\n  JOIN board_issues bi ON bi.issue_id = i.id\n  WHERE bi.board_id IN (${board_id})\n    AND $__timeFilter(i.created_date)\n    AND i.assignee_name != ''\n  GROUP BY 1\n),\nall_devs AS (\n  SELECT developer FROM issue_stats WHERE developer IS NOT NULL AND developer != ''\n),\nnormed AS (\n  SELECT developer, REGEXP_REPLACE(LOWER(developer), '[^a-z]', '') AS norm\n  FROM all_devs\n),\ncanonical AS (\n  SELECT\n    a.developer,\n    (SELECT b.developer FROM normed b\n     WHERE SOUNDEX(a.norm) = SOUNDEX(b.norm)\n       AND LEAST(LENGTH(a.norm), LENGTH(b.norm)) * 10 >= GREATEST(LENGTH(a.norm), LENGTH(b.norm)) * 8\n     ORDER BY LENGTH(b.norm) DESC, b.developer ASC LIMIT 1\n    ) AS canonical_name\n  FROM normed a\n)\nSELECT\n  c.canonical_name                                AS Developer,\n  COALESCE(SUM(s.total_assigned),   0)           AS `Total Assigned`,\n  COALESCE(SUM(s.issues_resolved),  0)           AS `Issues Resolved`,\n  COALESCE(SUM(s.issues_open),      0)           AS `Issues Open`,\n  ROUND(AVG(s.avg_resolution_days), 1)           AS `Avg Resolution (d)`,\n  COALESCE(SUM(s.issues_resolved),  0) * 2       AS `Jira Score`\nFROM canonical c\nLEFT JOIN issue_stats s ON s.developer = c.developer\nGROUP BY c.canonical_name\nORDER BY `Jira Score` DESC\nLIMIT 30",
