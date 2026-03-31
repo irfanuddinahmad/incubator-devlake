@@ -15,24 +15,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package tasks
+package models
 
-import "github.com/apache/incubator-devlake/core/plugin"
+import (
+	"github.com/apache/incubator-devlake/core/models/common"
+	"github.com/apache/incubator-devlake/core/plugin"
+)
 
-// GetSubTaskMetas returns the ordered list of Copilot subtasks.
-func GetSubTaskMetas() []plugin.SubTaskMeta {
-	return []plugin.SubTaskMeta{
-		// Collectors
-		CollectOrgMetricsMeta,
-		CollectCopilotSeatAssignmentsMeta,
-		CollectEnterpriseMetricsMeta,
-		CollectUserMetricsMeta,
-		// Extractors
-		ExtractSeatsMeta,
-		ExtractOrgMetricsMeta,
-		ExtractEnterpriseMetricsMeta,
-		ExtractUserMetricsMeta,
-		// Converters
-		ConvertUserMetricsMeta,
-	}
+var _ plugin.ToolLayerScopeConfig = (*ClaudeScopeConfig)(nil)
+
+// ClaudeScopeConfig holds optional settings for a Claude scope.
+type ClaudeScopeConfig struct {
+	common.ScopeConfig `mapstructure:",squash" json:",inline" gorm:"embedded"`
+}
+
+func (ClaudeScopeConfig) TableName() string {
+	return "_tool_claude_scope_configs"
+}
+
+// GetConnectionId implements plugin.ToolLayerScopeConfig.
+func (sc ClaudeScopeConfig) GetConnectionId() uint64 {
+	return sc.ConnectionId
 }
