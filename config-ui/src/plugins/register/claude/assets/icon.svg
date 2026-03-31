@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!-- Anthropic-style abstract mark -->
+  <rect width="48" height="48" rx="8" fill="#D97757"/>
+  <!-- Simplified "A" glyph resembling Anthropic branding -->
+  <polygon points="24,8 36,38 30,38 24,22 18,38 12,38" fill="white"/>
+  <rect x="16" y="28" width="16" height="4" fill="white" rx="2"/>
+</svg>

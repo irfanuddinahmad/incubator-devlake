@@ -17,22 +17,9 @@ limitations under the License.
 
 package tasks
 
-import "github.com/apache/incubator-devlake/core/plugin"
-
-// GetSubTaskMetas returns the ordered list of Copilot subtasks.
-func GetSubTaskMetas() []plugin.SubTaskMeta {
-	return []plugin.SubTaskMeta{
-		// Collectors
-		CollectOrgMetricsMeta,
-		CollectCopilotSeatAssignmentsMeta,
-		CollectEnterpriseMetricsMeta,
-		CollectUserMetricsMeta,
-		// Extractors
-		ExtractSeatsMeta,
-		ExtractOrgMetricsMeta,
-		ExtractEnterpriseMetricsMeta,
-		ExtractUserMetricsMeta,
-		// Converters
-		ConvertUserMetricsMeta,
-	}
+// ClaudeOptions defines task-level options passed from pipeline plans.
+type ClaudeOptions struct {
+	ConnectionId   uint64 `mapstructure:"connectionId" json:"connectionId"`
+	ScopeId        string `mapstructure:"scopeId" json:"scopeId"`
+	OrganizationId string `mapstructure:"organizationId" json:"organizationId"`
 }

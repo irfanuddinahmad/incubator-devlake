@@ -19,20 +19,16 @@ package tasks
 
 import "github.com/apache/incubator-devlake/core/plugin"
 
-// GetSubTaskMetas returns the ordered list of Copilot subtasks.
+// GetSubTaskMetas returns all registered subtask metadata for the Cursor plugin.
 func GetSubTaskMetas() []plugin.SubTaskMeta {
 	return []plugin.SubTaskMeta{
-		// Collectors
-		CollectOrgMetricsMeta,
-		CollectCopilotSeatAssignmentsMeta,
-		CollectEnterpriseMetricsMeta,
-		CollectUserMetricsMeta,
-		// Extractors
-		ExtractSeatsMeta,
-		ExtractOrgMetricsMeta,
-		ExtractEnterpriseMetricsMeta,
-		ExtractUserMetricsMeta,
+		CollectDailyUsageMeta,
+		ExtractDailyUsageMeta,
+		CollectUsageEventsMeta,
+		ExtractUsageEventsMeta,
+		CollectCommitAiShareMeta,
+		ExtractCommitAiShareMeta,
 		// Converters
-		ConvertUserMetricsMeta,
+		ConvertDailyUsageMeta,
 	}
 }
