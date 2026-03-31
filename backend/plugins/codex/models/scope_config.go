@@ -15,24 +15,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package tasks
+package models
 
-import "github.com/apache/incubator-devlake/core/plugin"
+import "github.com/apache/incubator-devlake/core/models/common"
 
-// GetSubTaskMetas returns the ordered list of Copilot subtasks.
-func GetSubTaskMetas() []plugin.SubTaskMeta {
-	return []plugin.SubTaskMeta{
-		// Collectors
-		CollectOrgMetricsMeta,
-		CollectCopilotSeatAssignmentsMeta,
-		CollectEnterpriseMetricsMeta,
-		CollectUserMetricsMeta,
-		// Extractors
-		ExtractSeatsMeta,
-		ExtractOrgMetricsMeta,
-		ExtractEnterpriseMetricsMeta,
-		ExtractUserMetricsMeta,
-		// Converters
-		ConvertUserMetricsMeta,
-	}
+type CodexScopeConfig struct {
+	common.ScopeConfig `mapstructure:",squash" swaggerignore:"true"`
+	Name               string `json:"name" gorm:"type:varchar(255)"`
+}
+
+func (CodexScopeConfig) TableName() string {
+	return "_tool_codex_scope_configs"
+}
+
+func (cfg CodexScopeConfig) ScopeConfigId() uint64 {
+	return cfg.ID
 }

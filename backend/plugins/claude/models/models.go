@@ -15,24 +15,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package tasks
+package models
 
-import "github.com/apache/incubator-devlake/core/plugin"
+import "github.com/apache/incubator-devlake/core/dal"
 
-// GetSubTaskMetas returns the ordered list of Copilot subtasks.
-func GetSubTaskMetas() []plugin.SubTaskMeta {
-	return []plugin.SubTaskMeta{
-		// Collectors
-		CollectOrgMetricsMeta,
-		CollectCopilotSeatAssignmentsMeta,
-		CollectEnterpriseMetricsMeta,
-		CollectUserMetricsMeta,
-		// Extractors
-		ExtractSeatsMeta,
-		ExtractOrgMetricsMeta,
-		ExtractEnterpriseMetricsMeta,
-		ExtractUserMetricsMeta,
-		// Converters
-		ConvertUserMetricsMeta,
+// GetTablesInfo returns the list of tool-layer tables managed by the Claude plugin.
+func GetTablesInfo() []dal.Tabler {
+	return []dal.Tabler{
+		&ClaudeConnection{},
+		&ClaudeScope{},
+		&ClaudeScopeConfig{},
+		&ClaudeUsage{},
 	}
 }

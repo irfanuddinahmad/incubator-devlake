@@ -15,24 +15,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package tasks
+package impl
 
-import "github.com/apache/incubator-devlake/core/plugin"
+import "github.com/apache/incubator-devlake/plugins/claude/models"
 
-// GetSubTaskMetas returns the ordered list of Copilot subtasks.
-func GetSubTaskMetas() []plugin.SubTaskMeta {
-	return []plugin.SubTaskMeta{
-		// Collectors
-		CollectOrgMetricsMeta,
-		CollectCopilotSeatAssignmentsMeta,
-		CollectEnterpriseMetricsMeta,
-		CollectUserMetricsMeta,
-		// Extractors
-		ExtractSeatsMeta,
-		ExtractOrgMetricsMeta,
-		ExtractEnterpriseMetricsMeta,
-		ExtractUserMetricsMeta,
-		// Converters
-		ConvertUserMetricsMeta,
-	}
+// NormalizeConnection applies default values to the connection object.
+func NormalizeConnection(connection *models.ClaudeConnection) {
+	connection.Normalize()
 }

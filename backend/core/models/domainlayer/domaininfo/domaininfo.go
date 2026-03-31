@@ -19,6 +19,7 @@ package domaininfo
 
 import (
 	"github.com/apache/incubator-devlake/core/dal"
+	"github.com/apache/incubator-devlake/core/models/domainlayer/ai"
 	"github.com/apache/incubator-devlake/core/models/domainlayer/code"
 	"github.com/apache/incubator-devlake/core/models/domainlayer/codequality"
 	"github.com/apache/incubator-devlake/core/models/domainlayer/crossdomain"
@@ -100,5 +101,7 @@ func GetDomainTablesInfo() []dal.Tabler {
 		&qa.QaApi{},
 		&qa.QaTestCase{},
 		&qa.QaTestCaseExecution{},
+		// ai
+		&ai.AiActivity{},
 	}
 }

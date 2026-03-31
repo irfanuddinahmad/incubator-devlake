@@ -19,20 +19,14 @@ package tasks
 
 import "github.com/apache/incubator-devlake/core/plugin"
 
-// GetSubTaskMetas returns the ordered list of Copilot subtasks.
+// GetSubTaskMetas returns the ordered list of Claude subtasks:
+// 1. CollectUsage  – fetch raw JSON from the Anthropic Admin API
+// 2. ExtractUsage  – parse raw JSON into tool-layer ClaudeUsage rows
+// 3. ConvertUsage  – map ClaudeUsage into DevLake's ai_activities domain table
 func GetSubTaskMetas() []plugin.SubTaskMeta {
 	return []plugin.SubTaskMeta{
-		// Collectors
-		CollectOrgMetricsMeta,
-		CollectCopilotSeatAssignmentsMeta,
-		CollectEnterpriseMetricsMeta,
-		CollectUserMetricsMeta,
-		// Extractors
-		ExtractSeatsMeta,
-		ExtractOrgMetricsMeta,
-		ExtractEnterpriseMetricsMeta,
-		ExtractUserMetricsMeta,
-		// Converters
-		ConvertUserMetricsMeta,
+		CollectUsageMeta,
+		ExtractUsageMeta,
+		ConvertUsageMeta,
 	}
 }
