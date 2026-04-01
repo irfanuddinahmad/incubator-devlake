@@ -3,7 +3,10 @@
     "list": [
       {
         "builtIn": 1,
-        "datasource": {"type": "datasource", "uid": "grafana"},
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
@@ -23,18 +26,37 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
       "id": 1,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "pluginVersion": "11.0.0",
@@ -43,7 +65,7 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(DISTINCT user_email) AS \"Active Users\"\nFROM _tool_claude_usage\nWHERE $__timeFilter(date)\n  AND connection_id = ${connection_id}",
+          "rawSql": "SELECT COUNT(DISTINCT user_email) AS \"Active Users\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'\n  AND connection_id = ${connection_id}",
           "refId": "A"
         }
       ],
@@ -56,18 +78,37 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
       "id": 2,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "pluginVersion": "11.0.0",
@@ -76,7 +117,7 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT SUM(lines_added) AS \"Lines Added\"\nFROM _tool_claude_usage\nWHERE $__timeFilter(date)\n  AND connection_id = ${connection_id}",
+          "rawSql": "SELECT SUM(lines_added) AS \"Lines Added\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'\n  AND connection_id = ${connection_id}",
           "refId": "A"
         }
       ],
@@ -89,18 +130,37 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "purple", "value": null}]}
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
       "id": 3,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "pluginVersion": "11.0.0",
@@ -109,7 +169,7 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT SUM(prs_by_claude) AS \"PRs by Claude\"\nFROM _tool_claude_usage\nWHERE $__timeFilter(date)\n  AND connection_id = ${connection_id}",
+          "rawSql": "SELECT SUM(prs_created) AS \"PRs by Claude\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'\n  AND connection_id = ${connection_id}",
           "refId": "A"
         }
       ],
@@ -123,18 +183,45 @@
         "defaults": {
           "mappings": [],
           "unit": "currencyUSD",
-          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 500}, {"color": "red", "value": 2000}]}
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 500
+              },
+              {
+                "color": "red",
+                "value": 2000
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
       "id": 4,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "pluginVersion": "11.0.0",
@@ -143,7 +230,7 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ROUND(SUM(estimated_cost_usd), 2) AS \"Estimated Cost (USD)\"\nFROM _tool_claude_usage\nWHERE $__timeFilter(date)\n  AND connection_id = ${connection_id}",
+          "rawSql": "SELECT ROUND(SUM(estimated_cost_usd), 2) AS \"Estimated Cost (USD)\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'\n  AND connection_id = ${connection_id}",
           "refId": "A"
         }
       ],
@@ -155,7 +242,9 @@
       "description": "Daily count of distinct users who used Claude Code",
       "fieldConfig": {
         "defaults": {
-          "color": {"mode": "palette-classic"},
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "drawStyle": "line",
             "fillOpacity": 10,
@@ -165,15 +254,36 @@
             "spanNulls": false
           },
           "mappings": [],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
       "id": 5,
       "options": {
-        "legend": {"calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true},
-        "tooltip": {"mode": "single", "sort": "none"}
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
       },
       "pluginVersion": "11.0.0",
       "targets": [
@@ -181,7 +291,7 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT date AS time,\n  COUNT(DISTINCT user_email) AS \"Daily Active Users\"\nFROM _tool_claude_usage\nWHERE $__timeFilter(date)\n  AND connection_id = ${connection_id}\nGROUP BY date\nORDER BY date",
+          "rawSql": "SELECT date AS time,\n  COUNT(DISTINCT user_email) AS \"Daily Active Users\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'\n  AND connection_id = ${connection_id}\nGROUP BY date\nORDER BY date",
           "refId": "A"
         }
       ],
@@ -193,7 +303,9 @@
       "description": "Commits and PRs attributed to Claude over time",
       "fieldConfig": {
         "defaults": {
-          "color": {"mode": "palette-classic"},
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "drawStyle": "line",
             "fillOpacity": 10,
@@ -203,15 +315,36 @@
             "spanNulls": false
           },
           "mappings": [],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
       "id": 6,
       "options": {
-        "legend": {"calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true},
-        "tooltip": {"mode": "single", "sort": "none"}
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
       },
       "pluginVersion": "11.0.0",
       "targets": [
@@ -219,7 +352,7 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT date AS time,\n  SUM(prs_by_claude) AS \"PRs by Claude\",\n  SUM(commits_by_claude) AS \"Commits by Claude\"\nFROM _tool_claude_usage\nWHERE $__timeFilter(date)\n  AND connection_id = ${connection_id}\nGROUP BY date\nORDER BY date",
+          "rawSql": "SELECT date AS time,\n  SUM(prs_created) AS \"PRs by Claude\",\n  SUM(commits_created) AS \"Commits by Claude\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'\n  AND connection_id = ${connection_id}\nGROUP BY date\nORDER BY date",
           "refId": "A"
         }
       ],
@@ -231,24 +364,50 @@
       "description": "Estimated spend per model over time – shows Sonnet vs Opus cost allocation",
       "fieldConfig": {
         "defaults": {
-          "color": {"mode": "palette-classic"},
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "drawStyle": "bars",
             "fillOpacity": 80,
             "lineWidth": 0,
-            "stacking": {"group": "A", "mode": "normal"}
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            }
           },
           "unit": "currencyUSD",
           "mappings": [],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
       "id": 7,
       "options": {
-        "legend": {"calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true},
-        "tooltip": {"mode": "multi", "sort": "none"}
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
       },
       "pluginVersion": "11.0.0",
       "targets": [
@@ -256,14 +415,25 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT date AS time,\n  CASE\n    WHEN model LIKE '%sonnet%' OR model LIKE '%Sonnet%' THEN 'Sonnet'\n    WHEN model LIKE '%opus%'   OR model LIKE '%Opus%'   THEN 'Opus'\n    WHEN model LIKE '%haiku%'  OR model LIKE '%Haiku%'  THEN 'Haiku'\n    ELSE COALESCE(NULLIF(model,''), 'Unknown')\n  END AS metric,\n  SUM(estimated_cost_usd) AS value\nFROM _tool_claude_usage\nWHERE $__timeFilter(date)\n  AND connection_id = ${connection_id}\nGROUP BY date, metric\nORDER BY date",
+          "rawSql": "SELECT date AS time,\n  CASE\n    WHEN model LIKE '%sonnet%' OR model LIKE '%Sonnet%' THEN 'Sonnet'\n    WHEN model LIKE '%opus%'   OR model LIKE '%Opus%'   THEN 'Opus'\n    WHEN model LIKE '%haiku%'  OR model LIKE '%Haiku%'  THEN 'Haiku'\n    ELSE COALESCE(NULLIF(model,''), 'Unknown')\n  END AS metric,\n  SUM(estimated_cost_usd) AS value\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'\n  AND connection_id = ${connection_id}\nGROUP BY date, metric\nORDER BY date",
           "refId": "A"
         }
       ],
       "title": "Cost Efficiency – Model Spend Breakdown",
       "transformations": [
-        {"id": "prepareTimeSeries", "options": {"format": "many"}},
-        {"id": "renameByRegex", "options": {"regex": "^value (.+)$", "renamePattern": "$1"}}
+        {
+          "id": "prepareTimeSeries",
+          "options": {
+            "format": "many"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "^value (.+)$",
+            "renamePattern": "$1"
+          }
+        }
       ],
       "type": "timeseries"
     },
@@ -272,7 +442,9 @@
       "description": "Ratio of lines removed (refactoring) vs lines added (new feature work) over time. Higher removal ratio signals active code cleanup.",
       "fieldConfig": {
         "defaults": {
-          "color": {"mode": "palette-classic"},
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "drawStyle": "line",
             "fillOpacity": 10,
@@ -282,15 +454,36 @@
             "spanNulls": false
           },
           "mappings": [],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
       "id": 8,
       "options": {
-        "legend": {"calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true},
-        "tooltip": {"mode": "single", "sort": "none"}
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
       },
       "pluginVersion": "11.0.0",
       "targets": [
@@ -298,7 +491,7 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT date AS time,\n  SUM(lines_added)   AS \"Lines Added (Features)\",\n  SUM(lines_removed) AS \"Lines Removed (Refactoring)\",\n  ROUND(SUM(lines_removed) / NULLIF(SUM(lines_added), 0), 2) AS \"Refactor Ratio\"\nFROM _tool_claude_usage\nWHERE $__timeFilter(date)\n  AND connection_id = ${connection_id}\nGROUP BY date\nORDER BY date",
+          "rawSql": "SELECT date AS time,\n  SUM(lines_added)   AS \"Lines Added (Features)\",\n  SUM(lines_removed) AS \"Lines Removed (Refactoring)\",\n  ROUND(SUM(lines_removed) / NULLIF(SUM(lines_added), 0), 2) AS \"Refactor Ratio\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'\n  AND connection_id = ${connection_id}\nGROUP BY date\nORDER BY date",
           "refId": "A"
         }
       ],
@@ -311,15 +504,34 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
       "id": 9,
       "options": {
         "cellHeight": "sm",
-        "footer": {"countRows": false, "reducer": ["sum"], "show": false},
+        "footer": {
+          "countRows": false,
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
         "showHeader": true
       },
       "pluginVersion": "11.0.0",
@@ -328,7 +540,7 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT user_email AS \"User\",\n  COUNT(DISTINCT date) AS \"Active Days\",\n  SUM(num_sessions) AS \"Sessions\",\n  SUM(lines_added) AS \"Lines Added\",\n  SUM(lines_removed) AS \"Lines Removed\",\n  SUM(commits_by_claude) AS \"Commits\",\n  SUM(prs_by_claude) AS \"PRs\",\n  ROUND(SUM(estimated_cost_usd), 2) AS \"Cost (USD)\"\nFROM _tool_claude_usage\nWHERE $__timeFilter(date)\n  AND connection_id = ${connection_id}\nGROUP BY user_email\nORDER BY SUM(lines_added) DESC\nLIMIT 25",
+          "rawSql": "SELECT user_email AS \"User\",\n  COUNT(DISTINCT date) AS \"Active Days\",\n  SUM(num_sessions) AS \"Sessions\",\n  SUM(lines_added) AS \"Lines Added\",\n  SUM(lines_removed) AS \"Lines Removed\",\n  SUM(commits_created) AS \"Commits\",\n  SUM(prs_created) AS \"PRs\",\n  ROUND(SUM(estimated_cost_usd), 2) AS \"Cost (USD)\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'\n  AND connection_id = ${connection_id}\nGROUP BY user_email\nORDER BY SUM(lines_added) DESC\nLIMIT 25",
           "refId": "A"
         }
       ],
@@ -341,15 +553,34 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
       "id": 10,
       "options": {
         "cellHeight": "sm",
-        "footer": {"countRows": false, "reducer": ["sum"], "show": false},
+        "footer": {
+          "countRows": false,
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
         "showHeader": true
       },
       "pluginVersion": "11.0.0",
@@ -358,7 +589,7 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(NULLIF(model,''), 'Unknown') AS \"Model\",\n  SUM(input_tokens) AS \"Input Tokens\",\n  SUM(output_tokens) AS \"Output Tokens\",\n  SUM(lines_added) AS \"Lines Added\",\n  ROUND(SUM(estimated_cost_usd), 2) AS \"Total Cost (USD)\",\n  ROUND(SUM(estimated_cost_usd) / NULLIF(SUM(lines_added), 0), 4) AS \"Cost per Line (USD)\"\nFROM _tool_claude_usage\nWHERE $__timeFilter(date)\n  AND connection_id = ${connection_id}\nGROUP BY model\nORDER BY SUM(estimated_cost_usd) DESC",
+          "rawSql": "SELECT COALESCE(NULLIF(model,''), 'Unknown') AS \"Model\",\n  SUM(input_tokens) AS \"Input Tokens\",\n  SUM(output_tokens) AS \"Output Tokens\",\n  SUM(lines_added) AS \"Lines Added\",\n  ROUND(SUM(estimated_cost_usd), 2) AS \"Total Cost (USD)\",\n  ROUND(SUM(estimated_cost_usd) / NULLIF(SUM(lines_added), 0), 4) AS \"Cost per Line (USD)\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'\n  AND connection_id = ${connection_id}\nGROUP BY model\nORDER BY SUM(estimated_cost_usd) DESC",
           "refId": "A"
         }
       ],
@@ -368,11 +599,20 @@
   ],
   "refresh": "",
   "schemaVersion": 38,
-  "tags": ["claude", "anthropic", "devlake", "ai"],
+  "tags": [
+    "claude",
+    "anthropic",
+    "devlake",
+    "ai"
+  ],
   "templating": {
     "list": [
       {
-        "current": {"selected": false, "text": "", "value": ""},
+        "current": {
+          "selected": false,
+          "text": "",
+          "value": ""
+        },
         "datasource": "mysql",
         "definition": "SELECT DISTINCT connection_id FROM _tool_claude_connections ORDER BY connection_id DESC",
         "hide": 0,
@@ -390,7 +630,10 @@
       }
     ]
   },
-  "time": {"from": "now-90d", "to": "now"},
+  "time": {
+    "from": "now-90d",
+    "to": "now"
+  },
   "timepicker": {},
   "timezone": "utc",
   "title": "Claude Code Adoption & Productivity",
