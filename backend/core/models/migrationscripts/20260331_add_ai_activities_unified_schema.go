@@ -18,12 +18,40 @@ limitations under the License.
 package migrationscripts
 
 import (
+	"time"
+
 	"github.com/apache/incubator-devlake/core/context"
 	"github.com/apache/incubator-devlake/core/errors"
+	"github.com/apache/incubator-devlake/core/models/migrationscripts/archived"
 	"github.com/apache/incubator-devlake/core/plugin"
 )
 
 var _ plugin.MigrationScript = (*addAiActivitiesUnifiedSchema)(nil)
+
+type aiActivity20260331 struct {
+	archived.DomainEntity
+	Provider         string    `gorm:"type:varchar(100);index"`
+	AccountId        string    `gorm:"type:varchar(255);index"`
+	UserEmail        string    `gorm:"type:varchar(255)"`
+	Date             time.Time `gorm:"type:date;index"`
+	Type             string    `gorm:"type:varchar(100)"`
+	Model            string    `gorm:"type:varchar(100)"`
+	InterfaceType    string    `gorm:"type:varchar(50)"`
+	NumSessions      int
+	SuggestionsCount int
+	AcceptanceCount  int
+	LinesAdded       int
+	LinesRemoved     int
+	CommitsCreated   int
+	PrsCreated       int
+	InputTokens      int64
+	OutputTokens     int64
+	EstimatedCostUsd float64
+}
+
+func (aiActivity20260331) TableName() string {
+	return "ai_activities"
+}
 
 type addAiActivitiesUnifiedSchema struct{}
 
@@ -42,6 +70,12 @@ type addAiActivitiesUnifiedSchema struct{}
 // column differences against the updated Go struct.
 func (script *addAiActivitiesUnifiedSchema) Up(basicRes context.BasicRes) errors.Error {
 	db := basicRes.GetDal()
+
+	// If the table doesn't exist (fresh install or e2e tests), completely create it
+	// using AutoMigrate, bypassing the need to rename missing legacy columns.
+	if !db.HasTable("ai_activities") {
+		return db.AutoMigrate(&aiActivity20260331{})
+	}
 
 	// 1. Rename commits_by_claude → commits_created
 	if err := db.AddColumn("ai_activities", "commits_created", "bigint"); err != nil {
