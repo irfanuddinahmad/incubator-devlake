@@ -23,7 +23,6 @@ import "time"
 type CodexOptions struct {
 	ConnectionId uint64 `json:"connectionId" mapstructure:"connectionId"`
 	ScopeId      string `json:"scopeId" mapstructure:"scopeId"`
-	ProjectId    string `json:"projectId" mapstructure:"projectId"`
 
 	// Date range for collection. Defaults to the last 30 days if not set.
 	StartDate *time.Time `json:"startDate" mapstructure:"startDate"`
@@ -31,10 +30,13 @@ type CodexOptions struct {
 }
 
 // codexRawParams identifies the collection scope for raw data storage.
+// WorkspaceId is the ChatGPT Enterprise workspace ID from the connection and is
+// included here so that raw records can be scoped when re-collecting after a
+// workspace change.
 type codexRawParams struct {
 	ConnectionId uint64 `json:"connectionId"`
 	ScopeId      string `json:"scopeId"`
-	ProjectId    string `json:"projectId"`
+	WorkspaceId  string `json:"workspaceId"`
 }
 
 // GetParams implements helper.TaskOptions.

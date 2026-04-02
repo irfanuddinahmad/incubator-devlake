@@ -23,5 +23,7 @@ import "github.com/apache/incubator-devlake/core/plugin"
 func All() []plugin.MigrationScript {
 	return []plugin.MigrationScript{
 		new(addCursorInitialTables),
+		new(replaceUsageEventsWithModelUsage),
+		new(adminApiSchema),
 	}
 }

@@ -49,18 +49,28 @@ func TestBuildClaudeActivity_AllFields(t *testing.T) {
 	date := time.Date(2026, 3, 15, 0, 0, 0, 0, time.UTC)
 
 	usage := &models.ClaudeUsage{
-		ConnectionId:     connectionId,
-		Date:             date,
-		UserEmail:        "alice@example.com",
-		NumSessions:      5,
-		LinesAdded:       120,
-		LinesRemoved:     30,
-		CommitsByClaude:  3,
-		PrsByClaude:      1,
-		Model:            "claude-sonnet-4-5",
-		InputTokens:      10000,
-		OutputTokens:     2500,
-		EstimatedCostUsd: 0.045,
+		ConnectionId:             connectionId,
+		Date:                     date,
+		UserEmail:                "alice@example.com",
+		NumSessions:              5,
+		LinesAdded:               120,
+		LinesRemoved:             30,
+		CommitsByClaude:          3,
+		PrsByClaude:              1,
+		Model:                    "claude-sonnet-4-5",
+		InputTokens:              10000,
+		OutputTokens:             2500,
+		CacheReadTokens:          500,
+		CacheCreationTokens:      200,
+		EstimatedCostUsd:         0.045,
+		EditToolAccepted:         45,
+		EditToolRejected:         5,
+		MultiEditToolAccepted:    12,
+		MultiEditToolRejected:    2,
+		WriteToolAccepted:        8,
+		WriteToolRejected:        1,
+		NotebookEditToolAccepted: 3,
+		NotebookEditToolRejected: 0,
 	}
 
 	idGen := testClaudeIdGen()
@@ -82,6 +92,10 @@ func TestBuildClaudeActivity_AllFields(t *testing.T) {
 	assert.Equal(t, int64(10000), activity.InputTokens)
 	assert.Equal(t, int64(2500), activity.OutputTokens)
 	assert.InDelta(t, 0.045, activity.EstimatedCostUsd, 1e-9)
+	// SuggestionsCount = total tool proposals (accepted + rejected across all tools)
+	assert.Equal(t, 76, activity.SuggestionsCount, "SuggestionsCount should be sum of all accepted+rejected")
+	// AcceptanceCount = total accepted across all tools
+	assert.Equal(t, 68, activity.AcceptanceCount, "AcceptanceCount should be sum of all accepted")
 }
 
 func TestBuildClaudeActivity_EmptyEmail(t *testing.T) {
@@ -128,6 +142,8 @@ func TestBuildClaudeActivity_ZeroMetrics(t *testing.T) {
 	assert.Equal(t, 0, activity.LinesRemoved)
 	assert.Equal(t, 0, activity.CommitsCreated)
 	assert.Equal(t, 0, activity.PrsCreated)
+	assert.Equal(t, 0, activity.SuggestionsCount)
+	assert.Equal(t, 0, activity.AcceptanceCount)
 	assert.Equal(t, int64(0), activity.InputTokens)
 	assert.Equal(t, int64(0), activity.OutputTokens)
 	assert.Equal(t, float64(0), activity.EstimatedCostUsd)

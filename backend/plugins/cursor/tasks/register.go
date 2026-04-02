@@ -30,5 +30,6 @@ func GetSubTaskMetas() []plugin.SubTaskMeta {
 		ExtractCommitAiShareMeta,
 		// Converters
 		ConvertDailyUsageMeta,
+		ConvertModelUsageMeta,
 	}
 }

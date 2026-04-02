@@ -23,21 +23,31 @@ import (
 	"github.com/apache/incubator-devlake/core/models/common"
 )
 
-// CodexUsage stores daily aggregate Codex (OpenAI Codex / ChatGPT API) token usage
-// ingested from the OpenAI Usage API (GET /v1/usage?date=<date>&project_id=<id>).
-// The API aggregates across all users in a project; per-user breakdown is not available
-// on the public endpoint.
+// CodexUsage stores one daily Codex usage record from the Analytics API
+// endpoint GET /analytics/codex/workspaces/{workspace_id}/usage.
+//
+// A record is uniquely identified by (connection, scope, date, client_surface, user_email).
+// When the API is queried without a per-user breakdown, user_email is empty and the
+// record represents workspace-level aggregate data for that surface and day.
 type CodexUsage struct {
 	common.NoPKModel
 
 	ConnectionId uint64    `gorm:"primaryKey" json:"connectionId"`
 	ScopeId      string    `gorm:"primaryKey;type:varchar(255)" json:"scopeId"`
 	Date         time.Time `gorm:"primaryKey;type:date" json:"date"`
-	Model        string    `gorm:"primaryKey;type:varchar(100)" json:"model"`
+	// ClientSurface is the Codex client used: "cli", "ide", "cloud", or "code_review".
+	ClientSurface string `gorm:"primaryKey;type:varchar(50);default:''" json:"clientSurface"`
+	// UserEmail is populated when the API is queried with per-user breakdown.
+	// Empty for workspace-level aggregate records.
+	UserEmail string `gorm:"primaryKey;type:varchar(255);default:''" json:"userEmail"`
 
-	InputTokens      int64   `json:"inputTokens"`
-	OutputTokens     int64   `json:"outputTokens"`
-	EstimatedCostUsd float64 `json:"estimatedCostUsd"`
+	// Threads is the number of Codex sessions/tasks started.
+	Threads int64 `json:"threads"`
+	// Turns is the total number of conversation turns (user→model interactions).
+	Turns int64 `json:"turns"`
+	// Credits is the internal usage-credit quantity consumed. Credits are
+	// OpenAI's billing unit for Codex; they do not directly map to USD.
+	Credits float64 `json:"credits"`
 }
 
 func (CodexUsage) TableName() string {

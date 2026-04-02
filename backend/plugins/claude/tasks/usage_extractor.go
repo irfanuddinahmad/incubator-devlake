@@ -38,41 +38,64 @@ var ExtractUsageMeta = plugin.SubTaskMeta{
 
 // --- Anthropic API response structures ---
 
+// claudeActor identifies the user or API key that performed the actions.
+type claudeActor struct {
+	Type         string `json:"type"`          // "user_actor" or "api_actor"
+	EmailAddress string `json:"email_address"` // set when type == "user_actor"
+	ApiKeyName   string `json:"api_key_name"`  // set when type == "api_actor"
+}
+
+type claudeLinesOfCode struct {
+	Added   int `json:"added"`
+	Removed int `json:"removed"`
+}
+
+type claudeCoreMetrics struct {
+	NumSessions         int               `json:"num_sessions"`
+	LinesOfCode         claudeLinesOfCode `json:"lines_of_code"`
+	CommitsByClaudeCode int               `json:"commits_by_claude_code"`
+	PrsByClaudeCode     int               `json:"pull_requests_by_claude_code"`
+}
+
+type claudeModelTokens struct {
+	Input         int64 `json:"input"`
+	Output        int64 `json:"output"`
+	CacheRead     int64 `json:"cache_read"`
+	CacheCreation int64 `json:"cache_creation"`
+}
+
+type claudeToolAction struct {
+	Accepted int `json:"accepted"`
+	Rejected int `json:"rejected"`
+}
+
+type claudeToolActions struct {
+	EditTool         claudeToolAction `json:"edit_tool"`
+	MultiEditTool    claudeToolAction `json:"multi_edit_tool"`
+	WriteTool        claudeToolAction `json:"write_tool"`
+	NotebookEditTool claudeToolAction `json:"notebook_edit_tool"`
+}
+
+type claudeModelCost struct {
+	Amount   int    `json:"amount"` // in cents
+	Currency string `json:"currency"`
+}
+
+type claudeModelBreakdownItem struct {
+	Model         string            `json:"model"`
+	Tokens        claudeModelTokens `json:"tokens"`
+	EstimatedCost claudeModelCost   `json:"estimated_cost"`
+}
+
 // claudeUsageRecord mirrors the per-user record returned inside the `data` array
 // by the Anthropic claude_code usage report endpoint.
 type claudeUsageRecord struct {
-	// Date of the usage report (YYYY-MM-DD).
-	Date string `json:"date"`
-
-	// User identity
-	UserEmail string `json:"user_email"`
-
-	// Core metrics
-	NumSessions     int `json:"num_sessions"`
-	LinesAdded      int `json:"lines_added"`
-	LinesRemoved    int `json:"lines_removed"`
-	CommitsByClaude int `json:"commits_by_claude"`
-	PrsByClaude     int `json:"prs_by_claude"`
-
-	// Model breakdown – the API may return a flat record or a nested breakdown.
-	// We capture the primary model from the top-level field when present.
-	Model string `json:"model"`
-
-	// Token usage & cost
-	InputTokens      int64   `json:"input_tokens"`
-	OutputTokens     int64   `json:"output_tokens"`
-	EstimatedCostUsd float64 `json:"estimated_cost_usd"`
-
-	// Nested model breakdown (optional – aggregated when present).
-	ModelBreakdown []claudeModelBreakdown `json:"model_breakdown"`
-}
-
-// claudeModelBreakdown represents per-model token/cost breakdown within a usage record.
-type claudeModelBreakdown struct {
-	Model            string  `json:"model"`
-	InputTokens      int64   `json:"input_tokens"`
-	OutputTokens     int64   `json:"output_tokens"`
-	EstimatedCostUsd float64 `json:"estimated_cost_usd"`
+	// RFC 3339 timestamp, e.g. "2025-09-01T00:00:00Z"
+	Date           string                     `json:"date"`
+	Actor          claudeActor                `json:"actor"`
+	CoreMetrics    claudeCoreMetrics          `json:"core_metrics"`
+	ToolActions    claudeToolActions          `json:"tool_actions"`
+	ModelBreakdown []claudeModelBreakdownItem `json:"model_breakdown"`
 }
 
 // ExtractUsage parses raw Claude usage JSON rows into ClaudeUsage tool-layer records.
@@ -102,48 +125,79 @@ func ExtractUsage(taskCtx plugin.SubTaskContext) errors.Error {
 				return nil, parseErr
 			}
 
-			date, timeErr := time.Parse("2006-01-02", record.Date)
+			// Date field is RFC 3339, e.g. "2025-09-01T00:00:00Z"
+			date, timeErr := time.Parse(time.RFC3339, record.Date)
 			if timeErr != nil {
-				return nil, errors.Default.Wrap(timeErr, "failed to parse date: "+record.Date)
+				// Fallback: try plain date format
+				date, timeErr = time.Parse("2006-01-02", record.Date)
+				if timeErr != nil {
+					return nil, errors.Default.Wrap(timeErr, "failed to parse date: "+record.Date)
+				}
 			}
 
-			// If the record has a per-model breakdown, emit one row per model.
+			// Resolve user identity from actor.
+			userEmail := record.Actor.EmailAddress
+			if userEmail == "" {
+				// api_actor: use api_key_name as a stand-in identifier
+				userEmail = record.Actor.ApiKeyName
+			}
+
+			cm := record.CoreMetrics
+			ta := record.ToolActions
+
+			// Emit one row per model in the breakdown.
 			if len(record.ModelBreakdown) > 0 {
 				results := make([]interface{}, 0, len(record.ModelBreakdown))
 				for _, mb := range record.ModelBreakdown {
 					usage := &models.ClaudeUsage{
-						ConnectionId:     data.Options.ConnectionId,
-						Date:             date,
-						UserEmail:        record.UserEmail,
-						NumSessions:      record.NumSessions,
-						LinesAdded:       record.LinesAdded,
-						LinesRemoved:     record.LinesRemoved,
-						CommitsByClaude:  record.CommitsByClaude,
-						PrsByClaude:      record.PrsByClaude,
-						Model:            mb.Model,
-						InputTokens:      mb.InputTokens,
-						OutputTokens:     mb.OutputTokens,
-						EstimatedCostUsd: mb.EstimatedCostUsd,
+						ConnectionId:             data.Options.ConnectionId,
+						ScopeId:                  data.Options.ScopeId,
+						Date:                     date,
+						UserEmail:                userEmail,
+						Model:                    mb.Model,
+						NumSessions:              cm.NumSessions,
+						LinesAdded:               cm.LinesOfCode.Added,
+						LinesRemoved:             cm.LinesOfCode.Removed,
+						CommitsByClaude:          cm.CommitsByClaudeCode,
+						PrsByClaude:              cm.PrsByClaudeCode,
+						EditToolAccepted:         ta.EditTool.Accepted,
+						EditToolRejected:         ta.EditTool.Rejected,
+						MultiEditToolAccepted:    ta.MultiEditTool.Accepted,
+						MultiEditToolRejected:    ta.MultiEditTool.Rejected,
+						WriteToolAccepted:        ta.WriteTool.Accepted,
+						WriteToolRejected:        ta.WriteTool.Rejected,
+						NotebookEditToolAccepted: ta.NotebookEditTool.Accepted,
+						NotebookEditToolRejected: ta.NotebookEditTool.Rejected,
+						InputTokens:              mb.Tokens.Input,
+						OutputTokens:             mb.Tokens.Output,
+						CacheReadTokens:          mb.Tokens.CacheRead,
+						CacheCreationTokens:      mb.Tokens.CacheCreation,
+						EstimatedCostUsd:         float64(mb.EstimatedCost.Amount) / 100.0,
 					}
 					results = append(results, usage)
 				}
 				return results, nil
 			}
 
-			// Flat record – emit a single row.
+			// No model breakdown — emit a single aggregate row.
 			usage := &models.ClaudeUsage{
-				ConnectionId:     data.Options.ConnectionId,
-				Date:             date,
-				UserEmail:        record.UserEmail,
-				NumSessions:      record.NumSessions,
-				LinesAdded:       record.LinesAdded,
-				LinesRemoved:     record.LinesRemoved,
-				CommitsByClaude:  record.CommitsByClaude,
-				PrsByClaude:      record.PrsByClaude,
-				Model:            record.Model,
-				InputTokens:      record.InputTokens,
-				OutputTokens:     record.OutputTokens,
-				EstimatedCostUsd: record.EstimatedCostUsd,
+				ConnectionId:             data.Options.ConnectionId,
+				ScopeId:                  data.Options.ScopeId,
+				Date:                     date,
+				UserEmail:                userEmail,
+				NumSessions:              cm.NumSessions,
+				LinesAdded:               cm.LinesOfCode.Added,
+				LinesRemoved:             cm.LinesOfCode.Removed,
+				CommitsByClaude:          cm.CommitsByClaudeCode,
+				PrsByClaude:              cm.PrsByClaudeCode,
+				EditToolAccepted:         ta.EditTool.Accepted,
+				EditToolRejected:         ta.EditTool.Rejected,
+				MultiEditToolAccepted:    ta.MultiEditTool.Accepted,
+				MultiEditToolRejected:    ta.MultiEditTool.Rejected,
+				WriteToolAccepted:        ta.WriteTool.Accepted,
+				WriteToolRejected:        ta.WriteTool.Rejected,
+				NotebookEditToolAccepted: ta.NotebookEditTool.Accepted,
+				NotebookEditToolRejected: ta.NotebookEditTool.Rejected,
 			}
 			return []interface{}{usage}, nil
 		},

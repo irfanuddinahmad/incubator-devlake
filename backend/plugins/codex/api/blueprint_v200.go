@@ -67,7 +67,6 @@ func makeDataSourcePipelinePlanV200(
 			tasks.CodexOptions{
 				ConnectionId: scope.ConnectionId,
 				ScopeId:      scope.Id,
-				ProjectId:    scope.ProjectId,
 			},
 		)
 		if err != nil {

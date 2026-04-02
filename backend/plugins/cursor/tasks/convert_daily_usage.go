@@ -48,6 +48,8 @@ var ConvertDailyUsageMeta = plugin.SubTaskMeta{
 //   - TotalTabsAccepted → AcceptanceCount   (autocomplete tabs accepted)
 //   - AcceptedLinesAdded → LinesAdded
 //   - TotalLinesDeleted → LinesRemoved
+//   - ComposerRequests+ChatRequests+AgentRequests → NumSessions
+//   - MostUsedModel     → Model
 func buildCursorDailyActivity(idGen *didgen.DomainIdGenerator, connectionId uint64, accountId string, u *models.CursorDailyUsage) *ai.AiActivity {
 	return &ai.AiActivity{
 		DomainEntity: domainlayer.DomainEntity{
@@ -63,6 +65,8 @@ func buildCursorDailyActivity(idGen *didgen.DomainIdGenerator, connectionId uint
 		AcceptanceCount:  u.TotalTabsAccepted,
 		LinesAdded:       u.AcceptedLinesAdded,
 		LinesRemoved:     u.TotalLinesDeleted,
+		NumSessions:      u.ComposerRequests + u.ChatRequests + u.AgentRequests,
+		Model:            u.MostUsedModel,
 	}
 }
 

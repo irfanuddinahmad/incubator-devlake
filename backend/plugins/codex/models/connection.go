@@ -27,15 +27,22 @@ import (
 )
 
 const (
-	DefaultEndpoint         = "https://api.openai.com/v1"
+	// DefaultEndpoint is the Codex Analytics API base URL.
+	// The Analytics API lives under api.chatgpt.com, not api.openai.com.
+	DefaultEndpoint         = "https://api.chatgpt.com/v1"
 	DefaultRateLimitPerHour = 1000
 )
 
 type CodexConn struct {
 	helper.RestConnection `mapstructure:",squash"`
-	ApiKey                string `mapstructure:"token" json:"token" gorm:"column:api_key;serializer:encdec"`
-	ProjectId             string `mapstructure:"projectId" json:"projectId" gorm:"column:project_id;type:varchar(255)"`
-	RateLimitPerHour      int    `mapstructure:"rateLimitPerHour" json:"rateLimitPerHour"`
+	// ApiKey must be a Platform API key scoped to codex.enterprise.analytics.read.
+	// Email support@openai.com to have the key granted this scope.
+	ApiKey string `mapstructure:"token" json:"token" gorm:"column:api_key;serializer:encdec"`
+	// WorkspaceId is the ChatGPT Enterprise workspace ID found in the ChatGPT
+	// admin console under "Workspace details". It is used as the path parameter
+	// for all Analytics API calls: /analytics/codex/workspaces/{workspace_id}/...
+	WorkspaceId      string `mapstructure:"workspaceId" json:"workspaceId" gorm:"column:workspace_id;type:varchar(255)"`
+	RateLimitPerHour int    `mapstructure:"rateLimitPerHour" json:"rateLimitPerHour"`
 }
 
 func (conn *CodexConn) SetupAuthentication(request *http.Request) errors.Error {
