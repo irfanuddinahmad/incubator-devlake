@@ -22,7 +22,12 @@ import (
 
 	"github.com/apache/incubator-devlake/core/context"
 	"github.com/apache/incubator-devlake/core/errors"
-        "github.com/apache/incubator-devlake/core/models/migrationscripts/archived"
+	"github.com/apache/incubator-devlake/core/models/migrationscripts/archived"
+	"github.com/apache/incubator-devlake/helpers/migrationhelper"
+)
+
+// cursorDailyUsage20260403 is the snapshot of CursorDailyUsage used by this migration.
+// It adds the fields from POST /teams/daily-usage-data that were not in the analytics API.
 type cursorDailyUsage20260403 struct {
 	ConnectionId uint64    `gorm:"primaryKey"`
 	ScopeId      string    `gorm:"primaryKey;type:varchar(255)"`

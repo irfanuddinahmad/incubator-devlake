@@ -22,14 +22,20 @@ import (
 
 	"github.com/apache/incubator-devlake/core/context"
 	"github.com/apache/incubator-devlake/core/errors"
-        "github.com/apache/incubator-devlake/core/models/migrationscripts/archived"
+	"github.com/apache/incubator-devlake/core/models/migrationscripts/archived"
+	"github.com/apache/incubator-devlake/helpers/migrationhelper"
+)
+
+// cursorModelUsage20260402 is the snapshot of CursorModelUsage used by this migration.
+type cursorModelUsage20260402 struct {
 	ConnectionId uint64    `gorm:"primaryKey" json:"connectionId"`
 	ScopeId      string    `gorm:"primaryKey;type:varchar(255)" json:"scopeId"`
 	Date         time.Time `gorm:"primaryKey;type:date" json:"date"`
 	UserEmail    string    `gorm:"primaryKey;type:varchar(255)" json:"userEmail"`
 	Model        string    `gorm:"primaryKey;type:varchar(100)" json:"model"`
 	Messages     int       `json:"messages"`
-        archived.NoPKModel
+	archived.NoPKModel
+}
 
 func (cursorModelUsage20260402) TableName() string { return "_tool_cursor_model_usage" }
 
