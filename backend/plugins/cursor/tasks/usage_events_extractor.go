@@ -19,6 +19,7 @@ package tasks
 
 import (
 	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/apache/incubator-devlake/core/errors"
@@ -33,19 +34,32 @@ var ExtractUsageEventsMeta = plugin.SubTaskMeta{
 	Name:             "extractUsageEvents",
 	EntryPoint:       ExtractUsageEvents,
 	EnabledByDefault: true,
-	Description:      "Extract Cursor usage event records into _tool_cursor_usage_events",
+	Description:      "Extract Cursor individual AI request events into _tool_cursor_usage_events",
 	DomainTypes:      []string{plugin.DOMAIN_TYPE_CROSS},
 }
 
-// cursorUsageEventRow is the raw JSON row from the filtered-usage-events endpoint.
+// cursorTokenUsageDetail holds the optional token breakdown within a usage event.
+type cursorTokenUsageDetail struct {
+	InputTokens      int64   `json:"inputTokens"`
+	OutputTokens     int64   `json:"outputTokens"`
+	CacheWriteTokens int64   `json:"cacheWriteTokens"`
+	CacheReadTokens  int64   `json:"cacheReadTokens"`
+	TotalCents       float64 `json:"totalCents"`
+}
+
+// cursorUsageEventRow is the raw JSON row from POST /teams/filtered-usage-events.
 type cursorUsageEventRow struct {
-	EventId      string  `json:"eventId"`
-	Timestamp    string  `json:"timestamp"`
-	UserEmail    string  `json:"userEmail"`
-	Model        string  `json:"model"`
-	InputTokens  int64   `json:"inputTokens"`
-	OutputTokens int64   `json:"outputTokens"`
-	RequestCost  float64 `json:"requestCost"`
+	Timestamp        string                  `json:"timestamp"` // epoch ms as string
+	UserEmail        string                  `json:"userEmail"`
+	Model            string                  `json:"model"`
+	Kind             string                  `json:"kind"`
+	MaxMode          bool                    `json:"maxMode"`
+	RequestsCosts    float64                 `json:"requestsCosts"`
+	IsTokenBasedCall bool                    `json:"isTokenBasedCall"`
+	IsChargeable     bool                    `json:"isChargeable"`
+	IsHeadless       bool                    `json:"isHeadless"`
+	TokenUsage       *cursorTokenUsageDetail `json:"tokenUsage"`
+	ChargedCents     float64                 `json:"chargedCents"`
 }
 
 // ExtractUsageEvents reads raw cursor_usage_events records and writes
@@ -79,32 +93,25 @@ func ExtractUsageEvents(taskCtx plugin.SubTaskContext) errors.Error {
 				return nil, errors.Default.Wrap(err, "failed to unmarshal cursor usage-event row")
 			}
 
-			var ts time.Time
-			var parseErr error
-			ts, parseErr = time.Parse(time.RFC3339, rawRow.Timestamp)
+			tsMs, parseErr := strconv.ParseInt(rawRow.Timestamp, 10, 64)
 			if parseErr != nil {
-				ts, parseErr = time.Parse("2006-01-02", rawRow.Timestamp)
-				if parseErr != nil {
-					return nil, errors.Default.Wrap(parseErr, "failed to parse timestamp: "+rawRow.Timestamp)
-				}
+				return nil, errors.Default.Wrap(parseErr, "failed to parse timestamp: "+rawRow.Timestamp)
 			}
-
-			eventId := rawRow.EventId
-			if eventId == "" {
-				// Generate a stable surrogate key from params
-				eventId = rawRow.UserEmail + "_" + rawRow.Timestamp + "_" + rawRow.Model
-			}
+			ts := time.UnixMilli(tsMs).UTC()
 
 			record := &models.CursorUsageEvent{
-				ConnectionId: data.Options.ConnectionId,
-				ScopeId:      data.Options.ScopeId,
-				EventId:      eventId,
-				Timestamp:    ts,
-				UserEmail:    rawRow.UserEmail,
-				Model:        rawRow.Model,
-				InputTokens:  rawRow.InputTokens,
-				OutputTokens: rawRow.OutputTokens,
-				RequestCost:  rawRow.RequestCost,
+				ConnectionId:     data.Options.ConnectionId,
+				ScopeId:          data.Options.ScopeId,
+				Timestamp:        ts,
+				UserEmail:        rawRow.UserEmail,
+				Model:            rawRow.Model,
+				Kind:             rawRow.Kind,
+				MaxMode:          rawRow.MaxMode,
+				RequestsCosts:    rawRow.RequestsCosts,
+				IsTokenBasedCall: rawRow.IsTokenBasedCall,
+				IsChargeable:     rawRow.IsChargeable,
+				IsHeadless:       rawRow.IsHeadless,
+				ChargedCents:     rawRow.ChargedCents,
 				NoPKModel: common.NoPKModel{
 					RawDataOrigin: common.RawDataOrigin{
 						RawDataTable:  rawUsageEventsTable,
@@ -112,6 +119,13 @@ func ExtractUsageEvents(taskCtx plugin.SubTaskContext) errors.Error {
 						RawDataId:     row.ID,
 					},
 				},
+			}
+			if rawRow.TokenUsage != nil {
+				record.InputTokens = rawRow.TokenUsage.InputTokens
+				record.OutputTokens = rawRow.TokenUsage.OutputTokens
+				record.CacheWriteTokens = rawRow.TokenUsage.CacheWriteTokens
+				record.CacheReadTokens = rawRow.TokenUsage.CacheReadTokens
+				record.TotalCents = rawRow.TokenUsage.TotalCents
 			}
 			return []interface{}{record}, nil
 		},

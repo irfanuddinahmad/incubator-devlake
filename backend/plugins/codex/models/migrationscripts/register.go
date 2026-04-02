@@ -23,5 +23,6 @@ func All() []plugin.MigrationScript {
 	return []plugin.MigrationScript{
 		new(addCodexInitialTables),
 		new(addCodexUsageTable),
+		new(migrateToAnalyticsAPI),
 	}
 }

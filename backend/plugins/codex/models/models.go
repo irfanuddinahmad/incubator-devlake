@@ -25,5 +25,7 @@ func GetTablesInfo() []dal.Tabler {
 		&CodexScope{},
 		&CodexScopeConfig{},
 		&CodexUsage{},
+		&CodexCodeReview{},
+		&CodexCodeReviewResponse{},
 	}
 }

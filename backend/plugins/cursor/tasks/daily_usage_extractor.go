@@ -37,15 +37,31 @@ var ExtractDailyUsageMeta = plugin.SubTaskMeta{
 	DomainTypes:      []string{plugin.DOMAIN_TYPE_CROSS},
 }
 
-// cursorDailyUsageRow is the raw JSON row from the Cursor daily-usage endpoint.
+// cursorDailyUsageRow is the raw JSON row from POST /teams/daily-usage-data.
 type cursorDailyUsageRow struct {
-	Date               string `json:"date"`
-	UserEmail          string `json:"userEmail"`
-	TotalTabsShown     int    `json:"totalTabsShown"`
-	TotalTabsAccepted  int    `json:"totalTabsAccepted"`
-	TotalLinesAdded    int    `json:"totalLinesAdded"`
-	AcceptedLinesAdded int    `json:"acceptedLinesAdded"`
-	TotalLinesDeleted  int    `json:"totalLinesDeleted"`
+	UserId                   string `json:"userId"`
+	Day                      string `json:"day"` // YYYY-MM-DD
+	Email                    string `json:"email"`
+	IsActive                 bool   `json:"isActive"`
+	TotalTabsShown           int    `json:"totalTabsShown"`
+	TotalTabsAccepted        int    `json:"totalTabsAccepted"`
+	TotalLinesAdded          int    `json:"totalLinesAdded"`
+	TotalLinesDeleted        int    `json:"totalLinesDeleted"`
+	AcceptedLinesAdded       int    `json:"acceptedLinesAdded"`
+	AcceptedLinesDeleted     int    `json:"acceptedLinesDeleted"`
+	TotalApplies             int    `json:"totalApplies"`
+	TotalAccepts             int    `json:"totalAccepts"`
+	TotalRejects             int    `json:"totalRejects"`
+	ComposerRequests         int    `json:"composerRequests"`
+	ChatRequests             int    `json:"chatRequests"`
+	AgentRequests            int    `json:"agentRequests"`
+	CmdkUsages               int    `json:"cmdkUsages"`
+	SubscriptionIncludedReqs int    `json:"subscriptionIncludedReqs"`
+	ApiKeyReqs               int    `json:"apiKeyReqs"`
+	UsageBasedReqs           int    `json:"usageBasedReqs"`
+	BugbotUsages             int    `json:"bugbotUsages"`
+	MostUsedModel            string `json:"mostUsedModel"`
+	ClientVersion            string `json:"clientVersion"`
 }
 
 // ExtractDailyUsage reads raw cursor_daily_usage records and writes
@@ -79,25 +95,35 @@ func ExtractDailyUsage(taskCtx plugin.SubTaskContext) errors.Error {
 				return nil, errors.Default.Wrap(err, "failed to unmarshal cursor daily-usage row")
 			}
 
-			day, parseErr := time.Parse("2006-01-02", rawRow.Date)
+			day, parseErr := time.Parse("2006-01-02", rawRow.Day)
 			if parseErr != nil {
-				// Try RFC3339 fallback
-				day, parseErr = time.Parse(time.RFC3339, rawRow.Date)
-				if parseErr != nil {
-					return nil, errors.Default.Wrap(parseErr, "failed to parse date: "+rawRow.Date)
-				}
+				return nil, errors.Default.Wrap(parseErr, "failed to parse date: "+rawRow.Day)
 			}
 
 			record := &models.CursorDailyUsage{
-				ConnectionId:       data.Options.ConnectionId,
-				ScopeId:            data.Options.ScopeId,
-				Day:                day,
-				UserEmail:          rawRow.UserEmail,
-				TotalTabsShown:     rawRow.TotalTabsShown,
-				TotalTabsAccepted:  rawRow.TotalTabsAccepted,
-				TotalLinesAdded:    rawRow.TotalLinesAdded,
-				AcceptedLinesAdded: rawRow.AcceptedLinesAdded,
-				TotalLinesDeleted:  rawRow.TotalLinesDeleted,
+				ConnectionId:             data.Options.ConnectionId,
+				ScopeId:                  data.Options.ScopeId,
+				Day:                      day,
+				UserEmail:                rawRow.Email,
+				TotalTabsShown:           rawRow.TotalTabsShown,
+				TotalTabsAccepted:        rawRow.TotalTabsAccepted,
+				TotalLinesAdded:          rawRow.TotalLinesAdded,
+				TotalLinesDeleted:        rawRow.TotalLinesDeleted,
+				AcceptedLinesAdded:       rawRow.AcceptedLinesAdded,
+				AcceptedLinesDeleted:     rawRow.AcceptedLinesDeleted,
+				TotalApplies:             rawRow.TotalApplies,
+				TotalAccepts:             rawRow.TotalAccepts,
+				TotalRejects:             rawRow.TotalRejects,
+				ComposerRequests:         rawRow.ComposerRequests,
+				ChatRequests:             rawRow.ChatRequests,
+				AgentRequests:            rawRow.AgentRequests,
+				CmdkUsages:               rawRow.CmdkUsages,
+				SubscriptionIncludedReqs: rawRow.SubscriptionIncludedReqs,
+				ApiKeyReqs:               rawRow.ApiKeyReqs,
+				UsageBasedReqs:           rawRow.UsageBasedReqs,
+				BugbotUsages:             rawRow.BugbotUsages,
+				MostUsedModel:            rawRow.MostUsedModel,
+				ClientVersion:            rawRow.ClientVersion,
 				NoPKModel: common.NoPKModel{
 					RawDataOrigin: common.RawDataOrigin{
 						RawDataTable:  rawDailyUsageTable,

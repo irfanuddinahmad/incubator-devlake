@@ -23,18 +23,43 @@ import (
 	"github.com/apache/incubator-devlake/core/models/common"
 )
 
-// CursorDailyUsage stores per-user daily usage metrics from GET /teams/daily-usage-data.
+// CursorDailyUsage stores per-user daily usage metrics from POST /teams/daily-usage-data.
 type CursorDailyUsage struct {
 	ConnectionId uint64    `gorm:"primaryKey" json:"connectionId"`
 	ScopeId      string    `gorm:"primaryKey;type:varchar(255)" json:"scopeId"`
 	Day          time.Time `gorm:"primaryKey;type:date" json:"day"`
 	UserEmail    string    `gorm:"primaryKey;type:varchar(255)" json:"userEmail"`
 
-	TotalTabsShown     int `json:"totalTabsShown"`
-	TotalTabsAccepted  int `json:"totalTabsAccepted"`
-	TotalLinesAdded    int `json:"totalLinesAdded"`
-	AcceptedLinesAdded int `json:"acceptedLinesAdded"`
-	TotalLinesDeleted  int `json:"totalLinesDeleted"`
+	// Tab completion metrics
+	TotalTabsShown    int `json:"totalTabsShown"`
+	TotalTabsAccepted int `json:"totalTabsAccepted"`
+
+	// Code change metrics
+	TotalLinesAdded      int `json:"totalLinesAdded"`
+	TotalLinesDeleted    int `json:"totalLinesDeleted"`
+	AcceptedLinesAdded   int `json:"acceptedLinesAdded"`
+	AcceptedLinesDeleted int `json:"acceptedLinesDeleted"`
+
+	// Apply/accept actions
+	TotalApplies int `json:"totalApplies"`
+	TotalAccepts int `json:"totalAccepts"`
+	TotalRejects int `json:"totalRejects"`
+
+	// AI request type breakdown
+	ComposerRequests int `json:"composerRequests"`
+	ChatRequests     int `json:"chatRequests"`
+	AgentRequests    int `json:"agentRequests"`
+	CmdkUsages       int `json:"cmdkUsages"`
+
+	// Billing request type breakdown
+	SubscriptionIncludedReqs int `json:"subscriptionIncludedReqs"`
+	ApiKeyReqs               int `json:"apiKeyReqs"`
+	UsageBasedReqs           int `json:"usageBasedReqs"`
+
+	// Misc
+	BugbotUsages  int    `json:"bugbotUsages"`
+	MostUsedModel string `gorm:"type:varchar(100)" json:"mostUsedModel"`
+	ClientVersion string `gorm:"type:varchar(50)" json:"clientVersion"`
 
 	common.NoPKModel
 }
@@ -43,18 +68,34 @@ func (CursorDailyUsage) TableName() string {
 	return "_tool_cursor_daily_usage"
 }
 
-// CursorUsageEvent stores raw usage events from GET /teams/filtered-usage-events.
+// CursorUsageEvent stores individual AI request events from POST /teams/filtered-usage-events.
+// Each record represents one API call made by a team member.
 type CursorUsageEvent struct {
 	ConnectionId uint64 `gorm:"primaryKey" json:"connectionId"`
 	ScopeId      string `gorm:"primaryKey;type:varchar(255)" json:"scopeId"`
-	EventId      string `gorm:"primaryKey;type:varchar(255)" json:"eventId"`
+	// Timestamp in milliseconds treated as primary key granularity (ms precision).
+	Timestamp time.Time `gorm:"primaryKey;type:datetime(3)" json:"timestamp"`
+	UserEmail string    `gorm:"primaryKey;type:varchar(255)" json:"userEmail"`
+	Model     string    `gorm:"primaryKey;type:varchar(100)" json:"model"`
 
-	Timestamp    time.Time `json:"timestamp"`
-	UserEmail    string    `gorm:"type:varchar(255)" json:"userEmail"`
-	Model        string    `gorm:"type:varchar(100)" json:"model"`
-	InputTokens  int64     `json:"inputTokens"`
-	OutputTokens int64     `json:"outputTokens"`
-	RequestCost  float64   `json:"requestCost"`
+	// Billing category: "Usage-based", "Included in Business", etc.
+	Kind string `gorm:"type:varchar(100)" json:"kind"`
+
+	MaxMode          bool    `json:"maxMode"`
+	RequestsCosts    float64 `json:"requestsCosts"`
+	IsTokenBasedCall bool    `json:"isTokenBasedCall"`
+	IsChargeable     bool    `json:"isChargeable"`
+	IsHeadless       bool    `json:"isHeadless"`
+
+	// Token usage (populated when IsTokenBasedCall is true)
+	InputTokens      int64   `json:"inputTokens"`
+	OutputTokens     int64   `json:"outputTokens"`
+	CacheWriteTokens int64   `json:"cacheWriteTokens"`
+	CacheReadTokens  int64   `json:"cacheReadTokens"`
+	TotalCents       float64 `json:"totalCents"`
+
+	// Total amount charged in cents (model cost + Cursor Token Fee if applicable).
+	ChargedCents float64 `json:"chargedCents"`
 
 	common.NoPKModel
 }

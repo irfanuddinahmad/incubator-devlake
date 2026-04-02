@@ -106,20 +106,17 @@ func CollectUsage(taskCtx plugin.SubTaskContext) errors.Error {
 		startingAt = time.Now().UTC().AddDate(0, 0, -90)
 	}
 
-	endingBefore := time.Now().UTC().AddDate(0, 0, 1) // tomorrow inclusive
-
 	err = collector.InitCollector(helper.ApiCollectorArgs{
 		ApiClient:   apiClient,
-		PageSize:    1_000_000, // large value; pagination is cursor-driven via ErrFinishCollect
+		PageSize:    1000, // max per API docs
 		UrlTemplate: urlPath,
 		Query: func(reqData *helper.RequestData) (url.Values, errors.Error) {
 			q := url.Values{}
 			q.Set("starting_at", startingAt.Format("2006-01-02"))
-			q.Set("ending_before", endingBefore.Format("2006-01-02"))
 			// Pass cursor on subsequent pages.
 			if reqData.CustomData != nil {
 				if cursor, ok := reqData.CustomData.(string); ok && cursor != "" {
-					q.Set("after_id", cursor)
+					q.Set("page", cursor)
 				}
 			}
 			return q, nil

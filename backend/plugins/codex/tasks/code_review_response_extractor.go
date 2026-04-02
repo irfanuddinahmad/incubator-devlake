@@ -27,15 +27,15 @@ import (
 	"github.com/apache/incubator-devlake/plugins/codex/models"
 )
 
-var ExtractUsageMeta = plugin.SubTaskMeta{
-	Name:             "extractUsage",
-	EntryPoint:       ExtractUsage,
+var ExtractCodeReviewResponsesMeta = plugin.SubTaskMeta{
+	Name:             "extractCodeReviewResponses",
+	EntryPoint:       ExtractCodeReviewResponses,
 	EnabledByDefault: true,
-	Description:      "Extract Codex usage records (threads/turns/credits) into tool-layer models",
+	Description:      "Extract Codex code-review response records (replies/reactions) into tool-layer models",
 	DomainTypes:      []string{plugin.DOMAIN_TYPE_CROSS},
 }
 
-func ExtractUsage(taskCtx plugin.SubTaskContext) errors.Error {
+func ExtractCodeReviewResponses(taskCtx plugin.SubTaskContext) errors.Error {
 	data, ok := taskCtx.TaskContext().GetData().(*CodexTaskData)
 	if !ok {
 		return errors.Default.New("task data is not CodexTaskData")
@@ -44,7 +44,7 @@ func ExtractUsage(taskCtx plugin.SubTaskContext) errors.Error {
 	extractor, err := helper.NewApiExtractor(helper.ApiExtractorArgs{
 		RawDataSubTaskArgs: helper.RawDataSubTaskArgs{
 			Ctx:   taskCtx,
-			Table: rawUsageTable,
+			Table: rawCodeReviewResponseTable,
 			Options: codexRawParams{
 				ConnectionId: data.Options.ConnectionId,
 				ScopeId:      data.Options.ScopeId,
@@ -52,29 +52,27 @@ func ExtractUsage(taskCtx plugin.SubTaskContext) errors.Error {
 			},
 		},
 		Extract: func(row *helper.RawData) ([]interface{}, errors.Error) {
-			var record codexUsageRecord
+			var record codexCodeReviewResponseRecord
 			if err := errors.Convert(json.Unmarshal(row.Data, &record)); err != nil {
 				return nil, err
 			}
 
-			// Parse the date string (expected format: "2024-01-15").
 			day, parseErr := time.Parse("2006-01-02", record.Date)
 			if parseErr != nil {
 				return nil, errors.Default.Wrap(parseErr, "failed to parse date: "+record.Date)
 			}
 			day = day.UTC()
 
-			usage := &models.CodexUsage{
-				ConnectionId:  data.Options.ConnectionId,
-				ScopeId:       data.Options.ScopeId,
-				Date:          day,
-				ClientSurface: record.ClientSurface,
-				UserEmail:     record.UserEmail,
-				Threads:       record.Threads,
-				Turns:         record.Turns,
-				Credits:       record.Credits,
+			resp := &models.CodexCodeReviewResponse{
+				ConnectionId: data.Options.ConnectionId,
+				ScopeId:      data.Options.ScopeId,
+				Date:         day,
+				UserEmail:    record.UserEmail,
+				Replies:      record.Replies,
+				Upvotes:      record.Upvotes,
+				Downvotes:    record.Downvotes,
 			}
-			return []interface{}{usage}, nil
+			return []interface{}{resp}, nil
 		},
 	})
 	if err != nil {

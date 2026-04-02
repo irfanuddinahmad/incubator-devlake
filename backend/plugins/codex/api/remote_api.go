@@ -45,19 +45,19 @@ func listCodexRemoteScopes(
 	if connection == nil {
 		return nil, nil, errors.BadInput.New("connection is required")
 	}
-	projectId := strings.TrimSpace(connection.ProjectId)
-	if projectId == "" {
+	workspaceId := strings.TrimSpace(connection.WorkspaceId)
+	if workspaceId == "" {
 		return []dsmodels.DsRemoteApiScopeListEntry[models.CodexScope]{}, nil, nil
 	}
 	children = append(children, dsmodels.DsRemoteApiScopeListEntry[models.CodexScope]{
 		Type:     apihelper.RAS_ENTRY_TYPE_SCOPE,
-		Id:       projectId,
-		Name:     projectId,
-		FullName: projectId,
+		Id:       workspaceId,
+		Name:     workspaceId,
+		FullName: workspaceId,
 		Data: &models.CodexScope{
-			Id:        projectId,
-			ProjectId: projectId,
-			Name:      projectId,
+			Id:        workspaceId,
+			ProjectId: workspaceId,
+			Name:      workspaceId,
 		},
 	})
 	return children, nil, nil

@@ -30,34 +30,42 @@ import (
 	helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
 )
 
-const rawUsageTable = "_raw_codex_usage"
+const rawCodeReviewTable = "_raw_codex_code_reviews"
 
-var CollectUsageMeta = plugin.SubTaskMeta{
-	Name:             "collectUsage",
-	EntryPoint:       CollectUsage,
+var CollectCodeReviewsMeta = plugin.SubTaskMeta{
+	Name:             "collectCodeReviews",
+	EntryPoint:       CollectCodeReviews,
 	EnabledByDefault: true,
-	Description:      "Collect daily usage metrics from the Codex Analytics API (/workspaces/{id}/usage)",
+	Description:      "Collect Codex code-review activity from the Analytics API (/workspaces/{id}/code_reviews)",
 	DomainTypes:      []string{plugin.DOMAIN_TYPE_CROSS},
 }
 
-// codexUsageEnvelope is the top-level response from GET /analytics/codex/workspaces/{id}/usage.
-type codexUsageEnvelope struct {
-	Data     []codexUsageRecord `json:"data"`
-	HasMore  bool               `json:"has_more"`
-	NextPage string             `json:"next_page"`
+// codexCodeReviewsEnvelope is the top-level response from
+// GET /analytics/codex/workspaces/{id}/code_reviews.
+type codexCodeReviewsEnvelope struct {
+	Data     []codexCodeReviewRecord `json:"data"`
+	HasMore  bool                    `json:"has_more"`
+	NextPage string                  `json:"next_page"`
 }
 
-// codexUsageRecord represents one daily usage record for a workspace/user/surface combination.
-type codexUsageRecord struct {
-	Date          string  `json:"date"`           // "2024-01-15"
-	ClientSurface string  `json:"client_surface"` // "cli", "ide", "cloud", "code_review"
-	UserEmail     string  `json:"user_email"`     // empty when not per-user
-	Threads       int64   `json:"threads"`
-	Turns         int64   `json:"turns"`
-	Credits       float64 `json:"credits"`
+// codexCodeReviewRecord represents one code-review record for a single PR on a given day.
+type codexCodeReviewRecord struct {
+	Date              string        `json:"date"`             // "2024-01-15"
+	PrUrl             string        `json:"pull_request_url"` // canonical PR URL
+	ReviewsCompleted  int64         `json:"reviews_completed"`
+	CommentsGenerated int64         `json:"comments_generated"`
+	Severity          codexSeverity `json:"severity"`
 }
 
-func CollectUsage(taskCtx plugin.SubTaskContext) errors.Error {
+// codexSeverity holds the comment breakdown by priority level.
+type codexSeverity struct {
+	Low      int64 `json:"low"`
+	Medium   int64 `json:"medium"`
+	High     int64 `json:"high"`
+	Critical int64 `json:"critical"`
+}
+
+func CollectCodeReviews(taskCtx plugin.SubTaskContext) errors.Error {
 	data, ok := taskCtx.TaskContext().GetData().(*CodexTaskData)
 	if !ok {
 		return errors.Default.New("task data is not CodexTaskData")
@@ -75,7 +83,7 @@ func CollectUsage(taskCtx plugin.SubTaskContext) errors.Error {
 
 	rawArgs := helper.RawDataSubTaskArgs{
 		Ctx:   taskCtx,
-		Table: rawUsageTable,
+		Table: rawCodeReviewTable,
 		Options: codexRawParams{
 			ConnectionId: data.Options.ConnectionId,
 			ScopeId:      data.Options.ScopeId,
@@ -93,7 +101,6 @@ func CollectUsage(taskCtx plugin.SubTaskContext) errors.Error {
 		return err
 	}
 
-	// Build time range for the query.
 	endTime := time.Now().UTC()
 	if data.Options.EndDate != nil {
 		endTime = data.Options.EndDate.UTC()
@@ -105,7 +112,7 @@ func CollectUsage(taskCtx plugin.SubTaskContext) errors.Error {
 		startTime = data.Options.StartDate.UTC()
 	}
 
-	urlTemplate := fmt.Sprintf("analytics/codex/workspaces/%s/usage", workspaceId)
+	urlTemplate := fmt.Sprintf("analytics/codex/workspaces/%s/code_reviews", workspaceId)
 
 	err = collector.InitCollector(helper.ApiCollectorArgs{
 		ApiClient:   apiClient,
@@ -115,8 +122,6 @@ func CollectUsage(taskCtx plugin.SubTaskContext) errors.Error {
 			q := url.Values{}
 			q.Set("start_time", startTime.Format(time.RFC3339))
 			q.Set("end_time", endTime.Format(time.RFC3339))
-			// Request per-user breakdown for maximum data granularity.
-			q.Set("per_user", "true")
 			if reqData.CustomData != nil {
 				if cursor, ok := reqData.CustomData.(string); ok && cursor != "" {
 					q.Set("next_page", cursor)
@@ -127,11 +132,11 @@ func CollectUsage(taskCtx plugin.SubTaskContext) errors.Error {
 		GetNextPageCustomData: func(prevReqData *helper.RequestData, prevPageResponse *http.Response) (interface{}, errors.Error) {
 			body, readErr := io.ReadAll(prevPageResponse.Body)
 			if readErr != nil {
-				return nil, errors.Default.Wrap(readErr, "failed to read usage pagination response")
+				return nil, errors.Default.Wrap(readErr, "failed to read code_reviews pagination response")
 			}
-			var envelope codexUsageEnvelope
+			var envelope codexCodeReviewsEnvelope
 			if jsonErr := json.Unmarshal(body, &envelope); jsonErr != nil {
-				return nil, errors.Default.Wrap(jsonErr, "failed to parse usage pagination response")
+				return nil, errors.Default.Wrap(jsonErr, "failed to parse code_reviews pagination response")
 			}
 			if !envelope.HasMore || envelope.NextPage == "" {
 				return nil, helper.ErrFinishCollect
@@ -142,18 +147,18 @@ func CollectUsage(taskCtx plugin.SubTaskContext) errors.Error {
 			body, readErr := io.ReadAll(res.Body)
 			res.Body.Close()
 			if readErr != nil {
-				return nil, errors.Default.Wrap(readErr, "failed to read Codex usage response body")
+				return nil, errors.Default.Wrap(readErr, "failed to read Codex code_reviews response body")
 			}
-			var envelope codexUsageEnvelope
+			var envelope codexCodeReviewsEnvelope
 			if jsonErr := json.Unmarshal(body, &envelope); jsonErr != nil {
-				return nil, errors.Default.Wrap(jsonErr, "failed to parse Codex usage response")
+				return nil, errors.Default.Wrap(jsonErr, "failed to parse Codex code_reviews response")
 			}
 
 			var records []json.RawMessage
 			for _, record := range envelope.Data {
 				raw, marshalErr := json.Marshal(record)
 				if marshalErr != nil {
-					return nil, errors.Default.Wrap(marshalErr, "failed to marshal usage record")
+					return nil, errors.Default.Wrap(marshalErr, "failed to marshal code_review record")
 				}
 				records = append(records, raw)
 			}

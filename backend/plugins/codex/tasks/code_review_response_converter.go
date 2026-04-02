@@ -24,55 +24,43 @@ import (
 	"github.com/apache/incubator-devlake/core/errors"
 	"github.com/apache/incubator-devlake/core/models/domainlayer"
 	"github.com/apache/incubator-devlake/core/models/domainlayer/ai"
-	"github.com/apache/incubator-devlake/core/models/domainlayer/crossdomain"
 	"github.com/apache/incubator-devlake/core/models/domainlayer/didgen"
 	"github.com/apache/incubator-devlake/core/plugin"
 	helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
 	"github.com/apache/incubator-devlake/plugins/codex/models"
 )
 
-// clientSurfaceToInterfaceType maps Codex client_surface values to AiActivity InterfaceType.
-var clientSurfaceToInterfaceType = map[string]string{
-	"cli":         "cli",
-	"ide":         "ide_plugin",
-	"cloud":       "web_ui",
-	"code_review": "code_review",
-}
+// Note: resolveCodexAccountId is defined in usage_converter.go
 
-// buildCodexActivity converts a single CodexUsage tool-layer record into the
-// unified AiActivity domain model.
-// NumSessions maps to threads (parallel Codex tasks/sessions).
-// SuggestionsCount maps to turns (conversation turns = interactions sent to the user).
-func buildCodexActivity(idGen *didgen.DomainIdGenerator, connectionId uint64, accountId string, u *models.CodexUsage) *ai.AiActivity {
-	interfaceType := clientSurfaceToInterfaceType[u.ClientSurface]
-	if interfaceType == "" {
-		interfaceType = u.ClientSurface
-	}
-
+// buildCodexCodeReviewResponseActivity maps a CodexCodeReviewResponse to AiActivity.
+// Type = "CODE_REVIEW_RESPONSE"; AcceptanceCount = upvotes (positive reactions).
+func buildCodexCodeReviewResponseActivity(idGen *didgen.DomainIdGenerator, connectionId uint64, accountId string, r *models.CodexCodeReviewResponse) *ai.AiActivity {
 	return &ai.AiActivity{
 		DomainEntity: domainlayer.DomainEntity{
-			Id: idGen.Generate(connectionId, u.ScopeId, u.Date, u.ClientSurface, u.UserEmail),
+			Id: idGen.Generate(connectionId, r.ScopeId, r.Date, r.UserEmail),
 		},
-		Provider:         "codex",
-		AccountId:        accountId,
-		UserEmail:        u.UserEmail,
-		Date:             u.Date,
-		Type:             "CODE_EDIT",
-		InterfaceType:    interfaceType,
-		NumSessions:      int(u.Threads),
-		SuggestionsCount: int(u.Turns),
+		Provider:      "codex",
+		AccountId:     accountId,
+		UserEmail:     r.UserEmail,
+		Date:          r.Date,
+		Type:          "CODE_REVIEW_RESPONSE",
+		InterfaceType: "code_review",
+		// SuggestionsCount captures total engagement events (replies + upvotes + downvotes).
+		SuggestionsCount: int(r.Replies + r.Upvotes + r.Downvotes),
+		// AcceptanceCount captures positive reactions (upvotes = accepted/agreed).
+		AcceptanceCount: int(r.Upvotes),
 	}
 }
 
-var ConvertUsageMeta = plugin.SubTaskMeta{
-	Name:             "convertUsage",
-	EntryPoint:       ConvertUsage,
+var ConvertCodeReviewResponsesMeta = plugin.SubTaskMeta{
+	Name:             "convertCodeReviewResponses",
+	EntryPoint:       ConvertCodeReviewResponses,
 	EnabledByDefault: true,
-	Description:      "Convert CodexUsage records into DevLake's ai_activities domain table",
+	Description:      "Convert CodexCodeReviewResponse records into DevLake's ai_activities domain table",
 	DomainTypes:      []string{plugin.DOMAIN_TYPE_CROSS},
 }
 
-func ConvertUsage(taskCtx plugin.SubTaskContext) errors.Error {
+func ConvertCodeReviewResponses(taskCtx plugin.SubTaskContext) errors.Error {
 	data, ok := taskCtx.TaskContext().GetData().(*CodexTaskData)
 	if !ok {
 		return errors.Default.New("task data is not CodexTaskData")
@@ -81,10 +69,10 @@ func ConvertUsage(taskCtx plugin.SubTaskContext) errors.Error {
 	db := taskCtx.GetDal()
 	connectionId := data.Options.ConnectionId
 
-	idGen := didgen.NewDomainIdGenerator(&models.CodexUsage{})
+	idGen := didgen.NewDomainIdGenerator(&models.CodexCodeReviewResponse{})
 
 	cursor, err := db.Cursor(
-		dal.From(&models.CodexUsage{}),
+		dal.From(&models.CodexCodeReviewResponse{}),
 		dal.Where("connection_id = ?", connectionId),
 	)
 	if err != nil {
@@ -95,36 +83,23 @@ func ConvertUsage(taskCtx plugin.SubTaskContext) errors.Error {
 	converter, err := helper.NewDataConverter(helper.DataConverterArgs{
 		RawDataSubTaskArgs: helper.RawDataSubTaskArgs{
 			Ctx:   taskCtx,
-			Table: rawUsageTable,
+			Table: rawCodeReviewResponseTable,
 			Options: codexRawParams{
 				ConnectionId: data.Options.ConnectionId,
 				ScopeId:      data.Options.ScopeId,
 				WorkspaceId:  data.Connection.WorkspaceId,
 			},
 		},
-		InputRowType: reflect.TypeOf(models.CodexUsage{}),
+		InputRowType: reflect.TypeOf(models.CodexCodeReviewResponse{}),
 		Input:        cursor,
 		Convert: func(inputRow interface{}) ([]interface{}, errors.Error) {
-			u := inputRow.(*models.CodexUsage)
-			accountId := resolveCodexAccountId(db, u.UserEmail)
-			return []interface{}{buildCodexActivity(idGen, connectionId, accountId, u)}, nil
+			r := inputRow.(*models.CodexCodeReviewResponse)
+			accountId := resolveCodexAccountId(db, r.UserEmail)
+			return []interface{}{buildCodexCodeReviewResponseActivity(idGen, connectionId, accountId, r)}, nil
 		},
 	})
 	if err != nil {
 		return err
 	}
 	return converter.Execute()
-}
-
-// resolveCodexAccountId looks up the global DevLake AccountId for a given email.
-// It queries the crossdomain accounts table. Returns an empty string when not found.
-func resolveCodexAccountId(db dal.Dal, email string) string {
-	if email == "" {
-		return ""
-	}
-	var account crossdomain.Account
-	if err := db.First(&account, dal.Where("email = ?", email)); err != nil {
-		return ""
-	}
-	return account.Id
 }

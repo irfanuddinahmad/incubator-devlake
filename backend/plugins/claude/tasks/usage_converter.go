@@ -44,9 +44,18 @@ var ConvertUsageMeta = plugin.SubTaskMeta{
 // unified AiActivity domain model. accountId may be empty when no matching
 // DevLake account was found for the user email.
 func buildClaudeActivity(idGen *didgen.DomainIdGenerator, connectionId uint64, accountId string, usage *models.ClaudeUsage) *ai.AiActivity {
+	// Total edit proposals shown = accepted + rejected across all tools.
+	suggestionsCount := usage.EditToolAccepted + usage.EditToolRejected +
+		usage.MultiEditToolAccepted + usage.MultiEditToolRejected +
+		usage.WriteToolAccepted + usage.WriteToolRejected +
+		usage.NotebookEditToolAccepted + usage.NotebookEditToolRejected
+	// Accepted edit proposals.
+	acceptanceCount := usage.EditToolAccepted + usage.MultiEditToolAccepted +
+		usage.WriteToolAccepted + usage.NotebookEditToolAccepted
+
 	return &ai.AiActivity{
 		DomainEntity: domainlayer.DomainEntity{
-			Id: idGen.Generate(connectionId, usage.Date, usage.UserEmail),
+			Id: idGen.Generate(connectionId, usage.ScopeId, usage.Date, usage.UserEmail, usage.Model),
 		},
 		Provider:         "claude",
 		AccountId:        accountId,
@@ -56,6 +65,8 @@ func buildClaudeActivity(idGen *didgen.DomainIdGenerator, connectionId uint64, a
 		InterfaceType:    "cli",
 		Model:            usage.Model,
 		NumSessions:      usage.NumSessions,
+		SuggestionsCount: suggestionsCount,
+		AcceptanceCount:  acceptanceCount,
 		LinesAdded:       usage.LinesAdded,
 		LinesRemoved:     usage.LinesRemoved,
 		CommitsCreated:   usage.CommitsByClaude,

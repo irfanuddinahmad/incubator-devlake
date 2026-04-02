@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/apache/incubator-devlake/core/errors"
@@ -36,18 +35,29 @@ var CollectUsageEventsMeta = plugin.SubTaskMeta{
 	Name:             "collectUsageEvents",
 	EntryPoint:       CollectUsageEvents,
 	EnabledByDefault: true,
-	Description:      "Collect Cursor raw usage events (model, tokens, cost) from GET /teams/filtered-usage-events",
+	Description:      "Collect Cursor individual AI request events from POST /teams/filtered-usage-events",
 	DomainTypes:      []string{plugin.DOMAIN_TYPE_CROSS},
 }
 
-// cursorUsageEventsResponse is the envelope returned by GET /teams/filtered-usage-events.
-type cursorUsageEventsResponse struct {
-	Data     []json.RawMessage `json:"data"`
-	HasMore  bool              `json:"hasMore"`
-	NextPage string            `json:"nextPage"`
+// cursorUsageEventsPagination is the pagination object in the filtered-usage-events response.
+type cursorUsageEventsPagination struct {
+	NumPages        int  `json:"numPages"`
+	CurrentPage     int  `json:"currentPage"`
+	PageSize        int  `json:"pageSize"`
+	HasNextPage     bool `json:"hasNextPage"`
+	HasPreviousPage bool `json:"hasPreviousPage"`
 }
 
-// CollectUsageEvents fetches raw usage events from the Cursor API.
+// cursorUsageEventsResponse is the envelope returned by POST /teams/filtered-usage-events.
+type cursorUsageEventsResponse struct {
+	TotalUsageEventsCount int                         `json:"totalUsageEventsCount"`
+	Pagination            cursorUsageEventsPagination `json:"pagination"`
+	UsageEvents           []json.RawMessage           `json:"usageEvents"`
+	Period                map[string]interface{}      `json:"period"`
+}
+
+// CollectUsageEvents fetches individual AI request events from POST /teams/filtered-usage-events
+// with incremental sync support.
 func CollectUsageEvents(taskCtx plugin.SubTaskContext) errors.Error {
 	data, ok := taskCtx.TaskContext().GetData().(*CursorTaskData)
 	if !ok {
@@ -92,34 +102,36 @@ func CollectUsageEvents(taskCtx plugin.SubTaskContext) errors.Error {
 	}
 	endDate := time.Now().UTC().AddDate(0, 0, 1)
 
+	// Cursor admin API uses epoch milliseconds for date ranges.
+	startMs := startDate.UnixMilli()
+	endMs := endDate.UnixMilli()
+
 	err = collector.InitCollector(helper.ApiCollectorArgs{
 		ApiClient:   apiClient,
-		PageSize:    1_000_000,
+		PageSize:    500,
+		Method:      http.MethodPost,
 		UrlTemplate: "teams/filtered-usage-events",
-		Query: func(reqData *helper.RequestData) (url.Values, errors.Error) {
-			q := url.Values{}
-			q.Set("startDate", startDate.Format("2006-01-02"))
-			q.Set("endDate", endDate.Format("2006-01-02"))
-			if reqData.CustomData != nil {
-				if cursor, ok := reqData.CustomData.(string); ok && cursor != "" {
-					q.Set("cursor", cursor)
-				}
+		RequestBody: func(reqData *helper.RequestData) map[string]interface{} {
+			return map[string]interface{}{
+				"startDate": startMs,
+				"endDate":   endMs,
+				"page":      reqData.Pager.Page,
+				"pageSize":  reqData.Pager.Size,
 			}
-			return q, nil
 		},
-		GetNextPageCustomData: func(prevReqData *helper.RequestData, prevPageResponse *http.Response) (interface{}, errors.Error) {
-			body, readErr := io.ReadAll(prevPageResponse.Body)
+		GetTotalPages: func(res *http.Response, args *helper.ApiCollectorArgs) (int, errors.Error) {
+			body, readErr := io.ReadAll(res.Body)
 			if readErr != nil {
-				return nil, errors.Default.Wrap(readErr, "failed to read pagination response")
+				return 0, errors.Default.Wrap(readErr, "failed to read pagination response")
 			}
 			var envelope cursorUsageEventsResponse
 			if jsonErr := json.Unmarshal(body, &envelope); jsonErr != nil {
-				return nil, errors.Default.Wrap(jsonErr, "failed to parse pagination response")
+				return 0, errors.Default.Wrap(jsonErr, "failed to parse pagination response")
 			}
-			if !envelope.HasMore || envelope.NextPage == "" {
-				return nil, helper.ErrFinishCollect
+			if envelope.Pagination.NumPages == 0 {
+				return 1, nil
 			}
-			return envelope.NextPage, nil
+			return envelope.Pagination.NumPages, nil
 		},
 		ResponseParser: func(res *http.Response) ([]json.RawMessage, errors.Error) {
 			body, readErr := io.ReadAll(res.Body)
@@ -128,14 +140,10 @@ func CollectUsageEvents(taskCtx plugin.SubTaskContext) errors.Error {
 				return nil, errors.Default.Wrap(readErr, "failed to read Cursor usage-events response")
 			}
 			var envelope cursorUsageEventsResponse
-			if jsonErr := json.Unmarshal(body, &envelope); jsonErr == nil && envelope.Data != nil {
-				return envelope.Data, nil
+			if jsonErr := json.Unmarshal(body, &envelope); jsonErr != nil {
+				return nil, errors.Default.Wrap(jsonErr, "failed to parse Cursor usage-events response")
 			}
-			var rows []json.RawMessage
-			if jsonErr := json.Unmarshal(body, &rows); jsonErr != nil {
-				return nil, errors.Default.Wrap(jsonErr, "failed to parse Cursor usage-events response as array")
-			}
-			return rows, nil
+			return envelope.UsageEvents, nil
 		},
 		Incremental: true,
 		Concurrency: 1,

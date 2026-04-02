@@ -48,74 +48,82 @@ func TestBuildCodexActivity_AllFields(t *testing.T) {
 	date := time.Date(2026, 3, 25, 0, 0, 0, 0, time.UTC)
 
 	u := &models.CodexUsage{
-		ConnectionId:     connectionId,
-		ScopeId:          "proj-xyz",
-		Date:             date,
-		Model:            "gpt-4o",
-		InputTokens:      50000,
-		OutputTokens:     12000,
-		EstimatedCostUsd: 0.18,
+		ConnectionId:  connectionId,
+		ScopeId:       "ws-xyz",
+		Date:          date,
+		ClientSurface: "cli",
+		UserEmail:     "dev@example.com",
+		Threads:       10,
+		Turns:         50,
+		Credits:       25.5,
 	}
 
 	idGen := testCodexIdGen()
-	activity := buildCodexActivity(idGen, connectionId, u)
+	activity := buildCodexActivity(idGen, connectionId, "acct-42", u)
 
 	assert.NotEmpty(t, activity.Id)
 	assert.Equal(t, "codex", activity.Provider)
+	assert.Equal(t, "acct-42", activity.AccountId)
 	assert.Equal(t, date, activity.Date)
-	assert.Equal(t, "gpt-4o", activity.Model)
+	assert.Equal(t, "dev@example.com", activity.UserEmail)
 	assert.Equal(t, "CODE_EDIT", activity.Type)
 	assert.Equal(t, "cli", activity.InterfaceType)
-	assert.Equal(t, int64(50000), activity.InputTokens)
-	assert.Equal(t, int64(12000), activity.OutputTokens)
-	assert.InDelta(t, 0.18, activity.EstimatedCostUsd, 1e-9)
+	assert.Equal(t, 10, activity.NumSessions)
+	assert.Equal(t, 50, activity.SuggestionsCount)
+	// Credits are a billing unit, not mapped to EstimatedCostUsd.
+	assert.Equal(t, float64(0), activity.EstimatedCostUsd)
 }
 
-func TestBuildCodexActivity_NoUserContext(t *testing.T) {
-	// Codex records have no per-user data; UserEmail and AccountId must always be empty.
-	connectionId := uint64(21)
-	date := time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC)
+func TestBuildCodexActivity_ClientSurfaceMapping(t *testing.T) {
+	connectionId := uint64(20)
+	date := time.Date(2026, 3, 25, 0, 0, 0, 0, time.UTC)
 
-	u := &models.CodexUsage{
-		ConnectionId: connectionId,
-		Date:         date,
-		Model:        "gpt-4-turbo",
-		InputTokens:  1000,
-		OutputTokens: 200,
+	cases := []struct {
+		surface  string
+		expected string
+	}{
+		{"cli", "cli"},
+		{"ide", "ide_plugin"},
+		{"cloud", "web_ui"},
+		{"code_review", "code_review"},
+		{"unknown_surface", "unknown_surface"}, // pass-through for unknown values
 	}
 
-	idGen := testCodexIdGen()
-	activity := buildCodexActivity(idGen, connectionId, u)
-
-	assert.Equal(t, "", activity.UserEmail, "Codex activities must have no user email")
-	assert.Equal(t, "", activity.AccountId, "Codex activities must have no account ID")
-	// No autocomplete metrics
-	assert.Equal(t, 0, activity.SuggestionsCount)
-	assert.Equal(t, 0, activity.AcceptanceCount)
-	// No commit/PR agentic metrics
-	assert.Equal(t, 0, activity.CommitsCreated)
-	assert.Equal(t, 0, activity.PrsCreated)
+	for _, tc := range cases {
+		t.Run(tc.surface, func(t *testing.T) {
+			u := &models.CodexUsage{
+				ConnectionId:  connectionId,
+				ScopeId:       "ws-xyz",
+				Date:          date,
+				ClientSurface: tc.surface,
+			}
+			idGen := testCodexIdGen()
+			activity := buildCodexActivity(idGen, connectionId, "", u)
+			assert.Equal(t, tc.expected, activity.InterfaceType)
+		})
+	}
 }
 
-func TestBuildCodexActivity_ZeroTokens(t *testing.T) {
+func TestBuildCodexActivity_ZeroMetrics(t *testing.T) {
 	connectionId := uint64(22)
 	date := time.Date(2026, 2, 10, 0, 0, 0, 0, time.UTC)
 
 	u := &models.CodexUsage{
-		ConnectionId: connectionId,
-		Date:         date,
-		Model:        "gpt-3.5-turbo",
+		ConnectionId:  connectionId,
+		ScopeId:       "ws-zero",
+		Date:          date,
+		ClientSurface: "cloud",
 	}
 
 	idGen := testCodexIdGen()
-	activity := buildCodexActivity(idGen, connectionId, u)
+	activity := buildCodexActivity(idGen, connectionId, "", u)
 
-	assert.Equal(t, int64(0), activity.InputTokens)
-	assert.Equal(t, int64(0), activity.OutputTokens)
+	assert.Equal(t, int64(0), int64(activity.NumSessions))
+	assert.Equal(t, int64(0), int64(activity.SuggestionsCount))
 	assert.Equal(t, float64(0), activity.EstimatedCostUsd)
 	assert.Equal(t, "codex", activity.Provider)
 	assert.Equal(t, "CODE_EDIT", activity.Type)
-	assert.Equal(t, "cli", activity.InterfaceType)
+	assert.Equal(t, "web_ui", activity.InterfaceType)
 }
 
 func TestBuildCodexActivity_IdDeterminism(t *testing.T) {
@@ -123,29 +131,30 @@ func TestBuildCodexActivity_IdDeterminism(t *testing.T) {
 	date := time.Date(2026, 3, 25, 0, 0, 0, 0, time.UTC)
 
 	u := &models.CodexUsage{
-		ConnectionId: connectionId,
-		Date:         date,
-		Model:        "gpt-4o",
+		ConnectionId:  connectionId,
+		ScopeId:       "ws-xyz",
+		Date:          date,
+		ClientSurface: "cli",
+		UserEmail:     "user@example.com",
 	}
 
 	idGen := testCodexIdGen()
-	a1 := buildCodexActivity(idGen, connectionId, u)
-	a2 := buildCodexActivity(idGen, connectionId, u)
+	a1 := buildCodexActivity(idGen, connectionId, "", u)
+	a2 := buildCodexActivity(idGen, connectionId, "", u)
 
 	assert.Equal(t, a1.Id, a2.Id, "ID must be deterministic for same input")
 }
 
-func TestBuildCodexActivity_DifferentModelsGetDifferentIds(t *testing.T) {
-	// Two records for the same date but different models should produce distinct IDs.
+func TestBuildCodexActivity_DifferentSurfacesGetDifferentIds(t *testing.T) {
 	connectionId := uint64(20)
 	date := time.Date(2026, 3, 25, 0, 0, 0, 0, time.UTC)
 
-	u1 := &models.CodexUsage{ConnectionId: connectionId, Date: date, Model: "gpt-4o"}
-	u2 := &models.CodexUsage{ConnectionId: connectionId, Date: date, Model: "gpt-3.5-turbo"}
+	u1 := &models.CodexUsage{ConnectionId: connectionId, ScopeId: "ws-xyz", Date: date, ClientSurface: "cli"}
+	u2 := &models.CodexUsage{ConnectionId: connectionId, ScopeId: "ws-xyz", Date: date, ClientSurface: "ide"}
 
 	idGen := testCodexIdGen()
-	a1 := buildCodexActivity(idGen, connectionId, u1)
-	a2 := buildCodexActivity(idGen, connectionId, u2)
+	a1 := buildCodexActivity(idGen, connectionId, "", u1)
+	a2 := buildCodexActivity(idGen, connectionId, "", u2)
 
-	assert.NotEqual(t, a1.Id, a2.Id, "Different models on the same date must produce distinct IDs")
+	assert.NotEqual(t, a1.Id, a2.Id, "Different surfaces on the same date must produce distinct IDs")
 }
