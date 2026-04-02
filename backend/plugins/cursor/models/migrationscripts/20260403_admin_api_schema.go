@@ -22,12 +22,7 @@ import (
 
 	"github.com/apache/incubator-devlake/core/context"
 	"github.com/apache/incubator-devlake/core/errors"
-	"github.com/apache/incubator-devlake/core/models/common"
-	"github.com/apache/incubator-devlake/helpers/migrationhelper"
-)
-
-// cursorDailyUsage20260403 is the snapshot of CursorDailyUsage used by this migration.
-// It adds the fields from POST /teams/daily-usage-data that were not in the analytics API.
+        "github.com/apache/incubator-devlake/core/models/migrationscripts/archived"
 type cursorDailyUsage20260403 struct {
 	ConnectionId uint64    `gorm:"primaryKey"`
 	ScopeId      string    `gorm:"primaryKey;type:varchar(255)"`
@@ -59,7 +54,7 @@ type cursorDailyUsage20260403 struct {
 	MostUsedModel string `gorm:"type:varchar(100)"`
 	ClientVersion string `gorm:"type:varchar(50)"`
 
-	common.NoPKModel
+	archived.NoPKModel
 }
 
 func (cursorDailyUsage20260403) TableName() string { return "_tool_cursor_daily_usage" }
@@ -86,7 +81,7 @@ type cursorUsageEvent20260403 struct {
 	TotalCents       float64
 	ChargedCents     float64
 
-	common.NoPKModel
+	archived.NoPKModel
 }
 
 func (cursorUsageEvent20260403) TableName() string { return "_tool_cursor_usage_events" }

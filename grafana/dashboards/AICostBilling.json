@@ -75,7 +75,7 @@
     },
     {
       "datasource": "mysql",
-      "description": "Prompt cache tokens re-used (saves cost).",
+      "description": "Prompt cache tokens reused (saves cost).",
       "fieldConfig": {
         "defaults": {
           "mappings": [],
