@@ -158,7 +158,10 @@ func CollectDailyUsage(taskCtx plugin.SubTaskContext) errors.Error {
 		if err != nil {
 			return err
 		}
+		if err = collector.Execute(); err != nil {
+			return err
+		}
 	}
 
-	return collector.Execute()
+	return nil
 }
