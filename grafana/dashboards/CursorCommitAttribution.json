@@ -1,0 +1,427 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "datasource": "mysql",
+      "description": "Cumulative lines attributed to Cursor tab completion across all commits.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT SUM(tab_lines_added) AS \"Tab Lines\"\nFROM _tool_cursor_commit_ai_share\nWHERE $__timeFilter(commit_date)",
+          "refId": "A"
+        }
+      ],
+      "title": "Total AI Lines Added (Tab Completion)",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Cumulative lines attributed to Cursor Composer across all commits.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT SUM(composer_lines_added) AS \"Composer Lines\"\nFROM _tool_cursor_commit_ai_share\nWHERE $__timeFilter(commit_date)",
+          "refId": "A"
+        }
+      ],
+      "title": "Total AI Lines Added (Composer)",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Lines written without Cursor AI assistance.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT SUM(manual_lines_added) AS \"Manual Lines\"\nFROM _tool_cursor_commit_ai_share\nWHERE $__timeFilter(commit_date)",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Manual Lines Added",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "How lines added per day are sourced. Growing AI share indicates increasing Cursor adoption at the commit level.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 0,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT commit_date AS time,\n  SUM(tab_lines_added) AS \"Tab Completion\",\n  SUM(composer_lines_added) AS \"Composer\",\n  SUM(manual_lines_added) AS \"Manual\"\nFROM _tool_cursor_commit_ai_share\nWHERE $__timeFilter(commit_date)\nGROUP BY commit_date\nORDER BY commit_date",
+          "refId": "A"
+        }
+      ],
+      "title": "Daily Lines Added \u2013 Tab vs Composer vs Manual",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Percentage of lines added that were AI-generated (tab + composer) vs manual. Tracks overall AI adoption trend.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT commit_date AS time,\n  ROUND(\n    (SUM(tab_lines_added)+SUM(composer_lines_added))\n    / NULLIF(SUM(tab_lines_added)+SUM(composer_lines_added)+SUM(manual_lines_added), 0) * 100\n  , 1) AS \"AI Share %\"\nFROM _tool_cursor_commit_ai_share\nWHERE $__timeFilter(commit_date)\nGROUP BY commit_date\nORDER BY commit_date",
+          "refId": "A"
+        }
+      ],
+      "title": "AI Code Share % Over Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Total and AI-attributed lines per repo. Identifies which repos rely most on Cursor.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  repo_name AS \"Repository\",\n  COUNT(DISTINCT commit_sha) AS \"Commits\",\n  SUM(tab_lines_added) AS \"Tab Lines\",\n  SUM(composer_lines_added) AS \"Composer Lines\",\n  SUM(manual_lines_added) AS \"Manual Lines\",\n  ROUND(\n    (SUM(tab_lines_added)+SUM(composer_lines_added))\n    / NULLIF(SUM(tab_lines_added)+SUM(composer_lines_added)+SUM(manual_lines_added), 0) * 100\n  , 1) AS \"AI Share %\"\nFROM _tool_cursor_commit_ai_share\nWHERE $__timeFilter(commit_date)\nGROUP BY repo_name\nORDER BY SUM(tab_lines_added)+SUM(composer_lines_added) DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "AI Code Share by Repository",
+      "type": "table"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Individual commits with the most AI-generated code. Helps understand magnitude of AI usage per change.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  commit_date AS \"Date\",\n  repo_name AS \"Repository\",\n  commit_sha AS \"Commit SHA\",\n  tab_lines_added AS \"Tab Lines\",\n  composer_lines_added AS \"Composer Lines\",\n  manual_lines_added AS \"Manual Lines\",\n  ROUND(\n    (tab_lines_added+composer_lines_added)\n    / NULLIF(tab_lines_added+composer_lines_added+manual_lines_added, 0) * 100\n  , 1) AS \"AI Share %\"\nFROM _tool_cursor_commit_ai_share\nWHERE $__timeFilter(commit_date)\nORDER BY tab_lines_added+composer_lines_added DESC\nLIMIT 50",
+          "refId": "A"
+        }
+      ],
+      "title": "Top Commits by AI Lines Added",
+      "type": "table"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 38,
+  "tags": [
+    "cursor",
+    "ai",
+    "commit",
+    "attribution",
+    "devlake"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-90d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "utc",
+  "title": "Cursor Commit AI Attribution",
+  "uid": "cursor_commit_attribution",
+  "version": 1,
+  "weekStart": ""
+}

@@ -37,6 +37,7 @@ import (
 	"github.com/apache/incubator-devlake/server/api/push"
 	"github.com/apache/incubator-devlake/server/api/shared"
 	"github.com/apache/incubator-devlake/server/api/task"
+	userprojectmapping "github.com/apache/incubator-devlake/server/api/user_project_mapping"
 	"github.com/apache/incubator-devlake/server/services"
 
 	"github.com/gin-gonic/gin"
@@ -85,6 +86,12 @@ func RegisterRouter(r *gin.Engine, basicRes context.BasicRes) {
 	r.POST("/api-keys", apikeys.PostApiKey)
 	r.PUT("/api-keys/:apiKeyId", apikeys.PutApiKey)
 	r.DELETE("/api-keys/:apiKeyId", apikeys.DeleteApiKey)
+
+	// user project mapping api
+	r.GET("/user-project-mappings", userprojectmapping.GetAllMappings)
+	r.GET("/user-project-mappings/:userLogin", userprojectmapping.GetMappingsByUser)
+	r.POST("/user-project-mappings/:userLogin", userprojectmapping.PostMapping)
+	r.DELETE("/user-project-mappings/:userLogin/:projectName", userprojectmapping.DeleteMapping)
 
 	// mount all api resources for all plugins
 	resources, err := services.GetPluginsApiResources()

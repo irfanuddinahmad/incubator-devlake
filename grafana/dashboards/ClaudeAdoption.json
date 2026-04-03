@@ -1,0 +1,792 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "datasource": "mysql",
+      "description": "Number of distinct users active with Claude Code in the selected time range",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(DISTINCT user_email) AS \"Active Users\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'",
+          "refId": "A"
+        }
+      ],
+      "title": "Daily Active Users (Period)",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Total lines of code added by Claude Code sessions",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT SUM(lines_added) AS \"Lines Added\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Lines Added",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "PRs attributed to Claude Code in the selected time range",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT SUM(prs_created) AS \"PRs by Claude\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'",
+          "refId": "A"
+        }
+      ],
+      "title": "PRs Created by Claude",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Total estimated API spend for the selected time range",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "unit": "currencyUSD",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 500
+              },
+              {
+                "color": "red",
+                "value": 2000
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ROUND(SUM(estimated_cost_usd), 2) AS \"Estimated Cost (USD)\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'",
+          "refId": "A"
+        }
+      ],
+      "title": "Estimated Cost (USD)",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Daily count of distinct users who used Claude Code",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT date AS time,\n  COUNT(DISTINCT user_email) AS \"Daily Active Users\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'\nGROUP BY date\nORDER BY date",
+          "refId": "A"
+        }
+      ],
+      "title": "Claude Adoption \u2013 Daily Active Users",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Commits and PRs attributed to Claude over time",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT date AS time,\n  SUM(prs_created) AS \"PRs by Claude\",\n  SUM(commits_created) AS \"Commits by Claude\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'\nGROUP BY date\nORDER BY date",
+          "refId": "A"
+        }
+      ],
+      "title": "Coding Velocity \u2013 PRs & Commits by Claude",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Estimated spend per model over time \u2013 shows Sonnet vs Opus cost allocation",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 0,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            }
+          },
+          "unit": "currencyUSD",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT date AS time,\n  CASE\n    WHEN model LIKE '%sonnet%' OR model LIKE '%Sonnet%' THEN 'Sonnet'\n    WHEN model LIKE '%opus%'   OR model LIKE '%Opus%'   THEN 'Opus'\n    WHEN model LIKE '%haiku%'  OR model LIKE '%Haiku%'  THEN 'Haiku'\n    ELSE COALESCE(NULLIF(model,''), 'Unknown')\n  END AS metric,\n  SUM(estimated_cost_usd) AS value\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'\nGROUP BY date, metric\nORDER BY date",
+          "refId": "A"
+        }
+      ],
+      "title": "Cost Efficiency \u2013 Model Spend Breakdown",
+      "transformations": [
+        {
+          "id": "prepareTimeSeries",
+          "options": {
+            "format": "many"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "^value (.+)$",
+            "renamePattern": "$1"
+          }
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Ratio of lines removed (refactoring) vs lines added (new feature work) over time. Higher removal ratio signals active code cleanup.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT date AS time,\n  SUM(lines_added)   AS \"Lines Added (Features)\",\n  SUM(lines_removed) AS \"Lines Removed (Refactoring)\",\n  ROUND(SUM(lines_removed) / NULLIF(SUM(lines_added), 0), 2) AS \"Refactor Ratio\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'\nGROUP BY date\nORDER BY date",
+          "refId": "A"
+        }
+      ],
+      "title": "Quality Signal \u2013 Lines Added vs Removed",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Top developers ranked by Claude Code usage (lines added + PRs)",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "id": 9,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT user_email AS \"User\",\n  COUNT(DISTINCT date) AS \"Active Days\",\n  SUM(num_sessions) AS \"Sessions\",\n  SUM(lines_added) AS \"Lines Added\",\n  SUM(lines_removed) AS \"Lines Removed\",\n  SUM(commits_created) AS \"Commits\",\n  SUM(prs_created) AS \"PRs\",\n  ROUND(SUM(estimated_cost_usd), 2) AS \"Cost (USD)\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'\nGROUP BY user_email\nORDER BY SUM(lines_added) DESC\nLIMIT 25",
+          "refId": "A"
+        }
+      ],
+      "title": "Top Developers by Claude Usage",
+      "type": "table"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Cost per model with lines-of-code context for ROI analysis",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "id": 10,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(NULLIF(model,''), 'Unknown') AS \"Model\",\n  SUM(input_tokens) AS \"Input Tokens\",\n  SUM(output_tokens) AS \"Output Tokens\",\n  SUM(lines_added) AS \"Lines Added\",\n  ROUND(SUM(estimated_cost_usd), 2) AS \"Total Cost (USD)\",\n  ROUND(SUM(estimated_cost_usd) / NULLIF(SUM(lines_added), 0), 4) AS \"Cost per Line (USD)\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'claude'\nGROUP BY model\nORDER BY SUM(estimated_cost_usd) DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Cost Efficiency \u2013 Model ROI Breakdown",
+      "type": "table"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Per-tool accepted vs rejected action counts from _tool_claude_usage. Shows which Claude tool types get the most approval.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "lineWidth": 0,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT date AS time,\n  SUM(edit_tool_accepted) AS \"Edit Accepted\",\n  SUM(edit_tool_rejected) AS \"Edit Rejected\",\n  SUM(multi_edit_tool_accepted) AS \"Multi-Edit Accepted\",\n  SUM(multi_edit_tool_rejected) AS \"Multi-Edit Rejected\",\n  SUM(write_tool_accepted) AS \"Write Accepted\",\n  SUM(write_tool_rejected) AS \"Write Rejected\",\n  SUM(notebook_edit_tool_accepted) AS \"Notebook Accepted\",\n  SUM(notebook_edit_tool_rejected) AS \"Notebook Rejected\"\nFROM _tool_claude_usage\nWHERE $__timeFilter(date)\nGROUP BY date\nORDER BY date",
+          "refId": "A"
+        }
+      ],
+      "title": "Tool-Type Acceptance \u2013 Edit / Multi-Edit / Write / Notebook",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Anthropic prompt-cache token breakdown. High cache_read_tokens relative to cache_creation_tokens means effective prompt reuse and lower cost.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
+      "id": 12,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT date AS time,\n  SUM(cache_read_tokens) AS \"Cache Read Tokens\",\n  SUM(cache_creation_tokens) AS \"Cache Creation Tokens\"\nFROM _tool_claude_usage\nWHERE $__timeFilter(date)\nGROUP BY date\nORDER BY date",
+          "refId": "A"
+        }
+      ],
+      "title": "Cache Token Efficiency \u2013 Read vs Creation",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Acceptance rates per Claude model across all tool types, plus cache hit rate for cost efficiency.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "id": 13,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(NULLIF(model,''), 'Unknown') AS \"Model\",\n  SUM(edit_tool_accepted) AS \"Edit Acc\",\n  SUM(edit_tool_rejected) AS \"Edit Rej\",\n  SUM(write_tool_accepted) AS \"Write Acc\",\n  SUM(write_tool_rejected) AS \"Write Rej\",\n  SUM(multi_edit_tool_accepted) AS \"Multi-Edit Acc\",\n  SUM(notebook_edit_tool_accepted) AS \"Notebook Acc\",\n  ROUND(\n    (SUM(edit_tool_accepted)+SUM(multi_edit_tool_accepted)+SUM(write_tool_accepted)+SUM(notebook_edit_tool_accepted))\n    / NULLIF(\n        SUM(edit_tool_accepted)+SUM(edit_tool_rejected)+SUM(multi_edit_tool_accepted)+SUM(multi_edit_tool_rejected)\n        +SUM(write_tool_accepted)+SUM(write_tool_rejected)+SUM(notebook_edit_tool_accepted)+SUM(notebook_edit_tool_rejected)\n      , 0) * 100, 1\n  ) AS \"Overall Acc %\",\n  SUM(cache_read_tokens) AS \"Cache Read Tokens\",\n  ROUND(SUM(cache_read_tokens) / NULLIF(SUM(cache_read_tokens)+SUM(cache_creation_tokens), 0) * 100, 1) AS \"Cache Hit %\"\nFROM _tool_claude_usage\nWHERE $__timeFilter(date)\nGROUP BY model\nORDER BY SUM(edit_tool_accepted)+SUM(write_tool_accepted) DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Tool-Type Acceptance Rate by Model",
+      "type": "table"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 38,
+  "tags": [
+    "claude",
+    "anthropic",
+    "devlake",
+    "ai"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-90d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "utc",
+  "title": "Claude Code Adoption & Productivity",
+  "uid": "claude_adoption",
+  "version": 1,
+  "weekStart": ""
+}
