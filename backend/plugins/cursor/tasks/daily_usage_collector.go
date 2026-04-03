@@ -98,70 +98,61 @@ func CollectDailyUsage(taskCtx plugin.SubTaskContext) errors.Error {
 	if since != nil && !since.IsZero() {
 		startDate = since.UTC()
 	} else {
-		startDate = time.Now().UTC().AddDate(0, 0, -90)
+		startDate = time.Now().UTC().AddDate(0, 0, -30)
 	}
 	endDate := time.Now().UTC().AddDate(0, 0, 1)
+	maxStartDate := endDate.AddDate(0, 0, -30)
+	if startDate.Before(maxStartDate) {
+		startDate = maxStartDate
+	}
+	startMs := startDate.UnixMilli()
+	endMs := endDate.UnixMilli()
 
-	// The Cursor admin API limits each request to a 30-day date range.
-	// Iterate over consecutive 30-day windows to cover the full range.
-	const maxWindowDays = 30
-	for windowStart := startDate; windowStart.Before(endDate); windowStart = windowStart.AddDate(0, 0, maxWindowDays) {
-		windowEnd := windowStart.AddDate(0, 0, maxWindowDays)
-		if windowEnd.After(endDate) {
-			windowEnd = endDate
-		}
-		winStartMs := windowStart.UnixMilli()
-		winEndMs := windowEnd.UnixMilli()
-
-		err = collector.InitCollector(helper.ApiCollectorArgs{
-			ApiClient:   apiClient,
-			PageSize:    1000, // max page size for daily-usage-data
-			Method:      http.MethodPost,
-			UrlTemplate: "teams/daily-usage-data",
-			RequestBody: func(reqData *helper.RequestData) map[string]interface{} {
-				return map[string]interface{}{
-					"startDate": winStartMs,
-					"endDate":   winEndMs,
-					"page":      reqData.Pager.Page,
-					"pageSize":  reqData.Pager.Size,
-				}
-			},
-			GetTotalPages: func(res *http.Response, args *helper.ApiCollectorArgs) (int, errors.Error) {
-				body, readErr := io.ReadAll(res.Body)
-				if readErr != nil {
-					return 0, errors.Default.Wrap(readErr, "failed to read pagination response")
-				}
-				var envelope cursorDailyUsageResponse
-				if jsonErr := json.Unmarshal(body, &envelope); jsonErr != nil {
-					return 0, errors.Default.Wrap(jsonErr, "failed to parse pagination response")
-				}
-				if envelope.Pagination.TotalPages == 0 {
-					return 1, nil
-				}
-				return envelope.Pagination.TotalPages, nil
-			},
-			ResponseParser: func(res *http.Response) ([]json.RawMessage, errors.Error) {
-				body, readErr := io.ReadAll(res.Body)
-				res.Body.Close()
-				if readErr != nil {
-					return nil, errors.Default.Wrap(readErr, "failed to read Cursor daily-usage response")
-				}
-				var envelope cursorDailyUsageResponse
-				if jsonErr := json.Unmarshal(body, &envelope); jsonErr != nil {
-					return nil, errors.Default.Wrap(jsonErr, "failed to parse Cursor daily-usage response")
-				}
-				return envelope.Data, nil
-			},
-			Incremental: true,
-			Concurrency: 1,
-		})
-		if err != nil {
-			return err
-		}
-		if err = collector.Execute(); err != nil {
-			return err
-		}
+	err = collector.InitCollector(helper.ApiCollectorArgs{
+		ApiClient:   apiClient,
+		PageSize:    1000, // max page size for daily-usage-data
+		Method:      http.MethodPost,
+		UrlTemplate: "teams/daily-usage-data",
+		RequestBody: func(reqData *helper.RequestData) map[string]interface{} {
+			return map[string]interface{}{
+				"startDate": startMs,
+				"endDate":   endMs,
+				"page":      reqData.Pager.Page,
+				"pageSize":  reqData.Pager.Size,
+			}
+		},
+		GetTotalPages: func(res *http.Response, args *helper.ApiCollectorArgs) (int, errors.Error) {
+			body, readErr := io.ReadAll(res.Body)
+			if readErr != nil {
+				return 0, errors.Default.Wrap(readErr, "failed to read pagination response")
+			}
+			var envelope cursorDailyUsageResponse
+			if jsonErr := json.Unmarshal(body, &envelope); jsonErr != nil {
+				return 0, errors.Default.Wrap(jsonErr, "failed to parse pagination response")
+			}
+			if envelope.Pagination.TotalPages == 0 {
+				return 1, nil
+			}
+			return envelope.Pagination.TotalPages, nil
+		},
+		ResponseParser: func(res *http.Response) ([]json.RawMessage, errors.Error) {
+			body, readErr := io.ReadAll(res.Body)
+			res.Body.Close()
+			if readErr != nil {
+				return nil, errors.Default.Wrap(readErr, "failed to read Cursor daily-usage response")
+			}
+			var envelope cursorDailyUsageResponse
+			if jsonErr := json.Unmarshal(body, &envelope); jsonErr != nil {
+				return nil, errors.Default.Wrap(jsonErr, "failed to parse Cursor daily-usage response")
+			}
+			return envelope.Data, nil
+		},
+		Incremental: true,
+		Concurrency: 1,
+	})
+	if err != nil {
+		return err
 	}
 
-	return nil
+	return collector.Execute()
 }
