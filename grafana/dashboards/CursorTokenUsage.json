@@ -22,7 +22,7 @@
   "panels": [
     {
       "datasource": "mysql",
-      "description": "Sum of all Cursor tokens consumed by the whole team in the selected period (input + output + cache write + cache read).",
+      "description": "Fresh model tokens used by the team in the selected period (input + output only, excluding cache tokens).",
       "fieldConfig": {
         "defaults": {
           "mappings": [],
@@ -66,16 +66,16 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  COALESCE(SUM(input_tokens + output_tokens + cache_write_tokens + cache_read_tokens), 0) AS \"Team Total Tokens\"\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)",
+          "rawSql": "SELECT\n  COALESCE(SUM(input_tokens + output_tokens), 0) AS \"Team Model Tokens\"\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)",
           "refId": "A"
         }
       ],
-      "title": "Team Total Token Usage",
+      "title": "Team Model Tokens",
       "type": "stat"
     },
     {
       "datasource": "mysql",
-      "description": "Average number of tokens consumed per Cursor request in the selected period.",
+      "description": "Cache tokens in the selected period (cache read + cache write). These reflect reuse/accounting, not fresh model generation.",
       "fieldConfig": {
         "defaults": {
           "mappings": [],
@@ -119,16 +119,122 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ROUND(\n    COALESCE(SUM(input_tokens + output_tokens + cache_write_tokens + cache_read_tokens), 0)\n    / NULLIF(COUNT(*), 0),\n    2\n  ) AS \"Avg Tokens / Request\"\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)",
+          "rawSql": "SELECT\n  COALESCE(SUM(cache_write_tokens + cache_read_tokens), 0) AS \"Team Cache Tokens\"\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)",
           "refId": "A"
         }
       ],
-      "title": "Average Tokens per Request",
+      "title": "Team Cache Tokens",
       "type": "stat"
     },
     {
       "datasource": "mysql",
-      "description": "Percentage of total tokens served from cache (read + write) in the selected period.",
+      "description": "All accounted tokens in the selected period: input + output + cache read + cache write.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  COALESCE(SUM(input_tokens + output_tokens + cache_write_tokens + cache_read_tokens), 0) AS \"All Accounted Tokens\"\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)",
+          "refId": "A"
+        }
+      ],
+      "title": "All Accounted Tokens",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Average fresh model tokens consumed per Cursor request in the selected period (input + output only).",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 4
+      },
+      "id": 10,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  ROUND(\n    COALESCE(SUM(input_tokens + output_tokens), 0)\n    / NULLIF(COUNT(*), 0),\n    2\n  ) AS \"Avg Model Tokens / Request\"\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)",
+          "refId": "A"
+        }
+      ],
+      "title": "Average Model Tokens per Request",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Percentage of all accounted tokens represented by cache read + cache write.",
       "fieldConfig": {
         "defaults": {
           "mappings": [],
@@ -155,11 +261,11 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 8,
-        "x": 16,
-        "y": 0
+        "w": 6,
+        "x": 12,
+        "y": 4
       },
-      "id": 3,
+      "id": 11,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
@@ -220,7 +326,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 4
+        "y": 8
       },
       "id": 4,
       "options": {
@@ -270,7 +376,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 4
+        "y": 8
       },
       "id": 5,
       "options": {
@@ -319,7 +425,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 12
+        "y": 16
       },
       "id": 6,
       "options": {
@@ -348,7 +454,7 @@
     },
     {
       "datasource": "mysql",
-      "description": "Effective cost per 1K tokens by model using both charged cost (after credits/discounts) and gross cost (before credits).",
+      "description": "Effective cost per 1K model tokens by model using input + output as the denominator. Filtered to models with at least 100k model tokens and 20 requests so the ranking stays meaningful.",
       "fieldConfig": {
         "defaults": {
           "mappings": [],
@@ -368,7 +474,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 12
+        "y": 16
       },
       "id": 7,
       "options": {
@@ -388,16 +494,16 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  COALESCE(NULLIF(model, ''), 'Unknown') AS \"Model\",\n  COUNT(*) AS \"Requests\",\n  SUM(input_tokens + output_tokens + cache_write_tokens + cache_read_tokens) AS \"Total Tokens\",\n  ROUND(SUM(charged_cents) / 100.0, 4) AS \"Charged (USD)\",\n  ROUND(SUM(total_cents) / 100.0, 4) AS \"Gross (USD)\",\n  ROUND((SUM(charged_cents) / 100.0) * 1000.0 / NULLIF(SUM(input_tokens + output_tokens + cache_write_tokens + cache_read_tokens), 0), 6) AS \"Charged USD / 1K Tokens\",\n  ROUND((SUM(total_cents) / 100.0) * 1000.0 / NULLIF(SUM(input_tokens + output_tokens + cache_write_tokens + cache_read_tokens), 0), 6) AS \"Gross USD / 1K Tokens\"\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)\nGROUP BY COALESCE(NULLIF(model, ''), 'Unknown')\nHAVING SUM(input_tokens + output_tokens + cache_write_tokens + cache_read_tokens) > 0\nORDER BY (SUM(charged_cents) / 100.0) * 1000.0 / NULLIF(SUM(input_tokens + output_tokens + cache_write_tokens + cache_read_tokens), 0) DESC\nLIMIT 25",
+          "rawSql": "SELECT\n  COALESCE(NULLIF(model, ''), 'Unknown') AS \"Model\",\n  COUNT(*) AS \"Requests\",\n  SUM(input_tokens + output_tokens) AS \"Model Tokens\",\n  SUM(cache_write_tokens + cache_read_tokens) AS \"Cache Tokens\",\n  ROUND(SUM(charged_cents) / 100.0, 4) AS \"Charged (USD)\",\n  ROUND(SUM(total_cents) / 100.0, 4) AS \"Gross (USD)\",\n  ROUND((SUM(charged_cents) / 100.0) * 1000.0 / NULLIF(SUM(input_tokens + output_tokens), 0), 6) AS \"Charged USD / 1K Model Tokens\",\n  ROUND((SUM(total_cents) / 100.0) * 1000.0 / NULLIF(SUM(input_tokens + output_tokens), 0), 6) AS \"Gross USD / 1K Model Tokens\"\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)\nGROUP BY COALESCE(NULLIF(model, ''), 'Unknown')\nHAVING SUM(input_tokens + output_tokens) >= 100000\n  AND COUNT(*) >= 20\nORDER BY (SUM(charged_cents) / 100.0) * 1000.0 / NULLIF(SUM(input_tokens + output_tokens), 0) DESC\nLIMIT 25",
           "refId": "A"
         }
       ],
-      "title": "Effective Cost per 1K Tokens by Model",
+      "title": "Effective Cost per 1K Model Tokens by Model",
       "type": "table"
     },
     {
       "datasource": "mysql",
-      "description": "Highest charged USD per 1K tokens among models in the selected period. Use as a quick signal for cost drift.",
+      "description": "Highest charged USD per 1K model tokens among models in the selected period. Uses input + output as denominator and filters to at least 100k model tokens and 20 requests.",
       "fieldConfig": {
         "defaults": {
           "mappings": [],
@@ -426,7 +532,7 @@
         "h": 4,
         "w": 12,
         "x": 0,
-        "y": 20
+        "y": 24
       },
       "id": 8,
       "options": {
@@ -449,16 +555,16 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ROUND(MAX(cost_per_1k), 6) AS \"Highest Charged USD / 1K Tokens\"\nFROM (\n  SELECT\n    (SUM(charged_cents) / 100.0) * 1000.0\n    / NULLIF(SUM(input_tokens + output_tokens + cache_write_tokens + cache_read_tokens), 0) AS cost_per_1k\n  FROM _tool_cursor_usage_events\n  WHERE $__timeFilter(timestamp)\n  GROUP BY COALESCE(NULLIF(model, ''), 'Unknown')\n  HAVING SUM(input_tokens + output_tokens + cache_write_tokens + cache_read_tokens) > 0\n) t",
+          "rawSql": "SELECT\n  ROUND(MAX(cost_per_1k), 6) AS \"Highest Charged USD / 1K Model Tokens\"\nFROM (\n  SELECT\n    (SUM(charged_cents) / 100.0) * 1000.0\n    / NULLIF(SUM(input_tokens + output_tokens), 0) AS cost_per_1k\n  FROM _tool_cursor_usage_events\n  WHERE $__timeFilter(timestamp)\n  GROUP BY COALESCE(NULLIF(model, ''), 'Unknown')\n  HAVING SUM(input_tokens + output_tokens) >= 100000\n    AND COUNT(*) >= 20\n) t",
           "refId": "A"
         }
       ],
-      "title": "Highest Charged USD per 1K Tokens",
+      "title": "Highest Charged USD per 1K Model Tokens",
       "type": "stat"
     },
     {
       "datasource": "mysql",
-      "description": "Lowest charged USD per 1K tokens among models in the selected period. Useful baseline for model efficiency.",
+      "description": "Lowest charged USD per 1K model tokens among models in the selected period. Uses input + output as denominator and filters to at least 100k model tokens and 20 requests.",
       "fieldConfig": {
         "defaults": {
           "mappings": [],
@@ -487,7 +593,7 @@
         "h": 4,
         "w": 12,
         "x": 12,
-        "y": 20
+        "y": 24
       },
       "id": 9,
       "options": {
@@ -510,12 +616,612 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ROUND(MIN(cost_per_1k), 6) AS \"Lowest Charged USD / 1K Tokens\"\nFROM (\n  SELECT\n    (SUM(charged_cents) / 100.0) * 1000.0\n    / NULLIF(SUM(input_tokens + output_tokens + cache_write_tokens + cache_read_tokens), 0) AS cost_per_1k\n  FROM _tool_cursor_usage_events\n  WHERE $__timeFilter(timestamp)\n  GROUP BY COALESCE(NULLIF(model, ''), 'Unknown')\n  HAVING SUM(input_tokens + output_tokens + cache_write_tokens + cache_read_tokens) > 0\n) t",
+          "rawSql": "SELECT\n  ROUND(MIN(cost_per_1k), 6) AS \"Lowest Charged USD / 1K Model Tokens\"\nFROM (\n  SELECT\n    (SUM(charged_cents) / 100.0) * 1000.0\n    / NULLIF(SUM(input_tokens + output_tokens), 0) AS cost_per_1k\n  FROM _tool_cursor_usage_events\n  WHERE $__timeFilter(timestamp)\n  GROUP BY COALESCE(NULLIF(model, ''), 'Unknown')\n  HAVING SUM(input_tokens + output_tokens) >= 100000\n    AND COUNT(*) >= 20\n) t",
           "refId": "A"
         }
       ],
-      "title": "Lowest Charged USD per 1K Tokens",
+      "title": "Lowest Charged USD per 1K Model Tokens",
       "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Model-token share by model in the selected period, based on input + output only. This is more useful than all-accounted tokens because cache tokens can dominate and distort the breakdown.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      },
+      "id": 12,
+      "options": {
+        "displayLabels": [
+          "name",
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "percent",
+            "value"
+          ]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  UNIX_TIMESTAMP(NOW()) AS time_sec,\n  COALESCE(NULLIF(model, ''), 'Unknown') AS metric,\n  SUM(input_tokens + output_tokens) AS value\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)\nGROUP BY COALESCE(NULLIF(model, ''), 'Unknown')\nHAVING SUM(input_tokens + output_tokens) > 0\nORDER BY SUM(input_tokens + output_tokens) DESC\nLIMIT 10",
+          "refId": "A"
+        }
+      ],
+      "title": "Model Share by Model Tokens",
+      "type": "piechart"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Model-token share by user in the selected period, based on input + output only. This highlights actual model consumption instead of cache-heavy accounting.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
+      "id": 13,
+      "options": {
+        "displayLabels": [
+          "name",
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "percent",
+            "value"
+          ]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  UNIX_TIMESTAMP(NOW()) AS time_sec,\n  COALESCE(NULLIF(user_email, ''), 'Unknown') AS metric,\n  SUM(input_tokens + output_tokens) AS value\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)\nGROUP BY COALESCE(NULLIF(user_email, ''), 'Unknown')\nHAVING SUM(input_tokens + output_tokens) > 0\nORDER BY SUM(input_tokens + output_tokens) DESC\nLIMIT 10",
+          "refId": "A"
+        }
+      ],
+      "title": "User Share by Model Tokens",
+      "type": "piechart"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Ranked view of charged USD per 1K model tokens by model. Filtered to models with at least 100k model tokens and 20 requests so tiny samples do not distort the ranking.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Charged USD / 1K Tokens",
+            "axisPlacement": "bottom",
+            "axisSoftMin": 0,
+            "fillOpacity": 70,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.01
+              },
+              {
+                "color": "red",
+                "value": 0.03
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "id": 14,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.7,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "hidden",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "none",
+        "text": {
+          "valueSize": 12
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  COALESCE(NULLIF(model, ''), 'Unknown') AS \"Model\",\n  ROUND((SUM(charged_cents) / 100.0) * 1000.0 / NULLIF(SUM(input_tokens + output_tokens), 0), 6) AS \"Charged USD / 1K Tokens\"\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)\nGROUP BY COALESCE(NULLIF(model, ''), 'Unknown')\nHAVING SUM(input_tokens + output_tokens) >= 100000\n  AND COUNT(*) >= 20\nORDER BY (SUM(charged_cents) / 100.0) * 1000.0 / NULLIF(SUM(input_tokens + output_tokens), 0) DESC\nLIMIT 15",
+          "refId": "A"
+        }
+      ],
+      "title": "Effective Charged USD per 1K Model Tokens by Model",
+      "type": "barchart"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Total charged USD by model in the selected period.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Charged USD",
+            "axisPlacement": "bottom",
+            "axisSoftMin": 0,
+            "fillOpacity": 70,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 46
+      },
+      "id": 18,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.7,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "hidden",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "none",
+        "text": {
+          "valueSize": 12
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  COALESCE(NULLIF(model, ''), 'Unknown') AS \"Model\",\n  ROUND(SUM(charged_cents) / 100.0, 4) AS \"Charged USD\"\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)\nGROUP BY COALESCE(NULLIF(model, ''), 'Unknown')\nHAVING SUM(charged_cents) > 0\nORDER BY SUM(charged_cents) DESC\nLIMIT 25",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Charged USD by Model",
+      "type": "barchart"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Share of total charged USD by model in the selected period. This directly shows which model contributes the largest portion of team spend.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 46
+      },
+      "id": 15,
+      "options": {
+        "displayLabels": [
+          "name",
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "percent",
+            "value"
+          ]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  UNIX_TIMESTAMP(NOW()) AS time_sec,\n  COALESCE(NULLIF(model, ''), 'Unknown') AS metric,\n  ROUND(SUM(charged_cents) / 100.0, 4) AS value\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)\nGROUP BY COALESCE(NULLIF(model, ''), 'Unknown')\nHAVING SUM(charged_cents) > 0\nORDER BY SUM(charged_cents) DESC\nLIMIT 10",
+          "refId": "A"
+        }
+      ],
+      "title": "Model Share of Team Charged USD",
+      "type": "piechart"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Total charged USD per developer across all models in the selected period.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Charged USD",
+            "axisPlacement": "bottom",
+            "axisSoftMin": 0,
+            "fillOpacity": 70,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 56
+      },
+      "id": 16,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.7,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "hidden",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "none",
+        "text": {
+          "valueSize": 12
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  COALESCE(NULLIF(user_email, ''), 'Unknown') AS \"User\",\n  ROUND(SUM(charged_cents) / 100.0, 4) AS \"Charged USD\"\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)\nGROUP BY COALESCE(NULLIF(user_email, ''), 'Unknown')\nHAVING SUM(charged_cents) > 0\nORDER BY SUM(charged_cents) DESC\nLIMIT 25",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Charged USD by Developer",
+      "type": "barchart"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Share of total charged USD by developer across all models in the selected period.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 56
+      },
+      "id": 17,
+      "options": {
+        "displayLabels": [
+          "name",
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "percent",
+            "value"
+          ]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  UNIX_TIMESTAMP(NOW()) AS time_sec,\n  COALESCE(NULLIF(user_email, ''), 'Unknown') AS metric,\n  ROUND(SUM(charged_cents) / 100.0, 4) AS value\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)\nGROUP BY COALESCE(NULLIF(user_email, ''), 'Unknown')\nHAVING SUM(charged_cents) > 0\nORDER BY SUM(charged_cents) DESC\nLIMIT 10",
+          "refId": "A"
+        }
+      ],
+      "title": "Developer Share of Team Charged USD",
+      "type": "piechart"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Weekly grouped correlation by developer showing model tokens, USD spent, and lines committed side by side for each developer in each week.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Weekly Totals (Tokens in K, USD x100, LOC)",
+            "axisPlacement": "bottom",
+            "axisSoftMin": 0,
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 66
+      },
+      "id": 20,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.28,
+        "fullHighlight": false,
+        "groupWidth": 0.34,
+        "legend": {
+          "calcs": [],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "none",
+        "text": {
+          "valueSize": 10
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "desc"
+        },
+        "xTickLabelRotation": 45,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH usage_weekly AS (\n  SELECT\n    DATE_SUB(DATE(timestamp), INTERVAL WEEKDAY(timestamp) DAY) AS week_start,\n    LOWER(COALESCE(NULLIF(user_email, ''), 'unknown')) AS user_key,\n    COALESCE(NULLIF(user_email, ''), 'Unknown') AS user_label,\n    SUM(input_tokens + output_tokens) AS model_tokens,\n    ROUND(SUM(charged_cents) / 100.0, 4) AS usd_spent\n  FROM _tool_cursor_usage_events\n  WHERE $__timeFilter(timestamp)\n  GROUP BY DATE_SUB(DATE(timestamp), INTERVAL WEEKDAY(timestamp) DAY), LOWER(COALESCE(NULLIF(user_email, ''), 'unknown')), COALESCE(NULLIF(user_email, ''), 'Unknown')\n),\nloc_weekly AS (\n  SELECT\n    DATE_SUB(DATE(authored_date), INTERVAL WEEKDAY(authored_date) DAY) AS week_start,\n    LOWER(COALESCE(NULLIF(author_email, ''), 'unknown')) AS user_key,\n    SUM(COALESCE(additions, 0) + COALESCE(deletions, 0)) AS lines_committed\n  FROM commits\n  WHERE $__timeFilter(authored_date)\n  GROUP BY DATE_SUB(DATE(authored_date), INTERVAL WEEKDAY(authored_date) DAY), LOWER(COALESCE(NULLIF(author_email, ''), 'unknown'))\n)\nSELECT\n  CONCAT(DATE_FORMAT(u.week_start, '%Y-%m-%d'), ' | ', u.user_label) AS \"Week / Developer\",\n  ROUND(u.model_tokens / 1000.0, 2) AS \"Model Tokens (K)\",\n  ROUND(u.usd_spent * 100, 2) AS \"USD Spent x100\",\n  COALESCE(l.lines_committed, 0) AS \"Lines Committed\"\nFROM usage_weekly u\nLEFT JOIN loc_weekly l\n  ON l.week_start = u.week_start\n AND l.user_key = u.user_key\nORDER BY u.week_start, u.user_label",
+          "refId": "A"
+        }
+      ],
+      "title": "Weekly Developer Output vs Rescaled Token Usage vs USD Spend",
+      "type": "barchart"
     }
   ],
   "refresh": "",
@@ -538,6 +1244,6 @@
   "timezone": "utc",
   "title": "Cursor Token Usage & Cost",
   "uid": "cursor_token_usage",
-  "version": 1,
+  "version": 20,
   "weekStart": ""
 }
