@@ -1147,7 +1147,7 @@
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "Weekly Totals (Tokens in K, USD x100, LOC)",
-            "axisPlacement": "bottom",
+            "axisPlacement": "auto",
             "axisSoftMin": 0,
             "fillOpacity": 80,
             "gradientMode": "none",
