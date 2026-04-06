@@ -1,0 +1,740 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [
+    {
+      "targetBlank": false,
+      "title": "Open Cursor Token Usage & Cost",
+      "type": "link",
+      "url": "/d/cursor_token_usage"
+    }
+  ],
+  "panels": [
+    {
+      "datasource": "mysql",
+      "description": "Number of distinct users active with Cursor in the selected time range",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(DISTINCT user_email) AS \"Active Users\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'cursor'",
+          "refId": "A"
+        }
+      ],
+      "title": "Daily Active Users (Period)",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Total lines of code added via Cursor autocomplete or chat",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT SUM(lines_added) AS \"Lines Added\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'cursor'",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Lines Added",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Total AI code suggestions shown to developers",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT SUM(suggestions_count) AS \"Suggestions Shown\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'cursor'",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Suggestions",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Percentage of AI code suggestions accepted by developers",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 15
+              },
+              {
+                "color": "green",
+                "value": 30
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(SUM(acceptance_count) / NULLIF(SUM(suggestions_count), 0) * 100, 0) AS \"Acceptance Rate\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'cursor'",
+          "refId": "A"
+        }
+      ],
+      "title": "Acceptance Rate",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Daily count of distinct users who used Cursor",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT date AS time,\n  COUNT(DISTINCT user_email) AS \"Daily Active Users\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'cursor'\nGROUP BY date\nORDER BY date",
+          "refId": "A"
+        }
+      ],
+      "title": "Cursor Adoption \u2013 Daily Active Users",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "AI code suggestions vs acceptances over time",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT date AS time,\n  SUM(suggestions_count) AS \"Suggestions Shown\",\n  SUM(acceptance_count) AS \"Suggestions Accepted\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'cursor'\nGROUP BY date\nORDER BY date",
+          "refId": "A"
+        }
+      ],
+      "title": "Copilot Efficacy \u2013 Suggestions vs Acceptances",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Ratio of lines removed (refactoring) vs lines added (new features) over time.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT date AS time,\n  SUM(lines_added)   AS \"Lines Added (Features)\",\n  SUM(lines_removed) AS \"Lines Removed (Refactoring)\",\n  ROUND(SUM(lines_removed) / NULLIF(SUM(lines_added), 0), 2) AS \"Refactor Ratio\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'cursor'\nGROUP BY date\nORDER BY date",
+          "refId": "A"
+        }
+      ],
+      "title": "Quality Signal \u2013 Lines Added vs Removed",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Top developers ranked by lines added via Cursor",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "id": 9,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT user_email AS \"User\",\n  COUNT(DISTINCT date) AS \"Active Days\",\n  SUM(suggestions_count) AS \"Suggestions\",\n  SUM(acceptance_count) AS \"Accepted\",\n  ROUND(SUM(acceptance_count)/NULLIF(SUM(suggestions_count), 0)*100, 1) AS \"Acceptance %\",\n  SUM(lines_added) AS \"Lines Added\",\n  SUM(lines_removed) AS \"Lines Removed\"\nFROM ai_activities\nWHERE $__timeFilter(date)\n  AND provider = 'cursor'\nGROUP BY user_email\nORDER BY SUM(lines_added) DESC\nLIMIT 25",
+          "refId": "A"
+        }
+      ],
+      "title": "Top Developers by Cursor Usage",
+      "type": "table"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Daily breakdown of AI request types: Composer (multi-file agent), Chat, Agent and Cmd-K. Shows how teams use Cursor.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 0,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT day AS time,\n  SUM(composer_requests) AS \"Composer\",\n  SUM(chat_requests) AS \"Chat\",\n  SUM(agent_requests) AS \"Agent\",\n  SUM(cmdk_usages) AS \"Cmd-K\"\nFROM _tool_cursor_daily_usage\nWHERE $__timeFilter(day)\nGROUP BY day\nORDER BY day",
+          "refId": "A"
+        }
+      ],
+      "title": "Request Type Breakdown \u2013 Composer / Chat / Agent",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Requests charged to each billing bucket per day. Usage-based spikes may indicate plan overages.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 0,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT day AS time,\n  SUM(subscription_included_reqs) AS \"Subscription Included\",\n  SUM(usage_based_reqs) AS \"Usage-Based\",\n  SUM(api_key_reqs) AS \"API Key\"\nFROM _tool_cursor_daily_usage\nWHERE $__timeFilter(day)\nGROUP BY day\nORDER BY day",
+          "refId": "A"
+        }
+      ],
+      "title": "Billing Tier \u2013 Subscription vs Usage-based vs API Key",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Daily counts of code-apply actions, accepted and rejected suggestions. Rising reject ratio may indicate low-quality suggestions.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      },
+      "id": 12,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT day AS time,\n  SUM(total_applies) AS \"Applies\",\n  SUM(total_accepts) AS \"Accepts\",\n  SUM(total_rejects) AS \"Rejects\"\nFROM _tool_cursor_daily_usage\nWHERE $__timeFilter(day)\nGROUP BY day\nORDER BY day",
+          "refId": "A"
+        }
+      ],
+      "title": "Apply / Accept / Reject Action Counts",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Total composer, chat, agent and cmd-k requests per developer in the selected period.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
+      "id": 13,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT user_email AS \"User\",\n  SUM(composer_requests) AS \"Composer\",\n  SUM(chat_requests) AS \"Chat\",\n  SUM(agent_requests) AS \"Agent\",\n  SUM(cmdk_usages) AS \"Cmd-K\",\n  SUM(bugbot_usages) AS \"Bugbot\",\n  SUM(subscription_included_reqs) + SUM(usage_based_reqs) + SUM(api_key_reqs) AS \"Total Reqs\"\nFROM _tool_cursor_daily_usage\nWHERE $__timeFilter(day)\nGROUP BY user_email\nORDER BY SUM(composer_requests) + SUM(chat_requests) + SUM(agent_requests) DESC\nLIMIT 25",
+          "refId": "A"
+        }
+      ],
+      "title": "Per-User Request Type Breakdown",
+      "type": "table"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 38,
+  "tags": [
+    "cursor",
+    "devlake",
+    "ai"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "utc",
+  "title": "Cursor Adoption & Productivity",
+  "uid": "cursor_adoption",
+  "version": 7,
+  "weekStart": ""
+}
