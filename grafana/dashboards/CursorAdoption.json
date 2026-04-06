@@ -18,7 +18,14 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "links": [],
+  "links": [
+    {
+      "targetBlank": false,
+      "title": "Open Cursor Token Usage & Cost",
+      "type": "link",
+      "url": "/d/cursor_token_usage"
+    }
+  ],
   "panels": [
     {
       "datasource": "mysql",
@@ -728,6 +735,6 @@
   "timezone": "utc",
   "title": "Cursor Adoption & Productivity",
   "uid": "cursor_adoption",
-  "version": 1,
+  "version": 7,
   "weekStart": ""
 }
