@@ -18,14 +18,22 @@ limitations under the License.
 package api
 
 import (
+	"github.com/go-playground/validator/v10"
+
 	"github.com/apache/incubator-devlake/core/context"
 	"github.com/apache/incubator-devlake/core/log"
+	"github.com/apache/incubator-devlake/core/plugin"
+	helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
 )
 
 var basicRes context.BasicRes
 var logger log.Logger
+var vld *validator.Validate
+var connectionHelper *helper.ConnectionApiHelper
 
-func Init(br context.BasicRes) {
+func Init(br context.BasicRes, meta plugin.PluginMeta) {
 	basicRes = br
 	logger = basicRes.GetLogger()
+	vld = validator.New()
+	connectionHelper = helper.NewConnectionHelper(basicRes, vld, meta.Name())
 }
