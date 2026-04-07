@@ -71,6 +71,7 @@ func GetDomainTablesInfo() []dal.Tabler {
 		&crossdomain.TeamUser{},
 		&crossdomain.User{},
 		&crossdomain.UserAccount{},
+		&crossdomain.UserActivity{},
 		// devops
 		&devops.CICDPipeline{},
 		&devops.CICDTask{},

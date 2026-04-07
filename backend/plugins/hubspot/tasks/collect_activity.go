@@ -1,0 +1,212 @@
+/*
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package tasks
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/apache/incubator-devlake/core/errors"
+	"github.com/apache/incubator-devlake/core/plugin"
+	helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
+)
+
+const (
+	rawHubspotEmailTable = "_raw_hubspot_emails"
+	rawHubspotNoteTable  = "_raw_hubspot_notes"
+)
+
+type hubspotSearchResponse struct {
+	Results []json.RawMessage `json:"results"`
+	Paging  struct {
+		Next struct {
+			After string `json:"after"`
+		} `json:"next"`
+	} `json:"paging"`
+}
+
+var _ plugin.SubTaskEntryPoint = CollectActivity
+
+var CollectActivityMeta = plugin.SubTaskMeta{
+	Name:             "collectActivity",
+	EntryPoint:       CollectActivity,
+	EnabledByDefault: true,
+	Description:      "Collect HubSpot activity events from configured HubSpot APIs",
+	DomainTypes:      []string{plugin.DOMAIN_TYPE_CROSS},
+}
+
+func CollectActivity(taskCtx plugin.SubTaskContext) errors.Error {
+	data, ok := taskCtx.TaskContext().GetData().(*HubspotTaskData)
+	if !ok {
+		return errors.Default.New("task data is not HubspotTaskData")
+	}
+
+	apiClient, err := CreateApiClient(taskCtx.TaskContext(), data.Connection)
+	if err != nil {
+		return err
+	}
+
+	if err := collectHubspotObjectType(taskCtx, data, apiClient, "emails", rawHubspotEmailTable); err != nil {
+		return err
+	}
+
+	return collectHubspotObjectType(taskCtx, data, apiClient, "notes", rawHubspotNoteTable)
+}
+
+func buildHubspotSearchRequestBody(since *time.Time, until *time.Time, pageSize int, customData interface{}) map[string]interface{} {
+	filters := make([]map[string]interface{}, 0, 2)
+	if since != nil {
+		filters = append(filters, map[string]interface{}{
+			"propertyName": "hs_lastmodifieddate",
+			"operator":     "GTE",
+			"value":        strconv.FormatInt(since.UnixMilli(), 10),
+		})
+	}
+	if until != nil {
+		filters = append(filters, map[string]interface{}{
+			"propertyName": "hs_lastmodifieddate",
+			"operator":     "LTE",
+			"value":        strconv.FormatInt(until.UTC().UnixMilli(), 10),
+		})
+	}
+
+	body := map[string]interface{}{
+		"limit": pageSize,
+		"sorts": []map[string]string{{
+			"propertyName": "hs_lastmodifieddate",
+			"direction":    "ASCENDING",
+		}},
+		"properties": []string{
+			"hs_timestamp",
+			"hs_lastmodifieddate",
+			"hubspot_owner_id",
+			"hubspot_owner_email",
+			"owner_email",
+			"hs_email_from_email",
+			"hs_email_sender_email",
+			"hs_created_by_user_email",
+			"hs_createdate",
+		},
+	}
+	if len(filters) > 0 {
+		body["filterGroups"] = []map[string]interface{}{{"filters": filters}}
+	}
+	if customData != nil {
+		if after, ok := customData.(string); ok && strings.TrimSpace(after) != "" {
+			body["after"] = after
+		}
+	}
+
+	return body
+}
+
+func parseHubspotSearchResponse(body []byte) ([]json.RawMessage, errors.Error) {
+	var envelope hubspotSearchResponse
+	if err := errors.Convert(json.Unmarshal(body, &envelope)); err != nil {
+		return nil, errors.Default.Wrap(err, "failed to parse HubSpot search response")
+	}
+	return envelope.Results, nil
+}
+
+func parseHubspotNextAfter(body []byte) (string, errors.Error) {
+	var envelope hubspotSearchResponse
+	if err := errors.Convert(json.Unmarshal(body, &envelope)); err != nil {
+		return "", errors.Default.Wrap(err, "failed to parse HubSpot pagination response")
+	}
+	return strings.TrimSpace(envelope.Paging.Next.After), nil
+}
+
+func collectHubspotObjectType(
+	taskCtx plugin.SubTaskContext,
+	data *HubspotTaskData,
+	apiClient helper.RateLimitedApiClient,
+	objectType string,
+	rawTable string,
+) errors.Error {
+	rawArgs := helper.RawDataSubTaskArgs{
+		Ctx:   taskCtx,
+		Table: rawTable,
+		Options: hubspotRawParams{
+			ConnectionId: data.Options.ConnectionId,
+			ScopeId:      data.Options.ScopeId,
+		},
+		Params: hubspotRawParams{
+			ConnectionId: data.Options.ConnectionId,
+			ScopeId:      data.Options.ScopeId,
+		},
+	}
+
+	collector, err := helper.NewStatefulApiCollector(rawArgs)
+	if err != nil {
+		return err
+	}
+
+	var since *time.Time
+	if collectedSince := collector.GetSince(); collectedSince != nil && !collectedSince.IsZero() {
+		t := collectedSince.UTC()
+		since = &t
+	} else if data.Options.OccurredAfter != nil {
+		t := data.Options.OccurredAfter.UTC()
+		since = &t
+	}
+	until := data.Options.OccurredBefore
+
+	err = collector.InitCollector(helper.ApiCollectorArgs{
+		ApiClient:   apiClient,
+		PageSize:    100,
+		UrlTemplate: fmt.Sprintf("crm/v3/objects/%s/search", objectType),
+		Method:      http.MethodPost,
+		RequestBody: func(reqData *helper.RequestData) map[string]interface{} {
+			return buildHubspotSearchRequestBody(since, until, reqData.Pager.Size, reqData.CustomData)
+		},
+		GetNextPageCustomData: func(prevReqData *helper.RequestData, prevPageResponse *http.Response) (interface{}, errors.Error) {
+			body, readErr := io.ReadAll(prevPageResponse.Body)
+			if readErr != nil {
+				return nil, errors.Default.Wrap(readErr, "failed to read HubSpot pagination response")
+			}
+			after, parseErr := parseHubspotNextAfter(body)
+			if parseErr != nil {
+				return nil, parseErr
+			}
+			if after == "" {
+				return nil, helper.ErrFinishCollect
+			}
+			return after, nil
+		},
+		ResponseParser: func(res *http.Response) ([]json.RawMessage, errors.Error) {
+			body, readErr := io.ReadAll(res.Body)
+			res.Body.Close()
+			if readErr != nil {
+				return nil, errors.Default.Wrap(readErr, "failed to read HubSpot response body")
+			}
+			return parseHubspotSearchResponse(body)
+		},
+		Incremental: true,
+		Concurrency: 1,
+	})
+	if err != nil {
+		return err
+	}
+
+	return collector.Execute()
+}
