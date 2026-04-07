@@ -42,11 +42,13 @@ import (
 	github "github.com/apache/incubator-devlake/plugins/github/impl"
 	githubGraphql "github.com/apache/incubator-devlake/plugins/github_graphql/impl"
 	gitlab "github.com/apache/incubator-devlake/plugins/gitlab/impl"
+	hubspot "github.com/apache/incubator-devlake/plugins/hubspot/impl"
 	icla "github.com/apache/incubator-devlake/plugins/icla/impl"
 	issueTrace "github.com/apache/incubator-devlake/plugins/issue_trace/impl"
 	jenkins "github.com/apache/incubator-devlake/plugins/jenkins/impl"
 	jira "github.com/apache/incubator-devlake/plugins/jira/impl"
 	linker "github.com/apache/incubator-devlake/plugins/linker/impl"
+	notion "github.com/apache/incubator-devlake/plugins/notion/impl"
 	opsgenie "github.com/apache/incubator-devlake/plugins/opsgenie/impl"
 	org "github.com/apache/incubator-devlake/plugins/org/impl"
 	pagerduty "github.com/apache/incubator-devlake/plugins/pagerduty/impl"
@@ -85,9 +87,11 @@ func Test_GetPluginTablesInfo(t *testing.T) {
 	checker.FeedIn("github/models", github.Github{}.GetTablesInfo)
 	checker.FeedIn("github_graphql", githubGraphql.GithubGraphql{}.GetTablesInfo)
 	checker.FeedIn("gitlab/models", gitlab.Gitlab{}.GetTablesInfo)
+	checker.FeedIn("hubspot/models", hubspot.Hubspot{}.GetTablesInfo)
 	checker.FeedIn("icla/models", icla.Icla{}.GetTablesInfo)
 	checker.FeedIn("jenkins/models", jenkins.Jenkins{}.GetTablesInfo)
 	checker.FeedIn("jira/models", jira.Jira{}.GetTablesInfo)
+	checker.FeedIn("notion/models", notion.Notion{}.GetTablesInfo)
 	checker.FeedIn("org", org.Org{}.GetTablesInfo)
 	checker.FeedIn("pagerduty/models", pagerduty.PagerDuty{}.GetTablesInfo)
 	checker.FeedIn("refdiff/models", refdiff.RefDiff{}.GetTablesInfo)

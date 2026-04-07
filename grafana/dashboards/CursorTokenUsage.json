@@ -1187,9 +1187,9 @@
       "id": 20,
       "options": {
         "barRadius": 0,
-        "barWidth": 0.28,
+        "barWidth": 0.42,
         "fullHighlight": false,
-        "groupWidth": 0.34,
+        "groupWidth": 0.51,
         "legend": {
           "calcs": [],
           "displayMode": "table",
