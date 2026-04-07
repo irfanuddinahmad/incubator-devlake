@@ -215,3 +215,44 @@ func TestBuildNotionActivitiesFromEvents_NormalizedKeyMergesDifferentCase(t *tes
 		assert.Equal(t, "Notion page edited x2", activities[0].Summary)
 	}
 }
+
+func TestBuildNotionActivitiesFromEvents_WebhookFlowAndIgnored(t *testing.T) {
+	base := time.Date(2026, 4, 7, 10, 45, 0, 0, time.UTC)
+	events := []models.NotionActivityEvent{
+		{
+			ConnectionId:     31,
+			ScopeId:          "scope-webhook",
+			EventId:          "nwh-1",
+			OccurredAt:       base,
+			EditorUserEmail:  "notion-webhook@example.com",
+			EditorUserId:     "notion-user-1",
+			ActionType:       "ignored",
+			ObjectType:       "page",
+			ObjectId:         "p-1",
+			SourceObjectType: "page.unknown_event",
+		},
+		{
+			ConnectionId:     31,
+			ScopeId:          "scope-webhook",
+			EventId:          "nwh-2",
+			OccurredAt:       base.Add(3 * time.Minute),
+			EditorUserEmail:  "notion-webhook@example.com",
+			EditorUserId:     "notion-user-1",
+			ActionType:       "updated",
+			ObjectType:       "page",
+			ObjectId:         "p-1",
+			SourceObjectType: "page.content_updated",
+		},
+	}
+
+	activities := buildNotionActivitiesFromEvents(events, testNotionIdGen(), nil)
+	if assert.Len(t, activities, 1) {
+		a := activities[0]
+		assert.Equal(t, "notion", a.SourceSystem)
+		assert.Equal(t, "nwh-2", a.SourceEventId)
+		assert.Equal(t, "updated", a.ActionType)
+		assert.Equal(t, "page", a.ObjectType)
+		assert.Equal(t, "p-1", a.ObjectId)
+		assert.Equal(t, "page:p-1", a.ObjectRef)
+	}
+}

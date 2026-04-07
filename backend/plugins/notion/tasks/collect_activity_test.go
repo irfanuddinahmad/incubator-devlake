@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -89,6 +90,24 @@ func TestParseNotionCollectorHelpers(t *testing.T) {
 	results, err := parseNotionQueryResponse([]byte(`{"results":[{"id":"1"}]}`))
 	assert.NoError(t, err)
 	assert.Len(t, results, 1)
+}
+
+func TestResolveNotionNextCustomData_Flow(t *testing.T) {
+	next, err := resolveNotionNextCustomData([]byte(`{"has_more":true,"next_cursor":"cursor-2"}`))
+	if assert.NoError(t, err) {
+		cursor, ok := next.(string)
+		if assert.True(t, ok) {
+			assert.Equal(t, "cursor-2", cursor)
+			body := buildNotionQueryRequestBody(nil, nil, 100, cursor)
+			assert.Equal(t, "cursor-2", body["start_cursor"])
+		}
+	}
+
+	_, err = resolveNotionNextCustomData([]byte(`{"has_more":false,"next_cursor":"cursor-3"}`))
+	assert.ErrorIs(t, err, helper.ErrFinishCollect)
+
+	_, err = resolveNotionNextCustomData([]byte(`{"has_more":true,"next_cursor":""}`))
+	assert.ErrorIs(t, err, helper.ErrFinishCollect)
 }
 
 func TestParseNotionCollectorHelpers_InvalidJson(t *testing.T) {

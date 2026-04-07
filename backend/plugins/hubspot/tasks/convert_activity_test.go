@@ -215,3 +215,44 @@ func TestBuildHubspotActivitiesFromEvents_NormalizedKeyMergesDifferentCase(t *te
 		assert.Equal(t, "HubSpot email updated x2", activities[0].Summary)
 	}
 }
+
+func TestBuildHubspotActivitiesFromEvents_WebhookFlowAndIgnored(t *testing.T) {
+	base := time.Date(2026, 4, 7, 9, 30, 0, 0, time.UTC)
+	events := []models.HubspotActivityEvent{
+		{
+			ConnectionId:     21,
+			ScopeId:          "scope-webhook",
+			EventId:          "wh-1",
+			OccurredAt:       base,
+			ActingUserEmail:  "webhook@example.com",
+			ActingUserId:     "hubspot-user-1",
+			ActionType:       "ignored",
+			ObjectType:       "contact",
+			ObjectId:         "c-1",
+			SourceObjectType: "contact.creation",
+		},
+		{
+			ConnectionId:     21,
+			ScopeId:          "scope-webhook",
+			EventId:          "wh-2",
+			OccurredAt:       base.Add(2 * time.Minute),
+			ActingUserEmail:  "webhook@example.com",
+			ActingUserId:     "hubspot-user-1",
+			ActionType:       "updated",
+			ObjectType:       "contact",
+			ObjectId:         "c-1",
+			SourceObjectType: "contact.propertyChange",
+		},
+	}
+
+	activities := buildHubspotActivitiesFromEvents(events, testHubspotIdGen(), nil)
+	if assert.Len(t, activities, 1) {
+		a := activities[0]
+		assert.Equal(t, "hubspot", a.SourceSystem)
+		assert.Equal(t, "wh-2", a.SourceEventId)
+		assert.Equal(t, "updated", a.ActionType)
+		assert.Equal(t, "contact", a.ObjectType)
+		assert.Equal(t, "c-1", a.ObjectId)
+		assert.Equal(t, "contact:c-1", a.ObjectRef)
+	}
+}

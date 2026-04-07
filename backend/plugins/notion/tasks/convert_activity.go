@@ -126,6 +126,9 @@ func buildNotionActivitiesFromEvents(
 
 	for _, event := range events {
 		eventCopy := event
+		if strings.EqualFold(strings.TrimSpace(eventCopy.ActionType), "ignored") {
+			continue
+		}
 
 		bucket := floorToDebounceWindow(eventCopy.OccurredAt.UTC(), notionDebounceWindow)
 		normalizedAction := normalizeActionType(eventCopy.ActionType, "edited")

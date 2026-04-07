@@ -126,6 +126,9 @@ func buildHubspotActivitiesFromEvents(
 
 	for _, event := range events {
 		eventCopy := event
+		if strings.EqualFold(strings.TrimSpace(eventCopy.ActionType), "ignored") {
+			continue
+		}
 
 		bucket := floorToDebounceWindow(eventCopy.OccurredAt.UTC(), hubspotDebounceWindow)
 		normalizedAction := normalizeActionType(eventCopy.ActionType, "updated")

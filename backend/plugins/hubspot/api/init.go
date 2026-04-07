@@ -15,13 +15,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package migrationscripts
+package api
 
-import "github.com/apache/incubator-devlake/core/plugin"
+import (
+	"github.com/apache/incubator-devlake/core/context"
+	"github.com/apache/incubator-devlake/core/log"
+)
 
-func All() []plugin.MigrationScript {
-	return []plugin.MigrationScript{
-		new(addNotionInitialTables),
-		new(addNotionWebhookFields),
-	}
+var basicRes context.BasicRes
+var logger log.Logger
+
+func Init(br context.BasicRes) {
+	basicRes = br
+	logger = basicRes.GetLogger()
 }

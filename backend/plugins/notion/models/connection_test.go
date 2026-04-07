@@ -15,13 +15,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package migrationscripts
+package models
 
-import "github.com/apache/incubator-devlake/core/plugin"
+import (
+	"testing"
 
-func All() []plugin.MigrationScript {
-	return []plugin.MigrationScript{
-		new(addNotionInitialTables),
-		new(addNotionWebhookFields),
-	}
+	"github.com/stretchr/testify/assert"
+)
+
+func TestNotionConnection_BeforeSaveWebhookValidation(t *testing.T) {
+	c := &NotionConnection{NotionConn: NotionConn{EnableWebhook: true, WebhookSharedKey: "  "}}
+	err := c.BeforeSave(nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "webhookSharedKey")
+
+	c = &NotionConnection{NotionConn: NotionConn{EnableWebhook: false, WebhookSharedKey: ""}}
+	err = c.BeforeSave(nil)
+	assert.NoError(t, err)
+
+	c = &NotionConnection{NotionConn: NotionConn{EnableWebhook: true, WebhookSharedKey: "verification-token"}}
+	err = c.BeforeSave(nil)
+	assert.NoError(t, err)
 }
