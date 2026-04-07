@@ -42,7 +42,7 @@ var _ interface {
 type Hubspot struct{}
 
 func (p Hubspot) Init(basicRes context.BasicRes) errors.Error {
-	api.Init(basicRes)
+	api.Init(basicRes, p)
 	return nil
 }
 
@@ -104,6 +104,15 @@ func (p Hubspot) MigrationScripts() []plugin.MigrationScript {
 
 func (p Hubspot) ApiResources() map[string]map[string]plugin.ApiResourceHandler {
 	return map[string]map[string]plugin.ApiResourceHandler{
+		"connections": {
+			"POST": api.PostConnections,
+			"GET":  api.ListConnections,
+		},
+		"connections/:connectionId": {
+			"GET":    api.GetConnection,
+			"PATCH":  api.PatchConnection,
+			"DELETE": api.DeleteConnection,
+		},
 		"connections/:connectionId/scopes/:scopeId/webhook": {
 			"POST": api.PostWebhookEvents,
 		},
