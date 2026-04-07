@@ -21,8 +21,27 @@ import (
 	"testing"
 	"time"
 
+	helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestResolveHubspotSince_Priority(t *testing.T) {
+	collected := time.Date(2026, 4, 6, 11, 0, 0, 0, time.UTC)
+	occurredAfter := time.Date(2026, 4, 6, 10, 0, 0, 0, time.UTC)
+
+	since := resolveHubspotSince(&collected, &occurredAfter)
+	if assert.NotNil(t, since) {
+		assert.Equal(t, collected, *since)
+	}
+
+	since = resolveHubspotSince(nil, &occurredAfter)
+	if assert.NotNil(t, since) {
+		assert.Equal(t, occurredAfter, *since)
+	}
+
+	since = resolveHubspotSince(nil, nil)
+	assert.Nil(t, since)
+}
 
 func TestBuildHubspotSearchRequestBody_WithFiltersAndAfter(t *testing.T) {
 	since := time.Date(2026, 4, 6, 9, 0, 0, 0, time.UTC)
@@ -67,6 +86,21 @@ func TestParseHubspotNextAfter(t *testing.T) {
 	after, err = parseHubspotNextAfter([]byte(`{"paging":{"next":{"after":""}}}`))
 	assert.NoError(t, err)
 	assert.Equal(t, "", after)
+}
+
+func TestResolveHubspotNextCustomData_Flow(t *testing.T) {
+	next, err := resolveHubspotNextCustomData([]byte(`{"paging":{"next":{"after":"cursor-2"}}}`))
+	if assert.NoError(t, err) {
+		cursor, ok := next.(string)
+		if assert.True(t, ok) {
+			assert.Equal(t, "cursor-2", cursor)
+			body := buildHubspotSearchRequestBody(nil, nil, 100, cursor)
+			assert.Equal(t, "cursor-2", body["after"])
+		}
+	}
+
+	_, err = resolveHubspotNextCustomData([]byte(`{"paging":{"next":{"after":""}}}`))
+	assert.ErrorIs(t, err, helper.ErrFinishCollect)
 }
 
 func TestParseHubspotSearchResponse(t *testing.T) {

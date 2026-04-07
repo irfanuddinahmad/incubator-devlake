@@ -120,6 +120,18 @@ func buildHubspotSearchRequestBody(since *time.Time, until *time.Time, pageSize 
 	return body
 }
 
+func resolveHubspotSince(collectedSince *time.Time, occurredAfter *time.Time) *time.Time {
+	if collectedSince != nil && !collectedSince.IsZero() {
+		t := collectedSince.UTC()
+		return &t
+	}
+	if occurredAfter != nil {
+		t := occurredAfter.UTC()
+		return &t
+	}
+	return nil
+}
+
 func parseHubspotSearchResponse(body []byte) ([]json.RawMessage, errors.Error) {
 	var envelope hubspotSearchResponse
 	if err := errors.Convert(json.Unmarshal(body, &envelope)); err != nil {
@@ -134,6 +146,17 @@ func parseHubspotNextAfter(body []byte) (string, errors.Error) {
 		return "", errors.Default.Wrap(err, "failed to parse HubSpot pagination response")
 	}
 	return strings.TrimSpace(envelope.Paging.Next.After), nil
+}
+
+func resolveHubspotNextCustomData(body []byte) (interface{}, errors.Error) {
+	after, parseErr := parseHubspotNextAfter(body)
+	if parseErr != nil {
+		return nil, parseErr
+	}
+	if after == "" {
+		return nil, helper.ErrFinishCollect
+	}
+	return after, nil
 }
 
 func collectHubspotObjectType(
@@ -161,14 +184,7 @@ func collectHubspotObjectType(
 		return err
 	}
 
-	var since *time.Time
-	if collectedSince := collector.GetSince(); collectedSince != nil && !collectedSince.IsZero() {
-		t := collectedSince.UTC()
-		since = &t
-	} else if data.Options.OccurredAfter != nil {
-		t := data.Options.OccurredAfter.UTC()
-		since = &t
-	}
+	since := resolveHubspotSince(collector.GetSince(), data.Options.OccurredAfter)
 	until := data.Options.OccurredBefore
 
 	err = collector.InitCollector(helper.ApiCollectorArgs{
@@ -184,14 +200,7 @@ func collectHubspotObjectType(
 			if readErr != nil {
 				return nil, errors.Default.Wrap(readErr, "failed to read HubSpot pagination response")
 			}
-			after, parseErr := parseHubspotNextAfter(body)
-			if parseErr != nil {
-				return nil, parseErr
-			}
-			if after == "" {
-				return nil, helper.ErrFinishCollect
-			}
-			return after, nil
+			return resolveHubspotNextCustomData(body)
 		},
 		ResponseParser: func(res *http.Response) ([]json.RawMessage, errors.Error) {
 			body, readErr := io.ReadAll(res.Body)

@@ -119,6 +119,17 @@ func parseNotionNextCursor(body []byte) (string, bool, errors.Error) {
 	return strings.TrimSpace(envelope.NextCursor), envelope.HasMore, nil
 }
 
+func resolveNotionNextCustomData(body []byte) (interface{}, errors.Error) {
+	nextCursor, hasMore, parseErr := parseNotionNextCursor(body)
+	if parseErr != nil {
+		return nil, parseErr
+	}
+	if !hasMore || nextCursor == "" {
+		return nil, helper.ErrFinishCollect
+	}
+	return nextCursor, nil
+}
+
 func CollectActivity(taskCtx plugin.SubTaskContext) errors.Error {
 	data, ok := taskCtx.TaskContext().GetData().(*NotionTaskData)
 	if !ok {
@@ -165,14 +176,7 @@ func CollectActivity(taskCtx plugin.SubTaskContext) errors.Error {
 			if readErr != nil {
 				return nil, errors.Default.Wrap(readErr, "failed to read Notion pagination response")
 			}
-			nextCursor, hasMore, parseErr := parseNotionNextCursor(body)
-			if parseErr != nil {
-				return nil, parseErr
-			}
-			if !hasMore || nextCursor == "" {
-				return nil, helper.ErrFinishCollect
-			}
-			return nextCursor, nil
+			return resolveNotionNextCustomData(body)
 		},
 		ResponseParser: func(res *http.Response) ([]json.RawMessage, errors.Error) {
 			body, readErr := io.ReadAll(res.Body)

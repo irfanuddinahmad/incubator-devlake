@@ -18,10 +18,12 @@ limitations under the License.
 package impl
 
 import (
+	"github.com/apache/incubator-devlake/core/context"
 	"github.com/apache/incubator-devlake/core/dal"
 	"github.com/apache/incubator-devlake/core/errors"
 	"github.com/apache/incubator-devlake/core/plugin"
 	helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
+	"github.com/apache/incubator-devlake/plugins/notion/api"
 	"github.com/apache/incubator-devlake/plugins/notion/models"
 	"github.com/apache/incubator-devlake/plugins/notion/models/migrationscripts"
 	"github.com/apache/incubator-devlake/plugins/notion/tasks"
@@ -29,6 +31,8 @@ import (
 
 var _ interface {
 	plugin.PluginMeta
+	plugin.PluginInit
+	plugin.PluginApi
 	plugin.PluginTask
 	plugin.PluginModel
 	plugin.PluginSource
@@ -36,6 +40,11 @@ var _ interface {
 } = (*Notion)(nil)
 
 type Notion struct{}
+
+func (p Notion) Init(basicRes context.BasicRes) errors.Error {
+	api.Init(basicRes)
+	return nil
+}
 
 func (p Notion) Description() string {
 	return "Collect Notion activity events for daily user reporting"
@@ -91,4 +100,12 @@ func (p Notion) RootPkgPath() string {
 
 func (p Notion) MigrationScripts() []plugin.MigrationScript {
 	return migrationscripts.All()
+}
+
+func (p Notion) ApiResources() map[string]map[string]plugin.ApiResourceHandler {
+	return map[string]map[string]plugin.ApiResourceHandler{
+		"connections/:connectionId/scopes/:scopeId/webhook": {
+			"POST": api.PostWebhookEvents,
+		},
+	}
 }
