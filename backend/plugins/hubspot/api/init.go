@@ -21,19 +21,37 @@ import (
 	"github.com/go-playground/validator/v10"
 
 	"github.com/apache/incubator-devlake/core/context"
-	"github.com/apache/incubator-devlake/core/log"
 	"github.com/apache/incubator-devlake/core/plugin"
 	helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
+	"github.com/apache/incubator-devlake/plugins/hubspot/models"
 )
 
 var basicRes context.BasicRes
-var logger log.Logger
 var vld *validator.Validate
 var connectionHelper *helper.ConnectionApiHelper
+var dsHelper *helper.DsHelper[models.HubspotConnection, models.HubspotScope, models.HubspotScopeConfig]
+var raProxy *helper.DsRemoteApiProxyHelper[models.HubspotConnection]
+var raScopeList *helper.DsRemoteApiScopeListHelper[models.HubspotConnection, models.HubspotScope, HubspotRemotePagination]
+var raScopeSearch *helper.DsRemoteApiScopeSearchHelper[models.HubspotConnection, models.HubspotScope]
 
 func Init(br context.BasicRes, meta plugin.PluginMeta) {
 	basicRes = br
-	logger = basicRes.GetLogger()
 	vld = validator.New()
 	connectionHelper = helper.NewConnectionHelper(basicRes, vld, meta.Name())
+	dsHelper = helper.NewDataSourceHelper[
+		models.HubspotConnection, models.HubspotScope, models.HubspotScopeConfig,
+	](
+		basicRes,
+		meta.Name(),
+		[]string{"id", "name"},
+		func(c models.HubspotConnection) models.HubspotConnection {
+			c.Normalize()
+			return c.Sanitize()
+		},
+		func(s models.HubspotScope) models.HubspotScope { return s },
+		nil,
+	)
+	raProxy = helper.NewDsRemoteApiProxyHelper[models.HubspotConnection](dsHelper.ConnApi.ModelApiHelper)
+	raScopeList = helper.NewDsRemoteApiScopeListHelper[models.HubspotConnection, models.HubspotScope, HubspotRemotePagination](raProxy, listHubspotRemoteScopes)
+	raScopeSearch = helper.NewDsRemoteApiScopeSearchHelper[models.HubspotConnection, models.HubspotScope](raProxy, searchHubspotRemoteScopes)
 }
