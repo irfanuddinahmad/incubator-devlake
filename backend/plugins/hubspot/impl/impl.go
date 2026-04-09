@@ -21,6 +21,7 @@ import (
 	"github.com/apache/incubator-devlake/core/context"
 	"github.com/apache/incubator-devlake/core/dal"
 	"github.com/apache/incubator-devlake/core/errors"
+	coreModels "github.com/apache/incubator-devlake/core/models"
 	"github.com/apache/incubator-devlake/core/plugin"
 	helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
 	"github.com/apache/incubator-devlake/plugins/hubspot/api"
@@ -37,6 +38,7 @@ var _ interface {
 	plugin.PluginModel
 	plugin.PluginSource
 	plugin.PluginMigration
+	plugin.DataSourcePluginBlueprintV200
 } = (*Hubspot)(nil)
 
 type Hubspot struct{}
@@ -100,6 +102,13 @@ func (p Hubspot) RootPkgPath() string {
 
 func (p Hubspot) MigrationScripts() []plugin.MigrationScript {
 	return migrationscripts.All()
+}
+
+func (p Hubspot) MakeDataSourcePipelinePlanV200(
+	connectionId uint64,
+	scopes []*coreModels.BlueprintScope,
+) (coreModels.PipelinePlan, []plugin.Scope, errors.Error) {
+	return api.MakeDataSourcePipelinePlanV200(p.SubTaskMetas(), connectionId, scopes)
 }
 
 func (p Hubspot) ApiResources() map[string]map[string]plugin.ApiResourceHandler {
