@@ -64,7 +64,7 @@ func TestConnection(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput, 
 	}
 
 	return &plugin.ApiResourceOutput{
-		Body: shared.ApiBody{Success: true, Message: "success"},
+		Body:   shared.ApiBody{Success: true, Message: "success"},
 		Status: http.StatusOK,
 	}, nil
 }
@@ -89,7 +89,7 @@ func TestExistingConnection(input *plugin.ApiResourceInput) (*plugin.ApiResource
 	}
 
 	return &plugin.ApiResourceOutput{
-		Body: shared.ApiBody{Success: true, Message: "success"},
+		Body:   shared.ApiBody{Success: true, Message: "success"},
 		Status: http.StatusOK,
 	}, nil
 }

@@ -503,125 +503,82 @@
     },
     {
       "datasource": "mysql",
-      "description": "Highest charged USD per 1K model tokens among models in the selected period. Uses input + output as denominator and filters to at least 100k model tokens and 20 requests.",
+      "description": "Daily lowest charged USD per 1K model tokens across all models in the selected period.",
       "fieldConfig": {
         "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 4,
+            "showPoints": "auto",
+            "spanNulls": false
+          },
           "mappings": [],
-          "unit": "currencyUSD",
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 0.02
-              },
-              {
-                "color": "red",
-                "value": 0.05
               }
             ]
-          }
+          },
+          "unit": "currencyUSD"
         },
         "overrides": []
       },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 46
+      },
+      "id": 23,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH per_model_day AS (\n  SELECT\n    DATE(timestamp) AS day,\n    COALESCE(NULLIF(model, ''), 'Unknown') AS model_name,\n    (SUM(charged_cents) / 100.0) * 1000.0 / NULLIF(SUM(input_tokens + output_tokens), 0) AS cost_per_1k\n  FROM _tool_cursor_usage_events\n  WHERE $__timeFilter(timestamp)\n  GROUP BY DATE(timestamp), COALESCE(NULLIF(model, ''), 'Unknown')\n  HAVING SUM(input_tokens + output_tokens) > 0\n)\nSELECT\n  day AS time,\n  ROUND(MIN(cost_per_1k), 6) AS \"Lowest Charged USD / 1K Model Tokens\"\nFROM per_model_day\nGROUP BY day\nORDER BY day",
+          "refId": "A"
+        }
+      ],
+      "title": "Daily Lowest Charged USD per 1K Model Tokens",
+      "type": "timeseries"
+    },
+    {
       "gridPos": {
         "h": 4,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 30
       },
-      "id": 8,
+      "id": 21,
       "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "value_and_name"
+        "content": "",
+        "mode": "markdown"
       },
       "pluginVersion": "11.0.0",
-      "targets": [
-        {
-          "datasource": "mysql",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  ROUND(MAX(cost_per_1k), 6) AS \"Highest Charged USD / 1K Model Tokens\"\nFROM (\n  SELECT\n    (SUM(charged_cents) / 100.0) * 1000.0\n    / NULLIF(SUM(input_tokens + output_tokens), 0) AS cost_per_1k\n  FROM _tool_cursor_usage_events\n  WHERE $__timeFilter(timestamp)\n  GROUP BY COALESCE(NULLIF(model, ''), 'Unknown')\n  HAVING SUM(input_tokens + output_tokens) >= 100000\n    AND COUNT(*) >= 20\n) t",
-          "refId": "A"
-        }
-      ],
-      "title": "Highest Charged USD per 1K Model Tokens",
-      "type": "stat"
-    },
-    {
-      "datasource": "mysql",
-      "description": "Lowest charged USD per 1K model tokens among models in the selected period. Uses input + output as denominator and filters to at least 100k model tokens and 20 requests.",
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [],
-          "unit": "currencyUSD",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 0.02
-              },
-              {
-                "color": "red",
-                "value": 0.05
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 12,
-        "y": 24
-      },
-      "id": 9,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "value_and_name"
-      },
-      "pluginVersion": "11.0.0",
-      "targets": [
-        {
-          "datasource": "mysql",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  ROUND(MIN(cost_per_1k), 6) AS \"Lowest Charged USD / 1K Model Tokens\"\nFROM (\n  SELECT\n    (SUM(charged_cents) / 100.0) * 1000.0\n    / NULLIF(SUM(input_tokens + output_tokens), 0) AS cost_per_1k\n  FROM _tool_cursor_usage_events\n  WHERE $__timeFilter(timestamp)\n  GROUP BY COALESCE(NULLIF(model, ''), 'Unknown')\n  HAVING SUM(input_tokens + output_tokens) >= 100000\n    AND COUNT(*) >= 20\n) t",
-          "refId": "A"
-        }
-      ],
-      "title": "Lowest Charged USD per 1K Model Tokens",
-      "type": "stat"
+      "title": "",
+      "transparent": true,
+      "type": "text"
     },
     {
       "datasource": "mysql",
@@ -640,14 +597,11 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 28
+        "y": 34
       },
       "id": 12,
       "options": {
-        "displayLabels": [
-          "name",
-          "percent"
-        ],
+        "displayLabels": [],
         "legend": {
           "displayMode": "table",
           "placement": "right",
@@ -699,14 +653,11 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 28
+        "y": 30
       },
       "id": 13,
       "options": {
-        "displayLabels": [
-          "name",
-          "percent"
-        ],
+        "displayLabels": [],
         "legend": {
           "displayMode": "table",
           "placement": "right",
@@ -797,7 +748,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 36
+        "y": 56
       },
       "id": 14,
       "options": {
@@ -837,6 +788,68 @@
       ],
       "title": "Effective Charged USD per 1K Model Tokens by Model",
       "type": "barchart"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Daily highest charged USD per 1K model tokens across all models in the selected period.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 4,
+            "showPoints": "auto",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 46
+      },
+      "id": 22,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH per_model_day AS (\n  SELECT\n    DATE(timestamp) AS day,\n    COALESCE(NULLIF(model, ''), 'Unknown') AS model_name,\n    (SUM(charged_cents) / 100.0) * 1000.0 / NULLIF(SUM(input_tokens + output_tokens), 0) AS cost_per_1k\n  FROM _tool_cursor_usage_events\n  WHERE $__timeFilter(timestamp)\n  GROUP BY DATE(timestamp), COALESCE(NULLIF(model, ''), 'Unknown')\n  HAVING SUM(input_tokens + output_tokens) > 0\n)\nSELECT\n  day AS time,\n  ROUND(MAX(cost_per_1k), 6) AS \"Highest Charged USD / 1K Model Tokens\"\nFROM per_model_day\nGROUP BY day\nORDER BY day",
+          "refId": "A"
+        }
+      ],
+      "title": "Daily Highest Charged USD per 1K Model Tokens",
+      "type": "timeseries"
     },
     {
       "datasource": "mysql",
@@ -886,7 +899,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 46
+        "y": 66
       },
       "id": 18,
       "options": {
@@ -944,14 +957,11 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 46
+        "y": 66
       },
       "id": 15,
       "options": {
-        "displayLabels": [
-          "name",
-          "percent"
-        ],
+        "displayLabels": [],
         "legend": {
           "displayMode": "table",
           "placement": "right",
@@ -1034,7 +1044,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 56
+        "y": 76
       },
       "id": 16,
       "options": {
@@ -1092,14 +1102,11 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 56
+        "y": 76
       },
       "id": 17,
       "options": {
-        "displayLabels": [
-          "name",
-          "percent"
-        ],
+        "displayLabels": [],
         "legend": {
           "displayMode": "table",
           "placement": "right",
@@ -1182,7 +1189,7 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 66
+        "y": 86
       },
       "id": 20,
       "options": {
