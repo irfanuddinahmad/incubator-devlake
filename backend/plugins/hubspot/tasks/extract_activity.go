@@ -54,10 +54,14 @@ func ExtractActivity(taskCtx plugin.SubTaskContext) errors.Error {
 		return errors.Default.New("task data is not HubspotTaskData")
 	}
 
-	if err := extractHubspotRawTable(taskCtx, data, rawHubspotEmailTable, "email"); err != nil {
-		return err
+	targets := resolveHubspotCollectionTargets(data.Options.ObjectTypes)
+	for _, target := range targets {
+		if err := extractHubspotRawTable(taskCtx, data, target.RawTable, target.DomainObjectType); err != nil {
+			return err
+		}
 	}
-	return extractHubspotRawTable(taskCtx, data, rawHubspotNoteTable, "note")
+
+	return nil
 }
 
 func extractHubspotRawTable(
@@ -104,7 +108,7 @@ func extractHubspotRawTable(
 				OccurredAt:       occurredAt,
 				ActingUserId:     ownerId,
 				ActingUserEmail:  actingEmail,
-				ActionType:       "updated",
+				ActionType:       extractHubspotActionType(record),
 				ObjectType:       sourceObjectType,
 				ObjectId:         record.Id,
 				SourceObjectType: sourceObjectType,
@@ -156,18 +160,22 @@ func extractHubspotOwnerId(properties map[string]interface{}) string {
 	if properties == nil {
 		return ""
 	}
-	raw, ok := properties["hubspot_owner_id"]
-	if !ok || raw == nil {
-		return ""
+	for _, key := range []string{"hubspot_owner_id", "owner_id", "hs_created_by_user_id", "hs_updated_by_user_id"} {
+		raw, ok := properties[key]
+		if !ok || raw == nil {
+			continue
+		}
+		switch v := raw.(type) {
+		case string:
+			value := strings.TrimSpace(v)
+			if value != "" {
+				return value
+			}
+		case float64:
+			return strconv.FormatInt(int64(v), 10)
+		}
 	}
-	switch v := raw.(type) {
-	case string:
-		return strings.TrimSpace(v)
-	case float64:
-		return strconv.FormatInt(int64(v), 10)
-	default:
-		return ""
-	}
+	return ""
 }
 
 func extractHubspotOwnerEmail(properties map[string]interface{}) string {
@@ -177,6 +185,7 @@ func extractHubspotOwnerEmail(properties map[string]interface{}) string {
 	for _, key := range []string{
 		"hubspot_owner_email",
 		"owner_email",
+		"hs_updated_by_user_email",
 		"hs_email_from_email",
 		"hs_email_sender_email",
 		"hs_created_by_user_email",
@@ -193,4 +202,54 @@ func extractHubspotOwnerEmail(properties map[string]interface{}) string {
 		}
 	}
 	return ""
+}
+
+func extractHubspotActionType(record hubspotObjectRecord) string {
+	updatedAt, hasUpdatedAt := parseHubspotRecordTime(record.UpdatedAt)
+	createdAt, hasCreatedAt := parseHubspotRecordTime(record.CreatedAt)
+	if hasCreatedAt && (!hasUpdatedAt || createdAt.Equal(updatedAt) || updatedAt.Before(createdAt)) {
+		return "created"
+	}
+
+	createdMs, hasCreatedMs := parseHubspotPropertyMillis(record.Properties, "hs_createdate")
+	modifiedMs, hasModifiedMs := parseHubspotPropertyMillis(record.Properties, "hs_lastmodifieddate")
+	if hasCreatedMs && hasModifiedMs && createdMs == modifiedMs {
+		return "created"
+	}
+
+	return "updated"
+}
+
+func parseHubspotRecordTime(raw string) (time.Time, bool) {
+	if strings.TrimSpace(raw) == "" {
+		return time.Time{}, false
+	}
+	t, err := time.Parse(time.RFC3339, raw)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return t.UTC(), true
+}
+
+func parseHubspotPropertyMillis(properties map[string]interface{}, key string) (int64, bool) {
+	if properties == nil {
+		return 0, false
+	}
+	raw, ok := properties[key]
+	if !ok || raw == nil {
+		return 0, false
+	}
+	str, ok := raw.(string)
+	if !ok {
+		return 0, false
+	}
+	value := strings.TrimSpace(str)
+	if value == "" {
+		return 0, false
+	}
+	ms, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	return ms, true
 }

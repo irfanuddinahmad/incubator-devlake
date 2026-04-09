@@ -31,10 +31,31 @@ import (
 	helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
 )
 
-const (
-	rawHubspotEmailTable = "_raw_hubspot_emails"
-	rawHubspotNoteTable  = "_raw_hubspot_notes"
-)
+var defaultHubspotObjectTypes = []string{"leads", "deals", "contacts", "companies", "quotes"}
+
+var hubspotObjectTypeToDomainType = map[string]string{
+	"appointments": "appointment",
+	"carts":        "cart",
+	"companies":    "company",
+	"contacts":     "contact",
+	"deals":        "deal",
+	"emails":       "email",
+	"invoices":     "invoice",
+	"leads":        "lead",
+	"line_items":   "line_item",
+	"notes":        "note",
+	"orders":       "order",
+	"products":     "product",
+	"quotes":       "quote",
+	"services":     "service",
+	"users":        "user",
+}
+
+type hubspotCollectionTarget struct {
+	ObjectType       string
+	DomainObjectType string
+	RawTable         string
+}
 
 type hubspotSearchResponse struct {
 	Results []json.RawMessage `json:"results"`
@@ -66,14 +87,17 @@ func CollectActivity(taskCtx plugin.SubTaskContext) errors.Error {
 		return err
 	}
 
-	if err := collectHubspotObjectType(taskCtx, data, apiClient, "emails", rawHubspotEmailTable); err != nil {
-		return err
+	targets := resolveHubspotCollectionTargets(data.Options.ObjectTypes)
+	for _, target := range targets {
+		if err := collectHubspotObjectType(taskCtx, data, apiClient, target.ObjectType, target.RawTable); err != nil {
+			return err
+		}
 	}
 
-	return collectHubspotObjectType(taskCtx, data, apiClient, "notes", rawHubspotNoteTable)
+	return nil
 }
 
-func buildHubspotSearchRequestBody(since *time.Time, until *time.Time, pageSize int, customData interface{}) map[string]interface{} {
+func buildHubspotSearchRequestBody(objectType string, since *time.Time, until *time.Time, pageSize int, customData interface{}) map[string]interface{} {
 	filters := make([]map[string]interface{}, 0, 2)
 	if since != nil {
 		filters = append(filters, map[string]interface{}{
@@ -96,17 +120,7 @@ func buildHubspotSearchRequestBody(since *time.Time, until *time.Time, pageSize 
 			"propertyName": "hs_lastmodifieddate",
 			"direction":    "ASCENDING",
 		}},
-		"properties": []string{
-			"hs_timestamp",
-			"hs_lastmodifieddate",
-			"hubspot_owner_id",
-			"hubspot_owner_email",
-			"owner_email",
-			"hs_email_from_email",
-			"hs_email_sender_email",
-			"hs_created_by_user_email",
-			"hs_createdate",
-		},
+		"properties": resolveHubspotSearchProperties(objectType),
 	}
 	if len(filters) > 0 {
 		body["filterGroups"] = []map[string]interface{}{{"filters": filters}}
@@ -130,6 +144,72 @@ func resolveHubspotSince(collectedSince *time.Time, occurredAfter *time.Time) *t
 		return &t
 	}
 	return nil
+}
+
+func resolveHubspotCollectionTargets(requested []string) []hubspotCollectionTarget {
+	selected := requested
+	if len(selected) == 0 {
+		selected = defaultHubspotObjectTypes
+	}
+
+	result := make([]hubspotCollectionTarget, 0, len(selected))
+	seen := make(map[string]struct{}, len(selected))
+	for _, raw := range selected {
+		objectType := strings.TrimSpace(strings.ToLower(raw))
+		if objectType == "" {
+			continue
+		}
+		domainObjectType, ok := hubspotObjectTypeToDomainType[objectType]
+		if !ok {
+			continue
+		}
+		if _, exists := seen[objectType]; exists {
+			continue
+		}
+		seen[objectType] = struct{}{}
+		result = append(result, hubspotCollectionTarget{
+			ObjectType:       objectType,
+			DomainObjectType: domainObjectType,
+			RawTable:         rawHubspotObjectTable(objectType),
+		})
+	}
+
+	if len(result) == 0 {
+		for _, objectType := range defaultHubspotObjectTypes {
+			domainObjectType := hubspotObjectTypeToDomainType[objectType]
+			result = append(result, hubspotCollectionTarget{
+				ObjectType:       objectType,
+				DomainObjectType: domainObjectType,
+				RawTable:         rawHubspotObjectTable(objectType),
+			})
+		}
+	}
+
+	return result
+}
+
+func rawHubspotObjectTable(objectType string) string {
+	return fmt.Sprintf("_raw_hubspot_%s", strings.ReplaceAll(objectType, "-", "_"))
+}
+
+func resolveHubspotSearchProperties(objectType string) []string {
+	properties := []string{
+		"hs_timestamp",
+		"hs_lastmodifieddate",
+		"hs_createdate",
+		"hubspot_owner_id",
+		"hubspot_owner_email",
+		"owner_email",
+		"hs_created_by_user_id",
+		"hs_updated_by_user_id",
+		"hs_created_by_user_email",
+	}
+
+	if objectType == "emails" {
+		properties = append(properties, "hs_email_from_email", "hs_email_sender_email")
+	}
+
+	return properties
 }
 
 func parseHubspotSearchResponse(body []byte) ([]json.RawMessage, errors.Error) {
@@ -193,7 +273,7 @@ func collectHubspotObjectType(
 		UrlTemplate: fmt.Sprintf("crm/v3/objects/%s/search", objectType),
 		Method:      http.MethodPost,
 		RequestBody: func(reqData *helper.RequestData) map[string]interface{} {
-			return buildHubspotSearchRequestBody(since, until, reqData.Pager.Size, reqData.CustomData)
+			return buildHubspotSearchRequestBody(objectType, since, until, reqData.Pager.Size, reqData.CustomData)
 		},
 		GetNextPageCustomData: func(prevReqData *helper.RequestData, prevPageResponse *http.Response) (interface{}, errors.Error) {
 			body, readErr := io.ReadAll(prevPageResponse.Body)
