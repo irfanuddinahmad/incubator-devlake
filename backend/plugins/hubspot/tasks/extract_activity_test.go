@@ -19,6 +19,7 @@ package tasks
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -26,6 +27,7 @@ import (
 func TestExtractHubspotOwnerId(t *testing.T) {
 	assert.Equal(t, "123", extractHubspotOwnerId(map[string]interface{}{"hubspot_owner_id": "123"}))
 	assert.Equal(t, "123", extractHubspotOwnerId(map[string]interface{}{"hubspot_owner_id": float64(123)}))
+	assert.Equal(t, "456", extractHubspotOwnerId(map[string]interface{}{"hs_created_by_user_id": "456"}))
 	assert.Equal(t, "", extractHubspotOwnerId(map[string]interface{}{"hubspot_owner_id": nil}))
 	assert.Equal(t, "", extractHubspotOwnerId(nil))
 }
@@ -42,4 +44,26 @@ func TestExtractHubspotOwnerEmail(t *testing.T) {
 		"owner_email": nil,
 	}))
 	assert.Equal(t, "", extractHubspotOwnerEmail(nil))
+}
+
+func TestExtractHubspotActionType(t *testing.T) {
+	now := time.Now().UTC()
+	created := now.Format(time.RFC3339)
+
+	assert.Equal(t, "created", extractHubspotActionType(hubspotObjectRecord{
+		CreatedAt: created,
+		UpdatedAt: created,
+	}))
+
+	assert.Equal(t, "created", extractHubspotActionType(hubspotObjectRecord{
+		Properties: map[string]interface{}{
+			"hs_createdate":       "1743930000000",
+			"hs_lastmodifieddate": "1743930000000",
+		},
+	}))
+
+	assert.Equal(t, "updated", extractHubspotActionType(hubspotObjectRecord{
+		CreatedAt: now.Add(-time.Hour).Format(time.RFC3339),
+		UpdatedAt: now.Format(time.RFC3339),
+	}))
 }

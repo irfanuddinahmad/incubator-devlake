@@ -47,7 +47,7 @@ func TestBuildHubspotSearchRequestBody_WithFiltersAndAfter(t *testing.T) {
 	since := time.Date(2026, 4, 6, 9, 0, 0, 0, time.UTC)
 	until := time.Date(2026, 4, 6, 10, 0, 0, 0, time.UTC)
 
-	body := buildHubspotSearchRequestBody(&since, &until, 100, "cursor-1")
+	body := buildHubspotSearchRequestBody("emails", &since, &until, 100, "cursor-1")
 
 	assert.Equal(t, 100, body["limit"])
 	assert.Equal(t, "cursor-1", body["after"])
@@ -69,7 +69,7 @@ func TestBuildHubspotSearchRequestBody_WithFiltersAndAfter(t *testing.T) {
 }
 
 func TestBuildHubspotSearchRequestBody_WithoutFilters(t *testing.T) {
-	body := buildHubspotSearchRequestBody(nil, nil, 50, nil)
+	body := buildHubspotSearchRequestBody("deals", nil, nil, 50, nil)
 	_, hasFilterGroups := body["filterGroups"]
 	_, hasAfter := body["after"]
 
@@ -94,7 +94,7 @@ func TestResolveHubspotNextCustomData_Flow(t *testing.T) {
 		cursor, ok := next.(string)
 		if assert.True(t, ok) {
 			assert.Equal(t, "cursor-2", cursor)
-			body := buildHubspotSearchRequestBody(nil, nil, 100, cursor)
+			body := buildHubspotSearchRequestBody("deals", nil, nil, 100, cursor)
 			assert.Equal(t, "cursor-2", body["after"])
 		}
 	}
@@ -115,4 +115,21 @@ func TestParseHubspotCollectorHelpers_InvalidJson(t *testing.T) {
 
 	_, err = parseHubspotSearchResponse([]byte("{"))
 	assert.Error(t, err)
+}
+
+func TestResolveHubspotCollectionTargets_Defaults(t *testing.T) {
+	targets := resolveHubspotCollectionTargets(nil)
+	if assert.NotEmpty(t, targets) {
+		assert.Equal(t, "leads", targets[0].ObjectType)
+		assert.Equal(t, "lead", targets[0].DomainObjectType)
+		assert.Equal(t, "_raw_hubspot_leads", targets[0].RawTable)
+	}
+}
+
+func TestResolveHubspotCollectionTargets_FilterAndDeduplicate(t *testing.T) {
+	targets := resolveHubspotCollectionTargets([]string{"deals", "", "deals", "custom", "contacts"})
+	if assert.Len(t, targets, 2) {
+		assert.Equal(t, "deals", targets[0].ObjectType)
+		assert.Equal(t, "contacts", targets[1].ObjectType)
+	}
 }

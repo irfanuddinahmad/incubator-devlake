@@ -20,8 +20,9 @@ package tasks
 import "time"
 
 type HubspotOptions struct {
-	ConnectionId uint64 `json:"connectionId" mapstructure:"connectionId"`
-	ScopeId      string `json:"scopeId" mapstructure:"scopeId"`
+	ConnectionId uint64   `json:"connectionId" mapstructure:"connectionId"`
+	ScopeId      string   `json:"scopeId" mapstructure:"scopeId"`
+	ObjectTypes  []string `json:"objectTypes" mapstructure:"objectTypes"`
 
 	OccurredAfter  *time.Time `json:"occurredAfter" mapstructure:"occurredAfter"`
 	OccurredBefore *time.Time `json:"occurredBefore" mapstructure:"occurredBefore"`
