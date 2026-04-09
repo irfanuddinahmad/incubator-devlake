@@ -21,19 +21,37 @@ import (
 	"github.com/go-playground/validator/v10"
 
 	"github.com/apache/incubator-devlake/core/context"
-	"github.com/apache/incubator-devlake/core/log"
 	"github.com/apache/incubator-devlake/core/plugin"
 	helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
+	"github.com/apache/incubator-devlake/plugins/notion/models"
 )
 
 var basicRes context.BasicRes
-var logger log.Logger
 var vld *validator.Validate
 var connectionHelper *helper.ConnectionApiHelper
+var dsHelper *helper.DsHelper[models.NotionConnection, models.NotionScope, models.NotionScopeConfig]
+var raProxy *helper.DsRemoteApiProxyHelper[models.NotionConnection]
+var raScopeList *helper.DsRemoteApiScopeListHelper[models.NotionConnection, models.NotionScope, NotionRemotePagination]
+var raScopeSearch *helper.DsRemoteApiScopeSearchHelper[models.NotionConnection, models.NotionScope]
 
 func Init(br context.BasicRes, meta plugin.PluginMeta) {
 	basicRes = br
-	logger = basicRes.GetLogger()
 	vld = validator.New()
 	connectionHelper = helper.NewConnectionHelper(basicRes, vld, meta.Name())
+	dsHelper = helper.NewDataSourceHelper[
+		models.NotionConnection, models.NotionScope, models.NotionScopeConfig,
+	](
+		basicRes,
+		meta.Name(),
+		[]string{"id", "name"},
+		func(c models.NotionConnection) models.NotionConnection {
+			c.Normalize()
+			return c.Sanitize()
+		},
+		func(s models.NotionScope) models.NotionScope { return s },
+		nil,
+	)
+	raProxy = helper.NewDsRemoteApiProxyHelper[models.NotionConnection](dsHelper.ConnApi.ModelApiHelper)
+	raScopeList = helper.NewDsRemoteApiScopeListHelper[models.NotionConnection, models.NotionScope, NotionRemotePagination](raProxy, listNotionRemoteScopes)
+	raScopeSearch = helper.NewDsRemoteApiScopeSearchHelper[models.NotionConnection, models.NotionScope](raProxy, searchNotionRemoteScopes)
 }
