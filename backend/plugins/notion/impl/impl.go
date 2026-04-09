@@ -104,6 +104,9 @@ func (p Notion) MigrationScripts() []plugin.MigrationScript {
 
 func (p Notion) ApiResources() map[string]map[string]plugin.ApiResourceHandler {
 	return map[string]map[string]plugin.ApiResourceHandler{
+		"test": {
+			"POST": api.TestConnection,
+		},
 		"connections": {
 			"POST": api.PostConnections,
 			"GET":  api.ListConnections,
@@ -112,6 +115,9 @@ func (p Notion) ApiResources() map[string]map[string]plugin.ApiResourceHandler {
 			"GET":    api.GetConnection,
 			"PATCH":  api.PatchConnection,
 			"DELETE": api.DeleteConnection,
+		},
+		"connections/:connectionId/test": {
+			"POST": api.TestExistingConnection,
 		},
 		"connections/:connectionId/scopes/:scopeId/webhook": {
 			"POST": api.PostWebhookEvents,
