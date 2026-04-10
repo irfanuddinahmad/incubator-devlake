@@ -98,17 +98,18 @@ func CollectActivity(taskCtx plugin.SubTaskContext) errors.Error {
 }
 
 func buildHubspotSearchRequestBody(objectType string, since *time.Time, until *time.Time, pageSize int, customData interface{}) map[string]interface{} {
+	modifiedProperty := hubspotModifiedDateProperty(objectType)
 	filters := make([]map[string]interface{}, 0, 2)
 	if since != nil {
 		filters = append(filters, map[string]interface{}{
-			"propertyName": "hs_lastmodifieddate",
+			"propertyName": modifiedProperty,
 			"operator":     "GTE",
 			"value":        strconv.FormatInt(since.UnixMilli(), 10),
 		})
 	}
 	if until != nil {
 		filters = append(filters, map[string]interface{}{
-			"propertyName": "hs_lastmodifieddate",
+			"propertyName": modifiedProperty,
 			"operator":     "LTE",
 			"value":        strconv.FormatInt(until.UTC().UnixMilli(), 10),
 		})
@@ -117,7 +118,7 @@ func buildHubspotSearchRequestBody(objectType string, since *time.Time, until *t
 	body := map[string]interface{}{
 		"limit": pageSize,
 		"sorts": []map[string]string{{
-			"propertyName": "hs_lastmodifieddate",
+			"propertyName": modifiedProperty,
 			"direction":    "ASCENDING",
 		}},
 		"properties": resolveHubspotSearchProperties(objectType),
@@ -192,11 +193,22 @@ func rawHubspotObjectTable(objectType string) string {
 	return fmt.Sprintf("_raw_hubspot_%s", strings.ReplaceAll(objectType, "-", "_"))
 }
 
+func hubspotModifiedDateProperty(objectType string) string {
+	switch strings.TrimSpace(strings.ToLower(objectType)) {
+	case "contacts":
+		return "lastmodifieddate"
+	default:
+		return "hs_lastmodifieddate"
+	}
+}
+
 func resolveHubspotSearchProperties(objectType string) []string {
 	properties := []string{
 		"hs_timestamp",
 		"hs_lastmodifieddate",
 		"hs_createdate",
+		"lastmodifieddate",
+		"createdate",
 		"hubspot_owner_id",
 		"hubspot_owner_email",
 		"owner_email",
