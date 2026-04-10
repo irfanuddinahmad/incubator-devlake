@@ -24,7 +24,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"hash"
 	"io"
 	"net/http"
 	"strconv"
@@ -193,7 +192,7 @@ func buildRequestURI(request *http.Request) string {
 }
 
 func computeHmacBase64(raw string, secret string) string {
-	var mac hash.Hash = hmac.New(sha256.New, []byte(secret))
+	mac := hmac.New(sha256.New, []byte(secret))
 	_, _ = mac.Write([]byte(raw))
 	return base64.StdEncoding.EncodeToString(mac.Sum(nil))
 }
