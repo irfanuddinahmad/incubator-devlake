@@ -78,6 +78,30 @@ func TestBuildHubspotSearchRequestBody_WithoutFilters(t *testing.T) {
 	assert.Equal(t, 50, body["limit"])
 }
 
+func TestBuildHubspotSearchRequestBody_ContactsUseLastModifiedDate(t *testing.T) {
+	since := time.Date(2026, 4, 6, 9, 0, 0, 0, time.UTC)
+	body := buildHubspotSearchRequestBody("contacts", &since, nil, 25, nil)
+
+	sorts, ok := body["sorts"].([]map[string]string)
+	if assert.True(t, ok) && assert.Len(t, sorts, 1) {
+		assert.Equal(t, "lastmodifieddate", sorts[0]["propertyName"])
+	}
+
+	filterGroups, ok := body["filterGroups"].([]map[string]interface{})
+	if assert.True(t, ok) && assert.Len(t, filterGroups, 1) {
+		filters, ok := filterGroups[0]["filters"].([]map[string]interface{})
+		if assert.True(t, ok) && assert.Len(t, filters, 1) {
+			assert.Equal(t, "lastmodifieddate", filters[0]["propertyName"])
+		}
+	}
+
+	properties, ok := body["properties"].([]string)
+	if assert.True(t, ok) {
+		assert.Contains(t, properties, "createdate")
+		assert.Contains(t, properties, "lastmodifieddate")
+	}
+}
+
 func TestParseHubspotNextAfter(t *testing.T) {
 	after, err := parseHubspotNextAfter([]byte(`{"paging":{"next":{"after":"abc"}}}`))
 	assert.NoError(t, err)
