@@ -71,7 +71,8 @@ func ConvertActivity(taskCtx plugin.SubTaskContext) errors.Error {
 	defer cursor.Close()
 
 	idGen := didgen.NewDomainIdGenerator(&models.NotionActivityEvent{})
-	activities, err := buildNotionActivities(db, cursor, idGen)
+	userMap := loadNotionUserMap(db, connectionId)
+	activities, err := buildNotionActivities(db, cursor, idGen, userMap)
 	if err != nil {
 		return err
 	}
@@ -95,7 +96,7 @@ type notionGroupedActivity struct {
 	count      int
 }
 
-func buildNotionActivities(db dal.Dal, cursor dal.Rows, idGen *didgen.DomainIdGenerator) ([]*crossdomain.UserActivity, errors.Error) {
+func buildNotionActivities(db dal.Dal, cursor dal.Rows, idGen *didgen.DomainIdGenerator, userMap map[string]models.NotionUser) ([]*crossdomain.UserActivity, errors.Error) {
 	events := make([]models.NotionActivityEvent, 0)
 
 	for cursor.Next() {
@@ -108,7 +109,7 @@ func buildNotionActivities(db dal.Dal, cursor dal.Rows, idGen *didgen.DomainIdGe
 
 	activities := buildNotionActivitiesFromEvents(events, idGen, func(email string) string {
 		return resolveAccountIdByEmail(db, email)
-	})
+	}, userMap)
 	return activities, nil
 }
 
@@ -116,9 +117,13 @@ func buildNotionActivitiesFromEvents(
 	events []models.NotionActivityEvent,
 	idGen *didgen.DomainIdGenerator,
 	resolveAccountId func(email string) string,
+	userMap map[string]models.NotionUser,
 ) []*crossdomain.UserActivity {
 	if resolveAccountId == nil {
 		resolveAccountId = func(string) string { return "" }
+	}
+	if userMap == nil {
+		userMap = map[string]models.NotionUser{}
 	}
 
 	grouped := map[string]*notionGroupedActivity{}
@@ -144,11 +149,20 @@ func buildNotionActivitiesFromEvents(
 		groupId := fmt.Sprintf("%s:%s:%s:%s:%d", userKey, normalizedAction, normalizedObject, eventCopy.ObjectId, bucket.Unix())
 		group := grouped[groupId]
 		if group == nil {
+			resolvedEmail := strings.TrimSpace(eventCopy.EditorUserEmail)
+			resolvedName := ""
+			if u, ok := userMap[strings.TrimSpace(eventCopy.EditorUserId)]; ok {
+				if u.Email != "" {
+					resolvedEmail = u.Email
+				}
+				resolvedName = u.Name
+			}
+			displayName := fallbackDisplay(resolvedName, resolvedEmail, strings.TrimSpace(eventCopy.EditorUserId), "Notion user")
 			group = &notionGroupedActivity{
 				groupId:    groupId,
-				accountId:  resolveAccountId(eventCopy.EditorUserEmail),
-				userEmail:  strings.TrimSpace(eventCopy.EditorUserEmail),
-				userName:   fallbackDisplay(strings.TrimSpace(eventCopy.EditorUserEmail), strings.TrimSpace(eventCopy.EditorUserId), "Notion user"),
+				accountId:  resolveAccountId(resolvedEmail),
+				userEmail:  resolvedEmail,
+				userName:   displayName,
 				nativeId:   strings.TrimSpace(eventCopy.EditorUserId),
 				actionType: normalizedAction,
 				objectType: normalizedObject,

@@ -15,14 +15,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package migrationscripts
+package models
 
-import "github.com/apache/incubator-devlake/core/plugin"
+import "github.com/apache/incubator-devlake/core/models/common"
 
-func All() []plugin.MigrationScript {
-	return []plugin.MigrationScript{
-		new(addNotionInitialTables),
-		new(addNotionWebhookFields),
-		new(addNotionUsers),
-	}
+// NotionUser stores Notion workspace users resolved via GET /v1/users.
+type NotionUser struct {
+	common.NoPKModel
+	ConnectionId uint64 `gorm:"primaryKey" json:"connectionId"`
+	UserId       string `gorm:"primaryKey;type:varchar(255)" json:"userId"`
+	Name         string `gorm:"type:varchar(255)" json:"name"`
+	Email        string `gorm:"type:varchar(255)" json:"email"`
+	UserType     string `gorm:"type:varchar(64)" json:"userType"`
+}
+
+func (NotionUser) TableName() string {
+	return "_tool_notion_users"
 }
