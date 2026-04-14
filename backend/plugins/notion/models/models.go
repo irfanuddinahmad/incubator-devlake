@@ -25,5 +25,6 @@ func GetTablesInfo() []dal.Tabler {
 		&NotionScope{},
 		&NotionScopeConfig{},
 		&NotionActivityEvent{},
+		&NotionUser{},
 	}
 }

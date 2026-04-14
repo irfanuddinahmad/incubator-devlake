@@ -24,6 +24,7 @@ import (
 	"github.com/apache/incubator-devlake/core/dal"
 	"github.com/apache/incubator-devlake/core/errors"
 	"github.com/apache/incubator-devlake/core/models/domainlayer/crossdomain"
+	"github.com/apache/incubator-devlake/plugins/notion/models"
 )
 
 func createUserActivitiesInBatches(db dal.Dal, activities []*crossdomain.UserActivity) errors.Error {
@@ -84,7 +85,10 @@ func normalizeObjectType(objectType, fallback string) string {
 	return objectType
 }
 
-func fallbackDisplay(email, nativeId, fallback string) string {
+func fallbackDisplay(name, email, nativeId, fallback string) string {
+	if strings.TrimSpace(name) != "" {
+		return strings.TrimSpace(name)
+	}
 	if strings.TrimSpace(email) != "" {
 		return strings.TrimSpace(email)
 	}
@@ -92,4 +96,18 @@ func fallbackDisplay(email, nativeId, fallback string) string {
 		return strings.TrimSpace(nativeId)
 	}
 	return fallback
+}
+
+// loadNotionUserMap loads all NotionUser records for the given connectionId into a
+// map keyed by UserId for fast lookup during conversion.
+func loadNotionUserMap(db dal.Dal, connectionId uint64) map[string]models.NotionUser {
+	userMap := map[string]models.NotionUser{}
+	var users []models.NotionUser
+	if err := db.All(&users, dal.Where("connection_id = ?", connectionId)); err != nil {
+		return userMap
+	}
+	for _, u := range users {
+		userMap[u.UserId] = u
+	}
+	return userMap
 }

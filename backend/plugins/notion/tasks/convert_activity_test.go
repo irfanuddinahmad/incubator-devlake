@@ -80,7 +80,7 @@ func TestBuildNotionActivitiesFromEvents_DebounceAndSummary(t *testing.T) {
 	activities := buildNotionActivitiesFromEvents(events, testNotionIdGen(), func(email string) string {
 		calledWith = email
 		return "acc-ntn"
-	})
+	}, nil)
 
 	if assert.Len(t, activities, 1) {
 		a := activities[0]
@@ -112,7 +112,7 @@ func TestBuildNotionActivitiesFromEvents_FallbackIdentityAndDefaults(t *testing.
 		SourceObjectType: "page",
 	}
 
-	activities := buildNotionActivitiesFromEvents([]models.NotionActivityEvent{event}, testNotionIdGen(), nil)
+	activities := buildNotionActivitiesFromEvents([]models.NotionActivityEvent{event}, testNotionIdGen(), nil, nil)
 
 	if assert.Len(t, activities, 1) {
 		a := activities[0]
@@ -140,8 +140,8 @@ func TestBuildNotionActivitiesFromEvents_IdDeterminism(t *testing.T) {
 		SourceObjectType: "page",
 	}}
 
-	a1 := buildNotionActivitiesFromEvents(events, testNotionIdGen(), nil)
-	a2 := buildNotionActivitiesFromEvents(events, testNotionIdGen(), nil)
+	a1 := buildNotionActivitiesFromEvents(events, testNotionIdGen(), nil, nil)
+	a2 := buildNotionActivitiesFromEvents(events, testNotionIdGen(), nil, nil)
 
 	if assert.Len(t, a1, 1) && assert.Len(t, a2, 1) {
 		assert.Equal(t, a1[0].Id, a2[0].Id)
@@ -175,7 +175,7 @@ func TestBuildNotionActivitiesFromEvents_DebounceBoundaryCreatesTwoGroups(t *tes
 		},
 	}
 
-	activities := buildNotionActivitiesFromEvents(events, testNotionIdGen(), nil)
+	activities := buildNotionActivitiesFromEvents(events, testNotionIdGen(), nil, nil)
 	if assert.Len(t, activities, 2) {
 		assert.Equal(t, "Notion page edited", activities[0].Summary)
 		assert.Equal(t, "Notion page edited", activities[1].Summary)
@@ -210,7 +210,7 @@ func TestBuildNotionActivitiesFromEvents_NormalizedKeyMergesDifferentCase(t *tes
 		},
 	}
 
-	activities := buildNotionActivitiesFromEvents(events, testNotionIdGen(), nil)
+	activities := buildNotionActivitiesFromEvents(events, testNotionIdGen(), nil, nil)
 	if assert.Len(t, activities, 1) {
 		assert.Equal(t, "Notion page edited x2", activities[0].Summary)
 	}
@@ -245,7 +245,7 @@ func TestBuildNotionActivitiesFromEvents_WebhookFlowAndIgnored(t *testing.T) {
 		},
 	}
 
-	activities := buildNotionActivitiesFromEvents(events, testNotionIdGen(), nil)
+	activities := buildNotionActivitiesFromEvents(events, testNotionIdGen(), nil, nil)
 	if assert.Len(t, activities, 1) {
 		a := activities[0]
 		assert.Equal(t, "notion", a.SourceSystem)
