@@ -54,6 +54,58 @@ func TestBuildNotionActivityEvent_MapsFieldsAndDefaults(t *testing.T) {
 	}
 }
 
+func TestBuildNotionActivityEvent_CreatedWhenTimestampsMatch(t *testing.T) {
+	row := []byte(`{
+		"id": "page-2",
+		"object": "page",
+		"created_time": "2026-04-06T09:02:00Z",
+		"last_edited_time": "2026-04-06T09:02:00Z",
+		"created_by": {
+			"id": "creator-1",
+			"person": {
+				"email": "creator@example.com"
+			}
+		},
+		"last_edited_by": {
+			"id": "editor-1",
+			"person": {
+				"email": "editor@example.com"
+			}
+		}
+	}`)
+
+	event, err := buildNotionActivityEvent(row, 11, "scope-1")
+	if assert.NoError(t, err) && assert.NotNil(t, event) {
+		assert.Equal(t, "created", event.ActionType)
+		assert.Equal(t, "creator-1", event.EditorUserId)
+		assert.Equal(t, "creator@example.com", event.EditorUserEmail)
+	}
+}
+
+func TestBuildNotionActivityEvent_EditedWhenTimestampsDiffer(t *testing.T) {
+	row := []byte(`{
+		"id": "page-3",
+		"object": "page",
+		"created_time": "2026-04-01T08:00:00Z",
+		"last_edited_time": "2026-04-06T09:02:00Z",
+		"created_by": {
+			"id": "creator-1",
+			"person": {"email": "creator@example.com"}
+		},
+		"last_edited_by": {
+			"id": "editor-1",
+			"person": {"email": "editor@example.com"}
+		}
+	}`)
+
+	event, err := buildNotionActivityEvent(row, 11, "scope-1")
+	if assert.NoError(t, err) && assert.NotNil(t, event) {
+		assert.Equal(t, "edited", event.ActionType)
+		assert.Equal(t, "editor-1", event.EditorUserId)
+		assert.Equal(t, "editor@example.com", event.EditorUserEmail)
+	}
+}
+
 func TestBuildNotionActivityEvent_SkipsEmptyId(t *testing.T) {
 	row := []byte(`{
 		"id": "   ",
