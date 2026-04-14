@@ -289,18 +289,19 @@
       },
       "id": 6,
       "options": {
-        "orient": "auto",
-        "textMode": "auto",
-        "barAlignment": 0,
-        "groupWidth": 0.7,
-        "barRadius": 0,
-        "xTickLabelRotation": 45,
-        "xTickLabelSpacing": 0,
+        "displayLabels": ["name", "percent"],
         "legend": {
           "calcs": [],
-          "displayMode": "list",
+          "displayMode": "table",
           "placement": "right",
-          "showLegend": false
+          "showLegend": true,
+          "values": ["percent", "value"]
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": ["sum"],
+          "fields": "",
+          "values": true
         },
         "tooltip": {
           "mode": "single",
@@ -311,30 +312,16 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "palette-classic"
           },
           "custom": {
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "stacking": "none",
-            "fillOpacity": 80
+              "viz": false
+            }
           },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
+          "mappings": []
         },
         "overrides": []
       },
@@ -348,7 +335,7 @@
         }
       ],
       "title": "Activity Distribution by Type",
-      "type": "barchart"
+      "type": "piechart"
     },
     {
       "datasource": "mysql",
@@ -382,18 +369,19 @@
       },
       "id": 7,
       "options": {
-        "orient": "auto",
-        "textMode": "auto",
-        "barAlignment": 0,
-        "groupWidth": 0.7,
-        "barRadius": 0,
-        "xTickLabelRotation": 45,
-        "xTickLabelSpacing": 0,
+        "displayLabels": ["name", "percent"],
         "legend": {
           "calcs": [],
-          "displayMode": "list",
+          "displayMode": "table",
           "placement": "right",
-          "showLegend": false
+          "showLegend": true,
+          "values": ["percent", "value"]
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": ["sum"],
+          "fields": "",
+          "values": true
         },
         "tooltip": {
           "mode": "single",
@@ -404,30 +392,16 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "palette-classic"
           },
           "custom": {
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "stacking": "none",
-            "fillOpacity": 80
+              "viz": false
+            }
           },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": null
-              }
-            ]
-          }
+          "mappings": []
         },
         "overrides": []
       },
@@ -441,7 +415,7 @@
         }
       ],
       "title": "Activity by Object Type (Page, Database, etc)",
-      "type": "barchart"
+      "type": "piechart"
     },
     {
       "datasource": "mysql",
