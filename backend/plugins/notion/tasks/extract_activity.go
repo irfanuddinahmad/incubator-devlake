@@ -32,8 +32,17 @@ import (
 type notionPageRecord struct {
 	Id             string `json:"id"`
 	Object         string `json:"object"`
+	CreatedTime    string `json:"created_time"`
 	LastEditedTime string `json:"last_edited_time"`
-	LastEditedBy   struct {
+	CreatedBy      struct {
+		Id     string `json:"id"`
+		Object string `json:"object"`
+		Type   string `json:"type"`
+		Person struct {
+			Email string `json:"email"`
+		} `json:"person"`
+	} `json:"created_by"`
+	LastEditedBy struct {
 		Id     string `json:"id"`
 		Object string `json:"object"`
 		Type   string `json:"type"`
@@ -69,14 +78,25 @@ func buildNotionActivityEvent(rowData []byte, connectionId uint64, scopeId strin
 		return nil, errors.Default.Wrap(err, "failed to parse notion last_edited_time")
 	}
 
+	// Determine action type: "created" when the page has never been separately edited.
+	// In that case use created_by as the actor; otherwise use last_edited_by.
+	actionType := "edited"
+	actorId := strings.TrimSpace(record.LastEditedBy.Id)
+	actorEmail := strings.TrimSpace(record.LastEditedBy.Person.Email)
+	if record.CreatedTime != "" && record.CreatedTime == record.LastEditedTime {
+		actionType = "created"
+		actorId = strings.TrimSpace(record.CreatedBy.Id)
+		actorEmail = strings.TrimSpace(record.CreatedBy.Person.Email)
+	}
+
 	event := &models.NotionActivityEvent{
 		ConnectionId:     connectionId,
 		ScopeId:          scopeId,
 		EventId:          fmt.Sprintf("%s:%d", record.Id, occurredAt.UnixMilli()),
 		OccurredAt:       occurredAt.UTC(),
-		EditorUserId:     strings.TrimSpace(record.LastEditedBy.Id),
-		EditorUserEmail:  strings.TrimSpace(record.LastEditedBy.Person.Email),
-		ActionType:       "edited",
+		EditorUserId:     actorId,
+		EditorUserEmail:  actorEmail,
+		ActionType:       actionType,
 		ObjectType:       strings.TrimSpace(record.Object),
 		ObjectId:         strings.TrimSpace(record.Id),
 		SourceObjectType: "notion_data_source_page",
