@@ -29,11 +29,13 @@ import (
 	"github.com/apache/incubator-devlake/core/errors"
 	"github.com/apache/incubator-devlake/core/plugin"
 	helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
+	"github.com/sirupsen/logrus"
 )
 
 var defaultHubspotObjectTypes = []string{"leads", "deals", "contacts", "companies", "quotes"}
 
 const hubspotSearchAfterCeiling = 10000
+const hubspotMinWindowWidth = time.Millisecond
 
 var hubspotObjectTypeToDomainType = map[string]string{
 	"appointments": "appointment",
@@ -60,12 +62,18 @@ type hubspotCollectionTarget struct {
 }
 
 type hubspotSearchResponse struct {
+	Total   int               `json:"total"`
 	Results []json.RawMessage `json:"results"`
 	Paging  struct {
 		Next struct {
 			After string `json:"after"`
 		} `json:"next"`
 	} `json:"paging"`
+}
+
+type hubspotSearchWindow struct {
+	Since *time.Time
+	Until *time.Time
 }
 
 var _ plugin.SubTaskEntryPoint = CollectActivity
@@ -112,7 +120,7 @@ func buildHubspotSearchRequestBody(objectType string, since *time.Time, until *t
 	if until != nil {
 		filters = append(filters, map[string]interface{}{
 			"propertyName": modifiedProperty,
-			"operator":     "LTE",
+			"operator":     "LT",
 			"value":        strconv.FormatInt(until.UTC().UnixMilli(), 10),
 		})
 	}
@@ -151,12 +159,12 @@ func resolveHubspotSince(collectedSince *time.Time, occurredAfter *time.Time) *t
 
 func resolveHubspotUntil(occurredBefore *time.Time, now time.Time) *time.Time {
 	if occurredBefore != nil {
-		t := occurredBefore.UTC()
+		t := occurredBefore.UTC().Add(time.Millisecond)
 		return &t
 	}
-	// Use a fixed upper bound to avoid paging over a moving dataset,
+	// Use a fixed exclusive upper bound to avoid paging over a moving dataset,
 	// which can invalidate HubSpot "after" cursors during long runs.
-	t := now.UTC()
+	t := now.UTC().Add(time.Millisecond)
 	return &t
 }
 
@@ -264,15 +272,146 @@ func resolveHubspotNextCustomData(body []byte) (interface{}, errors.Error) {
 	if offset, convErr := strconv.Atoi(after); convErr == nil && offset >= hubspotSearchAfterCeiling {
 		// HubSpot search API fails with generic 400 once the next "after" cursor reaches
 		// the hard pagination ceiling. Stop current collection window gracefully.
+		logrus.WithField("after", after).Warn("[hubspot] reached search pagination ceiling; ending current collection window")
 		return nil, helper.ErrFinishCollect
 	}
 	return after, nil
 }
 
+func probeHubspotSearchWindow(apiClient *helper.ApiAsyncClient, objectType string, window hubspotSearchWindow) (int, *time.Time, errors.Error) {
+	res, err := apiClient.Post(
+		fmt.Sprintf("crm/v3/objects/%s/search", objectType),
+		nil,
+		buildHubspotSearchRequestBody(objectType, window.Since, window.Until, 1, nil),
+		nil,
+	)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	var envelope hubspotSearchResponse
+	if err := helper.UnmarshalResponse(res, &envelope); err != nil {
+		return 0, nil, err
+	}
+
+	if len(envelope.Results) == 0 {
+		return envelope.Total, nil, nil
+	}
+
+	modifiedAt, err := parseHubspotWindowModifiedAt(envelope.Results[0], objectType)
+	if err != nil {
+		return 0, nil, err
+	}
+	if modifiedAt == nil {
+		return envelope.Total, nil, nil
+	}
+	return envelope.Total, modifiedAt, nil
+}
+
+func parseHubspotWindowModifiedAt(item json.RawMessage, objectType string) (*time.Time, errors.Error) {
+	var record hubspotObjectRecord
+	if err := errors.Convert(json.Unmarshal(item, &record)); err != nil {
+		return nil, err
+	}
+	modifiedAt, err := parseHubspotModifiedAt(record, objectType)
+	if err != nil {
+		return nil, err
+	}
+	if modifiedAt.IsZero() {
+		return nil, nil
+	}
+	return &modifiedAt, nil
+}
+
+func parseHubspotModifiedAt(record hubspotObjectRecord, objectType string) (time.Time, errors.Error) {
+	if record.UpdatedAt != "" {
+		if t, err := time.Parse(time.RFC3339, record.UpdatedAt); err == nil {
+			return t.UTC(), nil
+		}
+	}
+
+	modifiedProperty := hubspotModifiedDateProperty(objectType)
+	if rawValue, ok := record.Properties[modifiedProperty]; ok {
+		switch value := rawValue.(type) {
+		case string:
+			trimmed := strings.TrimSpace(value)
+			if trimmed == "" {
+				break
+			}
+			if ts, err := strconv.ParseInt(trimmed, 10, 64); err == nil {
+				return time.UnixMilli(ts).UTC(), nil
+			}
+			if t, err := time.Parse(time.RFC3339, trimmed); err == nil {
+				return t.UTC(), nil
+			}
+		}
+	}
+
+	return parseHubspotOccurredAt(record)
+}
+
+func splitHubspotSearchWindow(window hubspotSearchWindow) (hubspotSearchWindow, hubspotSearchWindow, bool) {
+	if window.Since == nil || window.Until == nil {
+		return hubspotSearchWindow{}, hubspotSearchWindow{}, false
+	}
+	if !window.Until.After(*window.Since) {
+		return hubspotSearchWindow{}, hubspotSearchWindow{}, false
+	}
+	span := window.Until.Sub(*window.Since)
+	if span <= hubspotMinWindowWidth {
+		return hubspotSearchWindow{}, hubspotSearchWindow{}, false
+	}
+	mid := window.Since.Add(span / 2)
+	if !mid.After(*window.Since) || !window.Until.After(mid) {
+		return hubspotSearchWindow{}, hubspotSearchWindow{}, false
+	}
+	leftUntil := mid
+	rightSince := mid
+	return hubspotSearchWindow{Since: window.Since, Until: &leftUntil}, hubspotSearchWindow{Since: &rightSince, Until: window.Until}, true
+}
+
+func planHubspotCollectionWindows(apiClient *helper.ApiAsyncClient, objectType string, window hubspotSearchWindow) ([]hubspotSearchWindow, errors.Error) {
+	total, earliest, err := probeHubspotSearchWindow(apiClient, objectType, window)
+	if err != nil {
+		return nil, errors.Default.Wrap(err, fmt.Sprintf("failed to probe HubSpot %s window", objectType))
+	}
+	if total == 0 {
+		return nil, nil
+	}
+	if total <= hubspotSearchAfterCeiling {
+		return []hubspotSearchWindow{window}, nil
+	}
+
+	if window.Since == nil && earliest != nil {
+		window.Since = earliest
+	}
+
+	left, right, ok := splitHubspotSearchWindow(window)
+	if !ok {
+		logrus.WithFields(logrus.Fields{
+			"objectType": objectType,
+			"total":      total,
+			"since":      window.Since,
+			"until":      window.Until,
+		}).Warn("[hubspot] unable to split overloaded search window further; fallback ceiling guard will apply")
+		return []hubspotSearchWindow{window}, nil
+	}
+
+	leftWindows, err := planHubspotCollectionWindows(apiClient, objectType, left)
+	if err != nil {
+		return nil, err
+	}
+	rightWindows, err := planHubspotCollectionWindows(apiClient, objectType, right)
+	if err != nil {
+		return nil, err
+	}
+	return append(leftWindows, rightWindows...), nil
+}
+
 func collectHubspotObjectType(
 	taskCtx plugin.SubTaskContext,
 	data *HubspotTaskData,
-	apiClient helper.RateLimitedApiClient,
+	apiClient *helper.ApiAsyncClient,
 	objectType string,
 	rawTable string,
 ) errors.Error {
@@ -296,35 +435,45 @@ func collectHubspotObjectType(
 
 	since := resolveHubspotSince(collector.GetSince(), data.Options.OccurredAfter)
 	until := resolveHubspotUntil(data.Options.OccurredBefore, time.Now())
-
-	err = collector.InitCollector(helper.ApiCollectorArgs{
-		ApiClient:   apiClient,
-		PageSize:    100,
-		UrlTemplate: fmt.Sprintf("crm/v3/objects/%s/search", objectType),
-		Method:      http.MethodPost,
-		RequestBody: func(reqData *helper.RequestData) map[string]interface{} {
-			return buildHubspotSearchRequestBody(objectType, since, until, reqData.Pager.Size, reqData.CustomData)
-		},
-		GetNextPageCustomData: func(prevReqData *helper.RequestData, prevPageResponse *http.Response) (interface{}, errors.Error) {
-			body, readErr := io.ReadAll(prevPageResponse.Body)
-			if readErr != nil {
-				return nil, errors.Default.Wrap(readErr, "failed to read HubSpot pagination response")
-			}
-			return resolveHubspotNextCustomData(body)
-		},
-		ResponseParser: func(res *http.Response) ([]json.RawMessage, errors.Error) {
-			body, readErr := io.ReadAll(res.Body)
-			res.Body.Close()
-			if readErr != nil {
-				return nil, errors.Default.Wrap(readErr, "failed to read HubSpot response body")
-			}
-			return parseHubspotSearchResponse(body)
-		},
-		Incremental: true,
-		Concurrency: 1,
-	})
+	windows, err := planHubspotCollectionWindows(apiClient, objectType, hubspotSearchWindow{Since: since, Until: until})
 	if err != nil {
 		return err
+	}
+	if len(windows) == 0 {
+		return nil
+	}
+
+	for _, window := range windows {
+		window := window
+		err = collector.InitCollector(helper.ApiCollectorArgs{
+			ApiClient:   apiClient,
+			PageSize:    100,
+			UrlTemplate: fmt.Sprintf("crm/v3/objects/%s/search", objectType),
+			Method:      http.MethodPost,
+			RequestBody: func(reqData *helper.RequestData) map[string]interface{} {
+				return buildHubspotSearchRequestBody(objectType, window.Since, window.Until, reqData.Pager.Size, reqData.CustomData)
+			},
+			GetNextPageCustomData: func(prevReqData *helper.RequestData, prevPageResponse *http.Response) (interface{}, errors.Error) {
+				body, readErr := io.ReadAll(prevPageResponse.Body)
+				if readErr != nil {
+					return nil, errors.Default.Wrap(readErr, "failed to read HubSpot pagination response")
+				}
+				return resolveHubspotNextCustomData(body)
+			},
+			ResponseParser: func(res *http.Response) ([]json.RawMessage, errors.Error) {
+				body, readErr := io.ReadAll(res.Body)
+				res.Body.Close()
+				if readErr != nil {
+					return nil, errors.Default.Wrap(readErr, "failed to read HubSpot response body")
+				}
+				return parseHubspotSearchResponse(body)
+			},
+			Incremental: true,
+			Concurrency: 1,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	return collector.Execute()

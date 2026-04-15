@@ -43,6 +43,14 @@ func TestResolveHubspotSince_Priority(t *testing.T) {
 	assert.Nil(t, since)
 }
 
+func TestResolveHubspotUntil_ExclusiveUpperBound(t *testing.T) {
+	base := time.Date(2026, 4, 6, 10, 0, 0, 123000000, time.UTC)
+	until := resolveHubspotUntil(&base, time.Now())
+	if assert.NotNil(t, until) {
+		assert.Equal(t, base.Add(time.Millisecond), *until)
+	}
+}
+
 func TestBuildHubspotSearchRequestBody_WithFiltersAndAfter(t *testing.T) {
 	since := time.Date(2026, 4, 6, 9, 0, 0, 0, time.UTC)
 	until := time.Date(2026, 4, 6, 10, 0, 0, 0, time.UTC)
@@ -57,7 +65,7 @@ func TestBuildHubspotSearchRequestBody_WithFiltersAndAfter(t *testing.T) {
 		filters, ok := filterGroups[0]["filters"].([]map[string]interface{})
 		if assert.True(t, ok) && assert.Len(t, filters, 2) {
 			assert.Equal(t, "GTE", filters[0]["operator"])
-			assert.Equal(t, "LTE", filters[1]["operator"])
+			assert.Equal(t, "LT", filters[1]["operator"])
 		}
 	}
 
@@ -158,5 +166,18 @@ func TestResolveHubspotCollectionTargets_FilterAndDeduplicate(t *testing.T) {
 	if assert.Len(t, targets, 2) {
 		assert.Equal(t, "deals", targets[0].ObjectType)
 		assert.Equal(t, "contacts", targets[1].ObjectType)
+	}
+}
+
+func TestSplitHubspotSearchWindow(t *testing.T) {
+	since := time.Date(2026, 4, 6, 9, 0, 0, 0, time.UTC)
+	until := time.Date(2026, 4, 6, 11, 0, 0, 0, time.UTC)
+	left, right, ok := splitHubspotSearchWindow(hubspotSearchWindow{Since: &since, Until: &until})
+	if assert.True(t, ok) && assert.NotNil(t, left.Until) && assert.NotNil(t, right.Since) {
+		assert.Equal(t, since, *left.Since)
+		assert.Equal(t, until, *right.Until)
+		assert.Equal(t, *left.Until, *right.Since)
+		assert.True(t, left.Until.After(*left.Since))
+		assert.True(t, right.Until.After(*right.Since))
 	}
 }
