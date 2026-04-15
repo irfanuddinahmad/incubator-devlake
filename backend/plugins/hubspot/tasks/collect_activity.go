@@ -147,6 +147,17 @@ func resolveHubspotSince(collectedSince *time.Time, occurredAfter *time.Time) *t
 	return nil
 }
 
+func resolveHubspotUntil(occurredBefore *time.Time, now time.Time) *time.Time {
+	if occurredBefore != nil {
+		t := occurredBefore.UTC()
+		return &t
+	}
+	// Use a fixed upper bound to avoid paging over a moving dataset,
+	// which can invalidate HubSpot "after" cursors during long runs.
+	t := now.UTC()
+	return &t
+}
+
 func resolveHubspotCollectionTargets(requested []string) []hubspotCollectionTarget {
 	selected := requested
 	if len(selected) == 0 {
@@ -277,7 +288,7 @@ func collectHubspotObjectType(
 	}
 
 	since := resolveHubspotSince(collector.GetSince(), data.Options.OccurredAfter)
-	until := data.Options.OccurredBefore
+	until := resolveHubspotUntil(data.Options.OccurredBefore, time.Now())
 
 	err = collector.InitCollector(helper.ApiCollectorArgs{
 		ApiClient:   apiClient,
