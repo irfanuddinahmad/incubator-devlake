@@ -21,6 +21,7 @@ import "github.com/apache/incubator-devlake/core/plugin"
 
 func GetSubTaskMetas() []plugin.SubTaskMeta {
 	return []plugin.SubTaskMeta{
+		CollectOwnersMeta,
 		CollectActivityMeta,
 		ExtractActivityMeta,
 		ConvertActivityMeta,

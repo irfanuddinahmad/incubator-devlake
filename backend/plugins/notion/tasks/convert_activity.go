@@ -40,7 +40,7 @@ var ConvertActivityMeta = plugin.SubTaskMeta{
 	EnabledByDefault: true,
 	Description:      "Convert Notion tool-layer activity events into domain activity records",
 	DomainTypes:      []string{plugin.DOMAIN_TYPE_CROSS},
-	Dependencies:     []*plugin.SubTaskMeta{&ExtractActivityMeta},
+	Dependencies:     []*plugin.SubTaskMeta{&ExtractActivityMeta, &CollectUsersMeta},
 }
 
 func ConvertActivity(taskCtx plugin.SubTaskContext) errors.Error {

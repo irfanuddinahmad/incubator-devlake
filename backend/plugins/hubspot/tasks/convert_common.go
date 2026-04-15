@@ -24,6 +24,7 @@ import (
 	"github.com/apache/incubator-devlake/core/dal"
 	"github.com/apache/incubator-devlake/core/errors"
 	"github.com/apache/incubator-devlake/core/models/domainlayer/crossdomain"
+	"github.com/apache/incubator-devlake/plugins/hubspot/models"
 )
 
 func createUserActivitiesInBatches(db dal.Dal, activities []*crossdomain.UserActivity) errors.Error {
@@ -84,7 +85,10 @@ func normalizeObjectType(objectType, fallback string) string {
 	return objectType
 }
 
-func fallbackDisplay(email, nativeId, fallback string) string {
+func fallbackDisplay(name, email, nativeId, fallback string) string {
+	if strings.TrimSpace(name) != "" {
+		return strings.TrimSpace(name)
+	}
 	if strings.TrimSpace(email) != "" {
 		return strings.TrimSpace(email)
 	}
@@ -92,4 +96,21 @@ func fallbackDisplay(email, nativeId, fallback string) string {
 		return strings.TrimSpace(nativeId)
 	}
 	return fallback
+}
+
+func loadHubspotOwnerMap(db dal.Dal, connectionId uint64) map[string]models.HubspotOwner {
+	ownerMap := map[string]models.HubspotOwner{}
+	var owners []models.HubspotOwner
+	if err := db.All(&owners, dal.Where("connection_id = ?", connectionId)); err != nil {
+		return ownerMap
+	}
+	for _, owner := range owners {
+		if strings.TrimSpace(owner.OwnerId) != "" {
+			ownerMap[strings.TrimSpace(owner.OwnerId)] = owner
+		}
+		if strings.TrimSpace(owner.UserId) != "" {
+			ownerMap[strings.TrimSpace(owner.UserId)] = owner
+		}
+	}
+	return ownerMap
 }
