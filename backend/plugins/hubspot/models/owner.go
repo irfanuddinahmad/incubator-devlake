@@ -17,14 +17,19 @@ limitations under the License.
 
 package models
 
-import "github.com/apache/incubator-devlake/core/dal"
+import "github.com/apache/incubator-devlake/core/models/common"
 
-func GetTablesInfo() []dal.Tabler {
-	return []dal.Tabler{
-		&HubspotConnection{},
-		&HubspotScope{},
-		&HubspotScopeConfig{},
-		&HubspotActivityEvent{},
-		&HubspotOwner{},
-	}
+type HubspotOwner struct {
+	common.NoPKModel
+	ConnectionId uint64 `gorm:"primaryKey" json:"connectionId"`
+	OwnerId      string `gorm:"primaryKey;type:varchar(255)" json:"ownerId"`
+	UserId       string `gorm:"type:varchar(255)" json:"userId"`
+	Email        string `gorm:"type:varchar(255)" json:"email"`
+	FirstName    string `gorm:"type:varchar(255)" json:"firstName"`
+	LastName     string `gorm:"type:varchar(255)" json:"lastName"`
+	FullName     string `gorm:"type:varchar(255)" json:"fullName"`
+}
+
+func (HubspotOwner) TableName() string {
+	return "_tool_hubspot_owners"
 }

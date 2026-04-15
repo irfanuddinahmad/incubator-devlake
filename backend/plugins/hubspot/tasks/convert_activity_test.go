@@ -80,7 +80,7 @@ func TestBuildHubspotActivitiesFromEvents_DebounceAndSummary(t *testing.T) {
 	activities := buildHubspotActivitiesFromEvents(events, testHubspotIdGen(), func(email string) string {
 		calledWith = email
 		return "acc-123"
-	})
+	}, nil)
 
 	if assert.Len(t, activities, 1) {
 		a := activities[0]
@@ -112,7 +112,7 @@ func TestBuildHubspotActivitiesFromEvents_FallbackIdentityAndDefaults(t *testing
 		SourceObjectType: "note",
 	}
 
-	activities := buildHubspotActivitiesFromEvents([]models.HubspotActivityEvent{event}, testHubspotIdGen(), nil)
+	activities := buildHubspotActivitiesFromEvents([]models.HubspotActivityEvent{event}, testHubspotIdGen(), nil, nil)
 
 	if assert.Len(t, activities, 1) {
 		a := activities[0]
@@ -140,8 +140,8 @@ func TestBuildHubspotActivitiesFromEvents_IdDeterminism(t *testing.T) {
 		SourceObjectType: "email",
 	}}
 
-	a1 := buildHubspotActivitiesFromEvents(events, testHubspotIdGen(), nil)
-	a2 := buildHubspotActivitiesFromEvents(events, testHubspotIdGen(), nil)
+	a1 := buildHubspotActivitiesFromEvents(events, testHubspotIdGen(), nil, nil)
+	a2 := buildHubspotActivitiesFromEvents(events, testHubspotIdGen(), nil, nil)
 
 	if assert.Len(t, a1, 1) && assert.Len(t, a2, 1) {
 		assert.Equal(t, a1[0].Id, a2[0].Id)
@@ -175,7 +175,7 @@ func TestBuildHubspotActivitiesFromEvents_DebounceBoundaryCreatesTwoGroups(t *te
 		},
 	}
 
-	activities := buildHubspotActivitiesFromEvents(events, testHubspotIdGen(), nil)
+	activities := buildHubspotActivitiesFromEvents(events, testHubspotIdGen(), nil, nil)
 	if assert.Len(t, activities, 2) {
 		assert.Equal(t, "HubSpot email updated", activities[0].Summary)
 		assert.Equal(t, "HubSpot email updated", activities[1].Summary)
@@ -210,7 +210,7 @@ func TestBuildHubspotActivitiesFromEvents_NormalizedKeyMergesDifferentCase(t *te
 		},
 	}
 
-	activities := buildHubspotActivitiesFromEvents(events, testHubspotIdGen(), nil)
+	activities := buildHubspotActivitiesFromEvents(events, testHubspotIdGen(), nil, nil)
 	if assert.Len(t, activities, 1) {
 		assert.Equal(t, "HubSpot email updated x2", activities[0].Summary)
 	}
@@ -245,7 +245,7 @@ func TestBuildHubspotActivitiesFromEvents_WebhookFlowAndIgnored(t *testing.T) {
 		},
 	}
 
-	activities := buildHubspotActivitiesFromEvents(events, testHubspotIdGen(), nil)
+	activities := buildHubspotActivitiesFromEvents(events, testHubspotIdGen(), nil, nil)
 	if assert.Len(t, activities, 1) {
 		a := activities[0]
 		assert.Equal(t, "hubspot", a.SourceSystem)
@@ -255,4 +255,41 @@ func TestBuildHubspotActivitiesFromEvents_WebhookFlowAndIgnored(t *testing.T) {
 		assert.Equal(t, "c-1", a.ObjectId)
 		assert.Equal(t, "contact:c-1", a.ObjectRef)
 	}
+}
+
+func TestBuildHubspotActivitiesFromEvents_ResolvesEmailFromOwnerMap(t *testing.T) {
+	events := []models.HubspotActivityEvent{{
+		ConnectionId:     22,
+		ScopeId:          "scope-owner",
+		EventId:          "ho-1",
+		OccurredAt:       time.Date(2026, 4, 8, 8, 10, 0, 0, time.UTC),
+		ActingUserId:     "254072204",
+		ActingUserEmail:  "",
+		ActionType:       "updated",
+		ObjectType:       "contact",
+		ObjectId:         "c-88",
+		SourceObjectType: "contact",
+	}}
+
+	var accountLookup string
+	activities := buildHubspotActivitiesFromEvents(events, testHubspotIdGen(), func(email string) string {
+		accountLookup = email
+		return "acc-owner"
+	}, map[string]models.HubspotOwner{
+		"254072204": {
+			OwnerId:   "254072204",
+			Email:     "asad.khawaja@edly.io",
+			FirstName: "Muhammad Asad",
+			LastName:  "Khawaja",
+			FullName:  "Muhammad Asad Khawaja",
+		},
+	})
+
+	if assert.Len(t, activities, 1) {
+		a := activities[0]
+		assert.Equal(t, "asad.khawaja@edly.io", a.UserEmail)
+		assert.Equal(t, "Muhammad Asad Khawaja", a.UserDisplay)
+		assert.Equal(t, "acc-owner", a.AccountId)
+	}
+	assert.Equal(t, "asad.khawaja@edly.io", accountLookup)
 }

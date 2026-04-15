@@ -100,7 +100,7 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(DISTINCT COALESCE(NULLIF(ua.user_email, ''), ua.native_user_id)) AS \"Active Users\"\nFROM user_activities ua\nWHERE $__timeFilter(ua.action_time)\n  AND ua.source_system = 'notion'",
+          "rawSql": "SELECT COUNT(DISTINCT COALESCE(NULLIF(ua.user_email, ''), CONCAT('[id] ', ua.native_user_id))) AS \"Active Users\"\nFROM user_activities ua\nWHERE $__timeFilter(ua.action_time)\n  AND ua.source_system = 'notion'",
           "refId": "A"
         }
       ],
@@ -200,7 +200,7 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ROUND(COUNT(*) / NULLIF(COUNT(DISTINCT COALESCE(NULLIF(ua.user_email, ''), ua.native_user_id)), 0), 2) AS \"Avg Activities/User\"\nFROM user_activities ua\nWHERE $__timeFilter(ua.action_time)\n  AND ua.source_system = 'notion'",
+          "rawSql": "SELECT ROUND(COUNT(*) / NULLIF(COUNT(DISTINCT COALESCE(NULLIF(ua.user_email, ''), CONCAT('[id] ', ua.native_user_id))), 0), 2) AS \"Avg Activities/User\"\nFROM user_activities ua\nWHERE $__timeFilter(ua.action_time)\n  AND ua.source_system = 'notion'",
           "refId": "A"
         }
       ],
@@ -493,7 +493,7 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ua.action_day AS time,\n  COUNT(DISTINCT COALESCE(NULLIF(ua.user_email, ''), ua.native_user_id)) AS \"Active Users\",\n  COUNT(*) AS \"Total Activities\"\nFROM user_activities ua\nWHERE $__timeFilter(ua.action_time)\n  AND ua.source_system = 'notion'\nGROUP BY ua.action_day\nORDER BY 1",
+          "rawSql": "SELECT ua.action_day AS time,\n  COUNT(DISTINCT COALESCE(NULLIF(ua.user_email, ''), CONCAT('[id] ', ua.native_user_id))) AS \"Active Users\",\n  COUNT(*) AS \"Total Activities\"\nFROM user_activities ua\nWHERE $__timeFilter(ua.action_time)\n  AND ua.source_system = 'notion'\nGROUP BY ua.action_day\nORDER BY 1",
           "refId": "A"
         }
       ],
@@ -565,7 +565,7 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(NULLIF(ua.user_display, ''), ua.user_email, ua.native_user_id) AS \"User\",\n  COUNT(*) AS \"Activities\",\n  COUNT(DISTINCT ua.action_day) AS \"Active Days\",\n  COUNT(DISTINCT ua.object_type) AS \"Object Types\",\n  COUNT(DISTINCT ua.action_type) AS \"Action Types\"\nFROM user_activities ua\nWHERE $__timeFilter(ua.action_time)\n  AND ua.source_system = 'notion'\nGROUP BY COALESCE(NULLIF(ua.user_display, ''), ua.user_email, ua.native_user_id)\nORDER BY COUNT(*) DESC\nLIMIT 50",
+          "rawSql": "SELECT COALESCE(NULLIF(ua.user_email, ''), NULLIF(ua.user_display, ''), CONCAT('[id] ', ua.native_user_id)) AS \"User\",\n  MAX(NULLIF(ua.user_email, '')) AS \"Email\",\n  COUNT(*) AS \"Activities\",\n  COUNT(DISTINCT ua.action_day) AS \"Active Days\",\n  COUNT(DISTINCT ua.object_type) AS \"Object Types\",\n  COUNT(DISTINCT ua.action_type) AS \"Action Types\"\nFROM user_activities ua\nWHERE $__timeFilter(ua.action_time)\n  AND ua.source_system = 'notion'\nGROUP BY COALESCE(NULLIF(ua.user_email, ''), NULLIF(ua.user_display, ''), CONCAT('[id] ', ua.native_user_id))\nORDER BY COUNT(*) DESC\nLIMIT 50",
           "refId": "A"
         }
       ],
@@ -624,7 +624,7 @@
           "datasource": "mysql",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ua.action_day AS \"Day\",\n  COUNT(DISTINCT COALESCE(NULLIF(ua.user_email, ''), ua.native_user_id)) AS \"Users\",\n  COUNT(*) AS \"Activities\",\n  COUNT(DISTINCT ua.action_type) AS \"Action Types\",\n  COUNT(DISTINCT ua.object_type) AS \"Object Types\"\nFROM user_activities ua\nWHERE $__timeFilter(ua.action_time)\n  AND ua.source_system = 'notion'\nGROUP BY ua.action_day\nORDER BY ua.action_day DESC\nLIMIT 30",
+          "rawSql": "SELECT ua.action_day AS \"Day\",\n  COUNT(DISTINCT COALESCE(NULLIF(ua.user_email, ''), CONCAT('[id] ', ua.native_user_id))) AS \"Users\",\n  COUNT(*) AS \"Activities\",\n  COUNT(DISTINCT ua.action_type) AS \"Action Types\",\n  COUNT(DISTINCT ua.object_type) AS \"Object Types\"\nFROM user_activities ua\nWHERE $__timeFilter(ua.action_time)\n  AND ua.source_system = 'notion'\nGROUP BY ua.action_day\nORDER BY ua.action_day DESC\nLIMIT 30",
           "refId": "A"
         }
       ],

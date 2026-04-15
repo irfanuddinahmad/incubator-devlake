@@ -40,7 +40,7 @@ var ConvertActivityMeta = plugin.SubTaskMeta{
 	EnabledByDefault: true,
 	Description:      "Convert HubSpot tool-layer activity events into domain activity records",
 	DomainTypes:      []string{plugin.DOMAIN_TYPE_CROSS},
-	Dependencies:     []*plugin.SubTaskMeta{&ExtractActivityMeta},
+	Dependencies:     []*plugin.SubTaskMeta{&ExtractActivityMeta, &CollectOwnersMeta},
 }
 
 func ConvertActivity(taskCtx plugin.SubTaskContext) errors.Error {
@@ -71,7 +71,8 @@ func ConvertActivity(taskCtx plugin.SubTaskContext) errors.Error {
 	defer cursor.Close()
 
 	idGen := didgen.NewDomainIdGenerator(&models.HubspotActivityEvent{})
-	activities, err := buildHubspotActivities(db, cursor, idGen)
+	ownerMap := loadHubspotOwnerMap(db, connectionId)
+	activities, err := buildHubspotActivities(db, cursor, idGen, ownerMap)
 	if err != nil {
 		return err
 	}
@@ -95,7 +96,12 @@ type hubspotGroupedActivity struct {
 	count      int
 }
 
-func buildHubspotActivities(db dal.Dal, cursor dal.Rows, idGen *didgen.DomainIdGenerator) ([]*crossdomain.UserActivity, errors.Error) {
+func buildHubspotActivities(
+	db dal.Dal,
+	cursor dal.Rows,
+	idGen *didgen.DomainIdGenerator,
+	ownerMap map[string]models.HubspotOwner,
+) ([]*crossdomain.UserActivity, errors.Error) {
 	events := make([]models.HubspotActivityEvent, 0)
 
 	for cursor.Next() {
@@ -108,7 +114,7 @@ func buildHubspotActivities(db dal.Dal, cursor dal.Rows, idGen *didgen.DomainIdG
 
 	activities := buildHubspotActivitiesFromEvents(events, idGen, func(email string) string {
 		return resolveAccountIdByEmail(db, email)
-	})
+	}, ownerMap)
 	return activities, nil
 }
 
@@ -116,9 +122,13 @@ func buildHubspotActivitiesFromEvents(
 	events []models.HubspotActivityEvent,
 	idGen *didgen.DomainIdGenerator,
 	resolveAccountId func(email string) string,
+	ownerMap map[string]models.HubspotOwner,
 ) []*crossdomain.UserActivity {
 	if resolveAccountId == nil {
 		resolveAccountId = func(string) string { return "" }
+	}
+	if ownerMap == nil {
+		ownerMap = map[string]models.HubspotOwner{}
 	}
 
 	grouped := map[string]*hubspotGroupedActivity{}
@@ -144,11 +154,22 @@ func buildHubspotActivitiesFromEvents(
 		groupId := fmt.Sprintf("%s:%s:%s:%s:%d", userKey, normalizedAction, normalizedObject, eventCopy.ObjectId, bucket.Unix())
 		group := grouped[groupId]
 		if group == nil {
+			resolvedEmail := strings.TrimSpace(eventCopy.ActingUserEmail)
+			resolvedName := ""
+			if owner, ok := ownerMap[strings.TrimSpace(eventCopy.ActingUserId)]; ok {
+				if strings.TrimSpace(owner.Email) != "" {
+					resolvedEmail = strings.TrimSpace(owner.Email)
+				}
+				resolvedName = strings.TrimSpace(owner.FullName)
+				if resolvedName == "" {
+					resolvedName = strings.TrimSpace(strings.TrimSpace(owner.FirstName + " " + owner.LastName))
+				}
+			}
 			group = &hubspotGroupedActivity{
 				groupId:    groupId,
-				accountId:  resolveAccountId(eventCopy.ActingUserEmail),
-				userEmail:  strings.TrimSpace(eventCopy.ActingUserEmail),
-				userName:   fallbackDisplay(strings.TrimSpace(eventCopy.ActingUserEmail), strings.TrimSpace(eventCopy.ActingUserId), "HubSpot user"),
+				accountId:  resolveAccountId(resolvedEmail),
+				userEmail:  resolvedEmail,
+				userName:   fallbackDisplay(resolvedName, resolvedEmail, strings.TrimSpace(eventCopy.ActingUserId), "HubSpot user"),
 				nativeId:   strings.TrimSpace(eventCopy.ActingUserId),
 				actionType: normalizedAction,
 				objectType: normalizedObject,
