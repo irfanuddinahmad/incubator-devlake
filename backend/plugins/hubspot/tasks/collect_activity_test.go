@@ -123,6 +123,9 @@ func TestResolveHubspotNextCustomData_Flow(t *testing.T) {
 		}
 	}
 
+	_, err = resolveHubspotNextCustomData([]byte(`{"paging":{"next":{"after":"10000"}}}`))
+	assert.ErrorIs(t, err, helper.ErrFinishCollect)
+
 	_, err = resolveHubspotNextCustomData([]byte(`{"paging":{"next":{"after":""}}}`))
 	assert.ErrorIs(t, err, helper.ErrFinishCollect)
 }
