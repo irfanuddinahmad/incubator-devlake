@@ -33,6 +33,8 @@ import (
 
 var defaultHubspotObjectTypes = []string{"leads", "deals", "contacts", "companies", "quotes"}
 
+const hubspotSearchAfterCeiling = 10000
+
 var hubspotObjectTypeToDomainType = map[string]string{
 	"appointments": "appointment",
 	"carts":        "cart",
@@ -257,6 +259,11 @@ func resolveHubspotNextCustomData(body []byte) (interface{}, errors.Error) {
 		return nil, parseErr
 	}
 	if after == "" {
+		return nil, helper.ErrFinishCollect
+	}
+	if offset, convErr := strconv.Atoi(after); convErr == nil && offset >= hubspotSearchAfterCeiling {
+		// HubSpot search API fails with generic 400 once the next "after" cursor reaches
+		// the hard pagination ceiling. Stop current collection window gracefully.
 		return nil, helper.ErrFinishCollect
 	}
 	return after, nil
