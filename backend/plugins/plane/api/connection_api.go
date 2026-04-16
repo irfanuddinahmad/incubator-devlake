@@ -80,6 +80,7 @@ func testConnection(ctx context.Context, connection models.PlaneConnection) (*Pl
 
 // TestConnection tests the Plane connection.
 func TestConnection(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput, errors.Error) {
+	input.Body = normalizeConnectionBody(input.Body)
 	var connection models.PlaneConnection
 	err := helper.DecodeMapStruct(input.Body, &connection, false)
 	if err != nil {
@@ -94,9 +95,13 @@ func TestConnection(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput, 
 
 // TestExistingConnection tests an existing Plane connection.
 func TestExistingConnection(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput, errors.Error) {
-	connection, err := connApi.FindByPk(input)
+	input.Body = normalizeConnectionBody(input.Body)
+	connection, err := dsHelper.ConnApi.GetMergedConnection(input)
 	if err != nil {
 		return nil, errors.BadInput.Wrap(err, "find connection from db")
+	}
+	if err := helper.DecodeMapStruct(input.Body, connection, false); err != nil {
+		return nil, err
 	}
 	result, err := testConnection(apiRequestContext(input), *connection)
 	if err != nil {
@@ -106,6 +111,7 @@ func TestExistingConnection(input *plugin.ApiResourceInput) (*plugin.ApiResource
 }
 
 func PostConnections(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput, errors.Error) {
+	input.Body = normalizeConnectionBody(input.Body)
 	var connection models.PlaneConnection
 	if err := validateConnectionInput(&connection, input); err != nil {
 		return nil, err
@@ -118,14 +124,15 @@ func PostConnections(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput,
 }
 
 func ListConnections(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput, errors.Error) {
-	return connApi.GetAll(input)
+	return dsHelper.ConnApi.GetAll(input)
 }
 
 func GetConnection(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput, errors.Error) {
-	return connApi.GetDetail(input)
+	return dsHelper.ConnApi.GetDetail(input)
 }
 
 func PatchConnection(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput, errors.Error) {
+	input.Body = normalizeConnectionBody(input.Body)
 	model, err := connApi.PatchModel(input, true)
 	if err != nil {
 		return nil, errors.Convert(err)
@@ -133,7 +140,7 @@ func PatchConnection(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput,
 	if err := validateConnection(model); err != nil {
 		return nil, err
 	}
-	if err := connSrv.Update(model); err != nil {
+	if err := dsHelper.ConnSrv.Update(model); err != nil {
 		return nil, err
 	}
 	model = connApi.Sanitize(model)
@@ -157,4 +164,20 @@ func validateConnectionInput(connection *models.PlaneConnection, input *plugin.A
 		return err
 	}
 	return validateConnection(connection)
+}
+
+func normalizeConnectionBody(body map[string]interface{}) map[string]interface{} {
+	if body == nil {
+		return nil
+	}
+	normalized := make(map[string]interface{}, len(body)+1)
+	for key, value := range body {
+		normalized[key] = value
+	}
+	if normalized["apiKey"] == nil {
+		if token, ok := normalized["token"]; ok && token != nil && token != "" {
+			normalized["apiKey"] = token
+		}
+	}
+	return normalized
 }

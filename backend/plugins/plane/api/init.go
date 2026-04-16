@@ -21,20 +21,37 @@ import (
 	"github.com/apache/incubator-devlake/core/context"
 	"github.com/apache/incubator-devlake/core/plugin"
 	helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
-	"github.com/apache/incubator-devlake/helpers/srvhelper"
 	"github.com/apache/incubator-devlake/plugins/plane/models"
+	"github.com/go-playground/validator/v10"
 )
 
 var basicRes context.BasicRes
+var vld *validator.Validate
 var connHelper *helper.ConnectionApiHelper
 var connApi *helper.ModelApiHelper[models.PlaneConnection]
-var connSrv *srvhelper.ModelSrvHelper[models.PlaneConnection]
+var dsHelper *helper.DsHelper[models.PlaneConnection, models.PlaneProject, models.PlaneScopeConfig]
+var raProxy *helper.DsRemoteApiProxyHelper[models.PlaneConnection]
+var raScopeList *helper.DsRemoteApiScopeListHelper[models.PlaneConnection, models.PlaneProject, PlaneRemotePagination]
 
 func Init(br context.BasicRes, p plugin.PluginMeta) {
 	basicRes = br
-	connHelper = helper.NewConnectionHelper(br, nil, p.Name())
-	connSrv = srvhelper.NewModelSrvHelper[models.PlaneConnection](br, nil)
-	connApi = helper.NewModelApiHelper[models.PlaneConnection](br, connSrv, []string{"connectionId"}, func(c models.PlaneConnection) models.PlaneConnection {
-		return c.Sanitize()
-	})
+	vld = validator.New()
+	connHelper = helper.NewConnectionHelper(br, vld, p.Name())
+	dsHelper = helper.NewDataSourceHelper[
+		models.PlaneConnection, models.PlaneProject, models.PlaneScopeConfig,
+	](
+		br,
+		p.Name(),
+		[]string{"name"},
+		func(c models.PlaneConnection) models.PlaneConnection {
+			return c.Sanitize()
+		},
+		func(s models.PlaneProject) models.PlaneProject {
+			return s
+		},
+		nil,
+	)
+	raProxy = helper.NewDsRemoteApiProxyHelper[models.PlaneConnection](dsHelper.ConnApi.ModelApiHelper)
+	raScopeList = helper.NewDsRemoteApiScopeListHelper[models.PlaneConnection, models.PlaneProject, PlaneRemotePagination](raProxy, listPlaneRemoteScopes)
+	connApi = dsHelper.ConnApi.ModelApiHelper
 }

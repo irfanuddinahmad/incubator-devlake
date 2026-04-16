@@ -22,5 +22,7 @@ import "github.com/apache/incubator-devlake/core/plugin"
 func All() []plugin.MigrationScript {
 	return []plugin.MigrationScript{
 		new(addInitTables20260415),
+		new(addScopeTables20260416),
+		new(addRawDataColumns20260416),
 	}
 }

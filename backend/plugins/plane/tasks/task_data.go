@@ -17,7 +17,10 @@ limitations under the License.
 
 package tasks
 
-import helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
+import (
+	helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
+	"github.com/apache/incubator-devlake/plugins/plane/models"
+)
 
 type PlaneOptions struct {
 	ConnectionId uint64 `json:"connectionId" mapstructure:"connectionId"`
@@ -26,5 +29,6 @@ type PlaneOptions struct {
 
 type PlaneTaskData struct {
 	Options   *PlaneOptions
+	Project   *models.PlaneProject
 	ApiClient *helper.ApiAsyncClient
 }

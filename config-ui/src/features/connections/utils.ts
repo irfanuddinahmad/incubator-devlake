@@ -30,8 +30,9 @@ export const transformConnection = (plugin: string, connection: IConnectionAPI):
     name: connection.name,
     status: IConnectionStatus.IDLE,
     endpoint: connection.endpoint,
+    apiKey: connection.apiKey,
     authMethod: connection.authMethod,
-    token: connection.token,
+    token: connection.token ?? connection.apiKey,
     username: connection.username,
     password: connection.password,
     appId: connection.appId,
@@ -40,6 +41,7 @@ export const transformConnection = (plugin: string, connection: IConnectionAPI):
     proxy: connection.proxy,
     rateLimitPerHour: connection.rateLimitPerHour,
     organization: connection.organization,
+    workspaceSlug: connection.workspaceSlug,
   };
 };
 

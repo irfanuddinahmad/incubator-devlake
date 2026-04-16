@@ -50,11 +50,11 @@ func (p Plane) Connection() dal.Tabler {
 }
 
 func (p Plane) Scope() plugin.ToolLayerScope {
-	return nil
+	return &models.PlaneProject{}
 }
 
 func (p Plane) ScopeConfig() dal.Tabler {
-	return nil
+	return &models.PlaneScopeConfig{}
 }
 
 func (p Plane) Init(basicRes context.BasicRes) errors.Error {
@@ -65,6 +65,8 @@ func (p Plane) Init(basicRes context.BasicRes) errors.Error {
 func (p Plane) GetTablesInfo() []dal.Tabler {
 	return []dal.Tabler{
 		&models.PlaneConnection{},
+		&models.PlaneProject{},
+		&models.PlaneScopeConfig{},
 	}
 }
 
@@ -104,6 +106,15 @@ func (p Plane) PrepareTaskData(taskCtx plugin.TaskContext, options map[string]in
 		return nil, errors.BadInput.New("plane workspaceSlug is required")
 	}
 
+	project := &models.PlaneProject{}
+	db := taskCtx.GetDal()
+	if err := db.First(project, dal.Where("connection_id = ? AND project_id = ?", op.ConnectionId, op.ProjectId)); err != nil {
+		if db.IsErrorNotFound(err) {
+			return nil, errors.NotFound.New(fmt.Sprintf("plane project scope %s was not found for connection %d", op.ProjectId, op.ConnectionId))
+		}
+		return nil, errors.Default.Wrap(err, "unable to get plane project scope")
+	}
+
 	planeApiClient, err := tasks.NewPlaneApiClient(taskCtx, connection)
 	if err != nil {
 		return nil, errors.Default.Wrap(err, "failed to create plane api client")
@@ -111,6 +122,7 @@ func (p Plane) PrepareTaskData(taskCtx plugin.TaskContext, options map[string]in
 
 	taskData := &tasks.PlaneTaskData{
 		Options:   &op,
+		Project:   project,
 		ApiClient: planeApiClient,
 	}
 	return taskData, nil
@@ -141,6 +153,30 @@ func (p Plane) ApiResources() map[string]map[string]plugin.ApiResourceHandler {
 		"connections/:connectionId/test": {
 			"POST": api.TestExistingConnection,
 		},
+		"connections/:connectionId/remote-scopes": {
+			"GET": api.RemoteScopes,
+		},
+		"connections/:connectionId/search-remote-scopes": {
+			"GET": api.SearchRemoteScopes,
+		},
+		"connections/:connectionId/scopes": {
+			"GET": api.GetScopeList,
+			"PUT": api.PutScope,
+		},
+		"connections/:connectionId/scopes/:scopeId": {
+			"GET":    api.GetScope,
+			"PATCH":  api.UpdateScope,
+			"DELETE": api.DeleteScope,
+		},
+		"connections/:connectionId/scope-configs": {
+			"POST": api.CreateScopeConfig,
+			"GET":  api.GetScopeConfigList,
+		},
+		"connections/:connectionId/scope-configs/:scopeConfigId": {
+			"PATCH":  api.UpdateScopeConfig,
+			"GET":    api.GetScopeConfig,
+			"DELETE": api.DeleteScopeConfig,
+		},
 	}
 }
 
@@ -159,5 +195,5 @@ func (p Plane) MakeDataSourcePipelinePlanV200(
 	connectionId uint64,
 	scopes []*coreModels.BlueprintScope,
 ) (coreModels.PipelinePlan, []plugin.Scope, errors.Error) {
-	return nil, nil, errors.BadInput.New("plane blueprint planning is not available until scope support is added")
+	return api.MakeDataSourcePipelinePlanV200(p.SubTaskMetas(), connectionId, scopes)
 }

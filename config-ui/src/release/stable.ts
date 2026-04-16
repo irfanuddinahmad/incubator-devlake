@@ -107,6 +107,9 @@ const URLS = {
       BASIS: 'https://devlake.apache.org/docs/Configuration/PagerDuty',
       RATE_LIMIT: 'https://devlake.apache.org/docs/Configuration/PagerDuty/#custom-rate-limit-optional',
     },
+    PLANE: {
+      BASIS: 'https://devlake.apache.org/docs/Configuration/Tutorial',
+    },
     SLACK: {
       BASIS: 'https://devlake.apache.org/docs/Configuration/Slack',
       RATE_LIMIT: 'https://devlake.apache.org/docs/Configuration/Slack#custom-rate-limit-optional',
