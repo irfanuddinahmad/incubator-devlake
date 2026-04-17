@@ -79,7 +79,11 @@ func (p Plane) Name() string {
 }
 
 func (p Plane) SubTaskMetas() []plugin.SubTaskMeta {
-	return []plugin.SubTaskMeta{}
+	return []plugin.SubTaskMeta{
+		tasks.CollectProjectsMeta,
+		tasks.ExtractProjectsMeta,
+		tasks.ConvertProjectsMeta,
+	}
 }
 
 func (p Plane) PrepareTaskData(taskCtx plugin.TaskContext, options map[string]interface{}) (interface{}, errors.Error) {
@@ -105,6 +109,9 @@ func (p Plane) PrepareTaskData(taskCtx plugin.TaskContext, options map[string]in
 	if connection.WorkspaceSlug == "" {
 		return nil, errors.BadInput.New("plane workspaceSlug is required")
 	}
+	if connection.Endpoint == "" {
+		return nil, errors.BadInput.New("plane endpoint is required")
+	}
 
 	project := &models.PlaneProject{}
 	db := taskCtx.GetDal()
@@ -124,6 +131,7 @@ func (p Plane) PrepareTaskData(taskCtx plugin.TaskContext, options map[string]in
 		Options:   &op,
 		Project:   project,
 		ApiClient: planeApiClient,
+		Endpoint:  connection.Endpoint,
 	}
 	return taskData, nil
 }

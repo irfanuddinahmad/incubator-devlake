@@ -31,4 +31,16 @@ type PlaneTaskData struct {
 	Options   *PlaneOptions
 	Project   *models.PlaneProject
 	ApiClient *helper.ApiAsyncClient
+	Endpoint  string // base URL of the Plane instance, e.g. "https://api.plane.so"
+}
+
+// RAW_PROJECT_TABLE is the raw data table for Plane project API responses.
+// Used by the project collector, extractor, and convertor.
+const RAW_PROJECT_TABLE = "plane_api_projects"
+
+// PlaneApiParams holds the identifiers used to scope raw data storage and retrieval.
+type PlaneApiParams struct {
+	ConnectionId  uint64
+	WorkspaceSlug string
+	ProjectId     string
 }
