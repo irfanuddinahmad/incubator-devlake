@@ -144,5 +144,8 @@ func All() []plugin.MigrationScript {
 		new(fixNullPriority),
 		new(modifyCicdDeploymentsToText),
 		new(increaseCqIssuesProjectKeyLength),
+		new(addAiActivitiesUnifiedSchema),
+		new(addUserActivities),
+		new(addUserProjectMapping),
 	}
 }
