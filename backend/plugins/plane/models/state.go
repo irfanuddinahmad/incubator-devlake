@@ -15,15 +15,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package migrationscripts
+package models
 
-import "github.com/apache/incubator-devlake/core/plugin"
+import "github.com/apache/incubator-devlake/core/models/common"
 
-func All() []plugin.MigrationScript {
-	return []plugin.MigrationScript{
-		new(addInitTables20260415),
-		new(addScopeTables20260416),
-		new(addRawDataColumns20260416),
-		new(addWorkItemTables20260417),
-	}
+type PlaneState struct {
+	ConnectionId uint64  `gorm:"primaryKey"`
+	ProjectId    string  `gorm:"primaryKey;type:varchar(255);index"`
+	StateId      string  `gorm:"primaryKey;type:varchar(255)"`
+	Name         string  `gorm:"type:varchar(255)"`
+	Group        string  `gorm:"type:varchar(100)"`
+	Color        string  `gorm:"type:varchar(100)"`
+	Sequence     float64 `gorm:"type:double"`
+	common.NoPKModel
+}
+
+func (PlaneState) TableName() string {
+	return "_tool_plane_states"
 }

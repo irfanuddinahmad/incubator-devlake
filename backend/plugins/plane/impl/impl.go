@@ -67,6 +67,9 @@ func (p Plane) GetTablesInfo() []dal.Tabler {
 		&models.PlaneConnection{},
 		&models.PlaneProject{},
 		&models.PlaneScopeConfig{},
+		&models.PlaneWorkItem{},
+		&models.PlaneState{},
+		&models.PlaneWorkItemType{},
 	}
 }
 
@@ -83,6 +86,13 @@ func (p Plane) SubTaskMetas() []plugin.SubTaskMeta {
 		tasks.CollectProjectsMeta,
 		tasks.ExtractProjectsMeta,
 		tasks.ConvertProjectsMeta,
+		tasks.CollectStatesMeta,
+		tasks.ExtractStatesMeta,
+		tasks.CollectWorkItemTypesMeta,
+		tasks.ExtractWorkItemTypesMeta,
+		tasks.CollectWorkItemsMeta,
+		tasks.ExtractWorkItemsMeta,
+		tasks.ConvertWorkItemsMeta,
 	}
 }
 

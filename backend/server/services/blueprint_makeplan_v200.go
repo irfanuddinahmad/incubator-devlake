@@ -35,6 +35,9 @@ func GeneratePlanJsonV200(
 	skipCollectors bool,
 ) (coreModels.PipelinePlan, errors.Error) {
 	var err errors.Error
+	if len(connections) == 0 {
+		return nil, errors.Default.New("blueprint has no connections configured")
+	}
 	// make plan for data-source coreModels fist. generate plan for each
 	// connection, then merge them into one legitimate plan and collect the
 	// scopes produced by the data-source plugins
