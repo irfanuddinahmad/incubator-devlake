@@ -48,19 +48,19 @@ func ExtractWorkItems(taskCtx plugin.SubTaskContext) errors.Error {
 		return err
 	}
 
-	extractor, err := api.NewApiExtractor(api.ApiExtractorArgs{
-		RawDataSubTaskArgs: api.RawDataSubTaskArgs{
-			Ctx: taskCtx,
+	extractor, err := api.NewStatefulApiExtractor(&api.StatefulApiExtractorArgs[planeApiWorkItem]{
+		SubtaskCommonArgs: &api.SubtaskCommonArgs{
+			SubTaskContext: taskCtx,
+			Table:          RAW_WORK_ITEM_TABLE,
 			Params: PlaneApiParams{
 				ConnectionId:  data.Options.ConnectionId,
 				WorkspaceSlug: data.Project.WorkspaceSlug,
 				ProjectId:     data.Options.ProjectId,
 			},
-			Table: RAW_WORK_ITEM_TABLE,
 		},
-		Extract: func(row *api.RawData) ([]interface{}, errors.Error) {
-			workItem, err := extractPlaneWorkItem(
-				row.Data,
+		Extract: func(body *planeApiWorkItem, _ *api.RawData) ([]any, errors.Error) {
+			workItem, err := mapPlaneWorkItem(
+				body,
 				data.Options.ConnectionId,
 				data.Options.ProjectId,
 				stateMap,

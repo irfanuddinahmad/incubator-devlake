@@ -30,6 +30,16 @@ import (
 	"github.com/apache/incubator-devlake/plugins/plane/models"
 )
 
+const (
+	planeWorkItemPageSize              = 100
+	planeUpdatedAtOrderingVerification = "Fallback mode stays enabled until a multi-page Plane dataset verifies order_by=-updated_at across page boundaries."
+
+	planeStatusCancelled = "CANCELLED"
+
+	planeHostAPI = "api.plane.so"
+	planeHostApp = "app.plane.so"
+)
+
 type planePaginatedResults struct {
 	NextCursor string            `json:"next_cursor"`
 	Results    []json.RawMessage `json:"results"`
@@ -67,6 +77,10 @@ type planeApiWorkItemType struct {
 	IsDefault bool   `json:"is_default"`
 }
 
+type planeApiWorkItemUpdateMarker struct {
+	UpdatedAt *time.Time `json:"updated_at"`
+}
+
 func parsePlanePaginatedResults(response *http.Response) ([]json.RawMessage, errors.Error) {
 	var page planePaginatedResults
 	if err := api.UnmarshalResponse(response, &page); err != nil {
@@ -84,6 +98,41 @@ func parsePlaneNextCursor(response *http.Response) (interface{}, errors.Error) {
 		return nil, nil
 	}
 	return page.NextCursor, nil
+}
+
+func parsePlaneWorkItemResultsForCollector(
+	response *http.Response,
+	since *time.Time,
+) ([]json.RawMessage, errors.Error) {
+	var page planePaginatedResults
+	if err := api.UnmarshalResponse(response, &page); err != nil {
+		return nil, err
+	}
+	if since == nil {
+		return page.Results, nil
+	}
+	return filterPlaneWorkItemsByUpdatedAt(page.Results, since)
+}
+
+func filterPlaneWorkItemsByUpdatedAt(
+	results []json.RawMessage,
+	since *time.Time,
+) ([]json.RawMessage, errors.Error) {
+	if since == nil {
+		return results, nil
+	}
+
+	filtered := make([]json.RawMessage, 0, len(results))
+	for _, result := range results {
+		var marker planeApiWorkItemUpdateMarker
+		if err := json.Unmarshal(result, &marker); err != nil {
+			return nil, errors.Default.Wrap(err, "error unmarshalling Plane work item updated_at marker")
+		}
+		if marker.UpdatedAt == nil || !marker.UpdatedAt.Before(*since) {
+			filtered = append(filtered, result)
+		}
+	}
+	return filtered, nil
 }
 
 func extractPlaneState(data []byte, connectionId uint64, projectId string) (*models.PlaneState, errors.Error) {
@@ -116,18 +165,13 @@ func extractPlaneWorkItemType(data []byte, connectionId uint64, projectId string
 	}, nil
 }
 
-func extractPlaneWorkItem(
-	data []byte,
+func mapPlaneWorkItem(
+	apiWorkItem *planeApiWorkItem,
 	connectionId uint64,
 	projectId string,
 	states map[string]models.PlaneState,
 	workItemTypes map[string]models.PlaneWorkItemType,
 ) (*models.PlaneWorkItem, errors.Error) {
-	var apiWorkItem planeApiWorkItem
-	if err := json.Unmarshal(data, &apiWorkItem); err != nil {
-		return nil, errors.Default.Wrap(err, "error unmarshalling Plane work item")
-	}
-
 	workItem := &models.PlaneWorkItem{
 		ConnectionId:  connectionId,
 		ProjectId:     projectId,
@@ -188,7 +232,7 @@ func planeStateGroupToStandardStatus(group string) string {
 	case "completed":
 		return ticket.DONE
 	case "cancelled":
-		return "CANCELLED"
+		return planeStatusCancelled
 	default:
 		return ticket.TODO
 	}
@@ -218,8 +262,8 @@ func computePlaneLeadTimeMinutes(createdAt, completedAt *time.Time) *uint {
 func buildPlaneWorkItemURL(endpoint, workspaceSlug, projectIdentifier string, sequenceId int) string {
 	base := strings.TrimRight(endpoint, "/")
 	if parsed, err := neturl.Parse(base); err == nil {
-		if parsed.Host == "api.plane.so" {
-			parsed.Host = "app.plane.so"
+		if parsed.Host == planeHostAPI {
+			parsed.Host = planeHostApp
 			base = strings.TrimRight(parsed.String(), "/")
 		}
 	}
