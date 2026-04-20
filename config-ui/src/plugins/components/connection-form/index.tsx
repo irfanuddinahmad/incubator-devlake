@@ -65,11 +65,22 @@ export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
           ? API.connection.test(plugin, connectionId, {
               endpoint: isEqual(connection?.endpoint, values.endpoint) ? undefined : values.endpoint,
               authMethod: isEqual(connection?.authMethod, values.authMethod) ? undefined : values.authMethod,
+              authMode: isEqual((connection as any)?.authMode, values.authMode) ? undefined : values.authMode,
               username: isEqual(connection?.username, values.username) ? undefined : values.username,
               password: isEqual(connection?.password, values.password) ? undefined : values.password,
               token: isEqual(connection?.token, values.token) ? undefined : values.token,
+              accessToken: isEqual((connection as any)?.accessToken, values.accessToken)
+                ? undefined
+                : values.accessToken,
+              refreshToken: isEqual((connection as any)?.refreshToken, values.refreshToken)
+                ? undefined
+                : values.refreshToken,
               appId: isEqual(connection?.appId, values.appId) ? undefined : values.appId,
+              clientId: isEqual((connection as any)?.clientId, values.clientId) ? undefined : values.clientId,
               secretKey: isEqual(connection?.secretKey, values.secretKey) ? undefined : values.secretKey,
+              clientSecret: isEqual((connection as any)?.clientSecret, values.clientSecret)
+                ? undefined
+                : values.clientSecret,
               proxy: isEqual(connection?.proxy, values.proxy) ? undefined : values.proxy,
               dbUrl: isEqual(connection?.dbUrl, values.dbUrl) ? undefined : values.dbUrl,
               companyId: isEqual(connection?.companyId, values.companyId) ? undefined : values.companyId,
@@ -80,6 +91,11 @@ export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
               workspaceSlug: isEqual(connection?.workspaceSlug, values.workspaceSlug)
                 ? undefined
                 : values.workspaceSlug,
+              loginUrl: isEqual((connection as any)?.loginUrl, values.loginUrl) ? undefined : values.loginUrl,
+              instanceUrl: isEqual((connection as any)?.instanceUrl, values.instanceUrl)
+                ? undefined
+                : values.instanceUrl,
+              apiVersion: isEqual((connection as any)?.apiVersion, values.apiVersion) ? undefined : values.apiVersion,
               enableWebhook: isEqual((connection as any)?.enableWebhook, values.enableWebhook)
                 ? undefined
                 : values.enableWebhook,
@@ -93,12 +109,17 @@ export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
                 'name',
                 'endpoint',
                 'token',
+                'accessToken',
+                'refreshToken',
                 'username',
                 'password',
                 'proxy',
                 'authMethod',
+                'authMode',
                 'appId',
+                'clientId',
                 'secretKey',
+                'clientSecret',
                 'accessKeyId',
                 'secretAccessKey',
                 'region',
@@ -112,6 +133,9 @@ export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
                 'companyId',
                 'organization',
                 'organizationId',
+                'loginUrl',
+                'instanceUrl',
+                'apiVersion',
                 'workspaceSlug',
                 'enableWebhook',
                 'webhookSharedKey',

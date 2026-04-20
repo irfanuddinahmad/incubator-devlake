@@ -37,6 +37,7 @@ import { CircleCITransformation } from '@/plugins/register/circleci';
 import { ArgoCDTransformation } from '@/plugins/register/argocd';
 import { GhCopilotTransformation } from '@/plugins/register/gh-copilot';
 import { AsanaTransformation } from '@/plugins/register/asana';
+import { SalesforceTransformation } from '@/plugins/register/salesforce';
 import { DOC_URL } from '@/release';
 import { operator } from '@/utils';
 
@@ -266,6 +267,14 @@ export const ScopeConfigForm = ({
 
               {plugin === 'gh-copilot' && (
                 <GhCopilotTransformation
+                  entities={entities}
+                  transformation={transformation}
+                  setTransformation={setTransformation}
+                />
+              )}
+
+              {plugin === 'salesforce' && (
+                <SalesforceTransformation
                   entities={entities}
                   transformation={transformation}
                   setTransformation={setTransformation}
