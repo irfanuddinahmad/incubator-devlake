@@ -56,7 +56,8 @@ func (salesforceScope20260416) TableName() string { return "_tool_salesforce_sco
 
 type salesforceScopeConfig20260416 struct {
 	archived.Model
-	ConnectionId uint64   `json:"connectionId" gorm:"primaryKey"`
+	ConnectionId uint64   `json:"connectionId" gorm:"index"`
+	Entities     []string `gorm:"type:json;serializer:json" json:"entities"`
 	Name         string   `gorm:"type:varchar(255)" json:"name"`
 	ObjectTypes  []string `gorm:"serializer:json" json:"objectTypes"`
 	UseCdc       bool     `gorm:"column:use_cdc" json:"useCdc"`

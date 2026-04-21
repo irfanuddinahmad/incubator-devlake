@@ -160,6 +160,29 @@ If you already have an `access_token` or `refresh_token`, skip this section and 
 
 For a new Salesforce org, create an **External Client App** or **Connected App** first, then use the OAuth Web Server flow to get tokens.
 
+For local manual e2e testing, the OAuth code exchange can be automated with:
+
+```bash
+cd backend
+go run ./test/e2e/manual/salesforce/oauth_helper \
+  -client-id "CLIENT_ID" \
+  -client-secret "CLIENT_SECRET" \
+  -login-url "https://login.salesforce.com" \
+  -occurred-after "2026-04-01T00:00:00Z" \
+  -force=true
+```
+
+The helper opens the Salesforce authorization URL, captures the localhost callback, exchanges the code for tokens, and writes the ignored manual e2e config file:
+
+```text
+backend/test/e2e/manual/salesforce/salesforce_local_test.go
+```
+
+Use `-force=true` when refreshing an existing local config with a newly generated access token and refresh token. The helper does not print token values unless `-print-tokens=true` is explicitly provided.
+
+The OAuth `-login-url` must use `https://`.
+For production DevLake connections, use the UI/API connection fields described below.
+
 1. In Salesforce Setup, create an OAuth app.
 2. Enable OAuth settings.
 3. Add this callback URL:
@@ -681,6 +704,46 @@ WHERE $__timeFilter(action_time)
 GROUP BY source_system
 ORDER BY activity_count DESC;
 ```
+
+## Testing
+
+Run Salesforce plugin unit tests from `backend`:
+
+```bash
+go test ./plugins/salesforce/...
+```
+
+Run the Salesforce manual e2e package compile check without real Salesforce credentials:
+
+```bash
+go test ./test/e2e/manual/salesforce -run TestDoesNotExist -count=1
+```
+
+Run OAuth helper tests:
+
+```bash
+go test ./test/e2e/manual/salesforce/oauth_helper -count=1
+```
+
+For live manual e2e testing, first create or refresh the ignored local config:
+
+```bash
+go run ./test/e2e/manual/salesforce/oauth_helper \
+  -client-id "CLIENT_ID" \
+  -client-secret "CLIENT_SECRET" \
+  -login-url "https://login.salesforce.com" \
+  -occurred-after "2026-04-01T00:00:00Z" \
+  -force=true
+```
+
+Then run the live test against a disposable test database:
+
+```bash
+E2E_DB_URL="mysql://merico:merico@127.0.0.1:3306/lake_test?parseTime=true" \
+  go test ./test/e2e/manual/salesforce -run TestSalesforcePlugin -count=1 -v
+```
+
+Do **not** use the normal `lake` database for the manual e2e test. The test drops/recreates tables in the configured DB and refuses to run unless the database name looks disposable, such as `lake_test`. For intentional one-off runs against another database, set `SALESFORCE_E2E_ALLOW_UNSAFE_DB=true`.
 
 ## Error handling guidance
 

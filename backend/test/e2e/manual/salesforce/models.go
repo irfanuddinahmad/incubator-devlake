@@ -15,13 +15,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package migrationscripts
+package salesforce
 
-import "github.com/apache/incubator-devlake/core/plugin"
-
-func All() []plugin.MigrationScript {
-	return []plugin.MigrationScript{
-		new(addSalesforceInitialTables),
-		new(addSalesforceScopeConfigEntities),
-	}
+// TestConfig is populated locally from an ignored *_local_test.go file.
+type TestConfig struct {
+	AuthMode      string
+	AccessToken   string
+	RefreshToken  string
+	ClientId      string
+	ClientSecret  string
+	LoginUrl      string
+	InstanceUrl   string
+	ApiVersion    string
+	ObjectTypes   []string
+	OccurredAfter string
 }

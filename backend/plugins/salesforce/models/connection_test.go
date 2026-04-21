@@ -18,9 +18,14 @@ limitations under the License.
 package models
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSalesforceConnection_BeforeSaveAccessTokenValidation(t *testing.T) {
@@ -33,6 +38,18 @@ func TestSalesforceConnection_BeforeSaveAccessTokenValidation(t *testing.T) {
 	assert.NoError(t, c.BeforeSave(nil))
 }
 
+func TestSalesforceConnection_BeforeSaveAccessTokenRejectsInstanceUrlWithoutScheme(t *testing.T) {
+	c := &SalesforceConnection{SalesforceConn: SalesforceConn{
+		AuthMode:    AuthModeAccessToken,
+		AccessToken: "token",
+		InstanceUrl: "example.my.salesforce.com",
+	}}
+
+	err := c.BeforeSave(nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "instanceUrl must start with https://")
+}
+
 func TestSalesforceConnection_BeforeSaveRefreshTokenValidation(t *testing.T) {
 	c := &SalesforceConnection{SalesforceConn: SalesforceConn{AuthMode: AuthModeRefreshToken, RefreshToken: "refresh", ClientId: "", ClientSecret: "secret"}}
 	err := c.BeforeSave(nil)
@@ -41,4 +58,84 @@ func TestSalesforceConnection_BeforeSaveRefreshTokenValidation(t *testing.T) {
 
 	c = &SalesforceConnection{SalesforceConn: SalesforceConn{AuthMode: AuthModeRefreshToken, RefreshToken: "refresh", ClientId: "client", ClientSecret: "secret"}}
 	assert.NoError(t, c.BeforeSave(nil))
+}
+
+func TestSalesforceConnection_BeforeSaveRefreshTokenRejectsLoginUrlWithoutScheme(t *testing.T) {
+	c := &SalesforceConnection{SalesforceConn: SalesforceConn{
+		AuthMode:     AuthModeRefreshToken,
+		RefreshToken: "refresh",
+		ClientId:     "client",
+		ClientSecret: "secret",
+		LoginUrl:     "login.salesforce.com",
+	}}
+
+	err := c.BeforeSave(nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "loginUrl must start with https://")
+}
+
+func TestSalesforceConnection_BeforeSaveRefreshTokenRejectsInstanceUrlWithoutHttps(t *testing.T) {
+	c := &SalesforceConnection{SalesforceConn: SalesforceConn{
+		AuthMode:     AuthModeRefreshToken,
+		RefreshToken: "refresh",
+		ClientId:     "client",
+		ClientSecret: "secret",
+		LoginUrl:     "https://login.salesforce.com",
+		InstanceUrl:  "http://example.my.salesforce.com",
+	}}
+
+	err := c.BeforeSave(nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "instanceUrl must start with https://")
+}
+
+func TestSalesforceConn_SetupAuthenticationRefreshesOnFirstUse(t *testing.T) {
+	refreshCalled := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/services/oauth2/token", r.URL.Path)
+		require.NoError(t, r.ParseForm())
+		require.Equal(t, "refresh_token", r.Form.Get("grant_type"))
+		require.Equal(t, "client", r.Form.Get("client_id"))
+		require.Equal(t, "secret", r.Form.Get("client_secret"))
+		require.Equal(t, "refresh", r.Form.Get("refresh_token"))
+		refreshCalled = true
+		_, _ = fmt.Fprint(w, `{"access_token":"fresh-token","instance_url":"https://fresh.my.salesforce.com"}`)
+	}))
+	defer server.Close()
+
+	conn := &SalesforceConn{
+		AuthMode:     AuthModeRefreshToken,
+		AccessToken:  "stale-token",
+		RefreshToken: "refresh",
+		ClientId:     "client",
+		ClientSecret: "secret",
+		LoginUrl:     server.URL,
+		InstanceUrl:  "https://old.my.salesforce.com",
+	}
+	req, err := http.NewRequest(http.MethodGet, "https://old.my.salesforce.com/services/data/v61.0/query", nil)
+	require.NoError(t, err)
+
+	require.NoError(t, conn.SetupAuthentication(req))
+	require.True(t, refreshCalled)
+	require.Equal(t, "Bearer fresh-token", req.Header.Get("Authorization"))
+	require.Equal(t, "fresh.my.salesforce.com", req.URL.Host)
+	require.False(t, conn.tokenExpiresAt.IsZero())
+}
+
+func TestSalesforceConn_SetupAuthenticationReusesUnexpiredRefreshTokenModeAccessToken(t *testing.T) {
+	conn := &SalesforceConn{
+		AuthMode:       AuthModeRefreshToken,
+		AccessToken:    "fresh-token",
+		RefreshToken:   "refresh",
+		ClientId:       "client",
+		ClientSecret:   "secret",
+		LoginUrl:       "http://127.0.0.1:1",
+		InstanceUrl:    "https://fresh.my.salesforce.com",
+		tokenExpiresAt: time.Now().Add(time.Hour),
+	}
+	req, err := http.NewRequest(http.MethodGet, "https://fresh.my.salesforce.com/services/data/v61.0/query", nil)
+	require.NoError(t, err)
+
+	require.NoError(t, conn.SetupAuthentication(req))
+	require.Equal(t, "Bearer fresh-token", req.Header.Get("Authorization"))
 }

@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/apache/incubator-devlake/plugins/salesforce/models"
-	"github.com/stretchr/testify/require"
 	"github.com/go-playground/validator/v10"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDecodeConnectionBodyDerivesEndpointForAccessTokenMode(t *testing.T) {
@@ -53,4 +53,32 @@ func TestDecodeConnectionBodyDerivesEndpointForRefreshTokenMode(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, models.AuthModeRefreshToken, connection.AuthMode)
 	require.Equal(t, "https://login.salesforce.com", connection.Endpoint)
+}
+
+func TestDecodeConnectionBodyRejectsAccessTokenInstanceUrlWithoutScheme(t *testing.T) {
+	vld = validator.New()
+
+	_, err := decodeConnectionBody(map[string]interface{}{
+		"name":        "sf-access",
+		"authMode":    "access_token",
+		"accessToken": "token",
+		"instanceUrl": "org.example.my.salesforce.com",
+	})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "instanceUrl must start with https://")
+}
+
+func TestDecodeConnectionBodyRejectsRefreshTokenLoginUrlWithoutScheme(t *testing.T) {
+	vld = validator.New()
+
+	_, err := decodeConnectionBody(map[string]interface{}{
+		"name":         "sf-refresh",
+		"authMode":     "refresh_token",
+		"loginUrl":     "login.salesforce.com",
+		"clientId":     "client-id",
+		"clientSecret": "client-secret",
+		"refreshToken": "refresh-token",
+	})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "loginUrl must start with https://")
 }

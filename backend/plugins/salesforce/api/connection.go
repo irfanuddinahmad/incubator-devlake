@@ -18,8 +18,6 @@ limitations under the License.
 package api
 
 import (
-	"strings"
-
 	"github.com/apache/incubator-devlake/core/errors"
 	"github.com/apache/incubator-devlake/core/plugin"
 	helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
@@ -103,27 +101,11 @@ func validateConnection(connection *models.SalesforceConnection) errors.Error {
 	}
 
 	connection.Normalize()
+	if err := connection.Validate(); err != nil {
+		return err
+	}
 	if err := vld.Struct(connection); err != nil {
 		return errors.BadInput.Wrap(err, "error validating target")
-	}
-	switch connection.ResolveAuthMode() {
-	case models.AuthModeRefreshToken:
-		if strings.TrimSpace(connection.RefreshToken) == "" {
-			return errors.BadInput.New("refreshToken is required")
-		}
-		if strings.TrimSpace(connection.ClientId) == "" {
-			return errors.BadInput.New("clientId is required")
-		}
-		if strings.TrimSpace(connection.ClientSecret) == "" {
-			return errors.BadInput.New("clientSecret is required")
-		}
-	default:
-		if strings.TrimSpace(connection.AccessToken) == "" {
-			return errors.BadInput.New("accessToken is required")
-		}
-		if strings.TrimSpace(connection.InstanceUrl) == "" {
-			return errors.BadInput.New("instanceUrl is required")
-		}
 	}
 
 	return nil

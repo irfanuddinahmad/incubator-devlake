@@ -89,7 +89,7 @@ func (conn *SalesforceConn) resolveCredentials() (string, string, errors.Error) 
 
 	switch authMode {
 	case AuthModeRefreshToken:
-		if strings.TrimSpace(conn.AccessToken) == "" || instanceURL == "" || (!conn.tokenExpiresAt.IsZero() && time.Now().After(conn.tokenExpiresAt)) {
+		if strings.TrimSpace(conn.AccessToken) == "" || instanceURL == "" || conn.tokenExpiresAt.IsZero() || time.Now().After(conn.tokenExpiresAt) {
 			if err := conn.refreshAccessToken(); err != nil {
 				return "", "", err
 			}
@@ -266,6 +266,14 @@ func (connection *SalesforceConnection) validateForSave() errors.Error {
 
 	switch connection.ResolveAuthMode() {
 	case AuthModeRefreshToken:
+		if err := validateHttpsURL("loginUrl", connection.LoginUrl); err != nil {
+			return err
+		}
+		if strings.TrimSpace(connection.InstanceUrl) != "" {
+			if err := validateHttpsURL("instanceUrl", connection.InstanceUrl); err != nil {
+				return err
+			}
+		}
 		if strings.TrimSpace(connection.RefreshToken) == "" {
 			return errors.BadInput.New("refreshToken is required when authMode is refresh_token")
 		}
@@ -282,6 +290,35 @@ func (connection *SalesforceConnection) validateForSave() errors.Error {
 		if strings.TrimSpace(connection.InstanceUrl) == "" {
 			return errors.BadInput.New("instanceUrl is required when authMode is access_token")
 		}
+		if err := validateHttpsURL("instanceUrl", connection.InstanceUrl); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (connection *SalesforceConnection) Validate() errors.Error {
+	if connection == nil {
+		return nil
+	}
+	connection.Normalize()
+	return connection.validateForSave()
+}
+
+func validateHttpsURL(fieldName string, rawURL string) errors.Error {
+	trimmed := strings.TrimSpace(rawURL)
+	if trimmed == "" {
+		return nil
+	}
+	parsed, err := url.Parse(trimmed)
+	if err != nil {
+		return errors.BadInput.New(fmt.Sprintf("%s must be a valid https URL", fieldName))
+	}
+	if parsed.Scheme != "https" {
+		return errors.BadInput.New(fmt.Sprintf("%s must start with https://", fieldName))
+	}
+	if parsed.Host == "" {
+		return errors.BadInput.New(fmt.Sprintf("%s must be a valid https URL", fieldName))
 	}
 	return nil
 }
@@ -290,8 +327,7 @@ func (connection *SalesforceConnection) BeforeSave(_ *gorm.DB) error {
 	if connection == nil {
 		return nil
 	}
-	connection.Normalize()
-	if err := connection.validateForSave(); err != nil {
+	if err := connection.Validate(); err != nil {
 		return err
 	}
 	return nil

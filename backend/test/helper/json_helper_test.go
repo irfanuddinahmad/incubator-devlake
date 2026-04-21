@@ -15,13 +15,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package migrationscripts
+package helper
 
-import "github.com/apache/incubator-devlake/core/plugin"
+import (
+	"encoding/json"
+	"testing"
 
-func All() []plugin.MigrationScript {
-	return []plugin.MigrationScript{
-		new(addSalesforceInitialTables),
-		new(addSalesforceScopeConfigEntities),
-	}
+	"github.com/stretchr/testify/require"
+)
+
+func TestToCleanJsonRedactsTopLevelArray(t *testing.T) {
+	cleaned := ToCleanJson(true, json.RawMessage(`[{"accessToken":"abc","name":"safe"}]`))
+
+	require.JSONEq(t, `[{"accessToken":"******","name":"safe"}]`, string(cleaned))
+}
+
+func TestToCleanJsonRedactsNestedArray(t *testing.T) {
+	cleaned := ToCleanJson(true, map[string]any{
+		"items": []any{
+			map[string]any{
+				"refresh_token": "abc",
+				"name":          "safe",
+			},
+		},
+	})
+
+	require.JSONEq(t, `{"items":[{"refresh_token":"******","name":"safe"}]}`, string(cleaned))
 }
