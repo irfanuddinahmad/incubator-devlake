@@ -26,10 +26,15 @@ import { BitbucketConfig } from './bitbucket';
 import { BitbucketServerConfig } from './bitbucket-server';
 import { CircleCIConfig } from './circleci';
 import { GitHubConfig } from './github';
+import { ClaudeConfig } from './claude';
+import { CodexConfig } from './codex';
+import { CursorConfig } from './cursor';
 import { GhCopilotConfig } from './gh-copilot';
 import { GitLabConfig } from './gitlab';
 import { JenkinsConfig } from './jenkins';
 import { JiraConfig } from './jira';
+import { HubspotConfig } from './hubspot';
+import { NotionConfig } from './notion';
 import { PagerDutyConfig } from './pagerduty';
 import { SonarQubeConfig } from './sonarqube';
 import { TAPDConfig } from './tapd';
@@ -51,10 +56,15 @@ export const pluginConfigs: IPluginConfig[] = [
   BitbucketServerConfig,
   CircleCIConfig,
   GitHubConfig,
+  ClaudeConfig,
+  CodexConfig,
+  CursorConfig,
   GhCopilotConfig,
   GitLabConfig,
+  HubspotConfig,
   JenkinsConfig,
   JiraConfig,
+  NotionConfig,
   PagerDutyConfig,
   SlackConfig,
   QDevConfig,

@@ -1,0 +1,727 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [
+    {
+      "targetBlank": false,
+      "title": "Open Cursor Adoption & Productivity",
+      "type": "link",
+      "url": "/d/cursor_adoption"
+    },
+    {
+      "targetBlank": false,
+      "title": "Open Cursor Token Usage & Cost",
+      "type": "link",
+      "url": "/d/cursor_token_usage"
+    }
+  ],
+  "panels": [
+    {
+      "datasource": "mysql",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "content": "This dashboard focuses on team-level collaboration quality proxies from Cursor data, not raw speed. It highlights acceptance quality, feedback-loop friction, and interaction patterns using data already collected in _tool_cursor_daily_usage and _tool_cursor_usage_events. Exact measures such as post-merge rework, failed builds, and review burden are not derivable from Cursor data alone and require joins to SCM, CI/CD, and code review sources.",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.0.0",
+      "title": "What This Measures",
+      "type": "text"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Proxy for first-pass acceptance at the suggestion level using accepted tabs over shown tabs.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 20
+              },
+              {
+                "color": "green",
+                "value": 35
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 4
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ROUND(COALESCE(SUM(total_tabs_accepted) / NULLIF(SUM(total_tabs_shown), 0) * 100, 0), 1) AS \"Tab Acceptance %\"\nFROM _tool_cursor_daily_usage\nWHERE $__timeFilter(day)",
+          "refId": "A"
+        }
+      ],
+      "title": "First-Pass Proxy: Tab Acceptance",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Successful accept actions as a share of accept and reject actions. Lower values indicate more back-and-forth.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "green",
+                "value": 75
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 4
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ROUND(COALESCE(SUM(total_accepts) / NULLIF(SUM(total_accepts) + SUM(total_rejects), 0) * 100, 0), 1) AS \"Apply Success %\"\nFROM _tool_cursor_daily_usage\nWHERE $__timeFilter(day)",
+          "refId": "A"
+        }
+      ],
+      "title": "Apply Success Ratio",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "How many apply attempts were needed per accepted outcome. Values above 1 indicate extra iteration or correction loops.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1.25
+              },
+              {
+                "color": "red",
+                "value": 1.75
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 4
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ROUND(COALESCE(SUM(total_applies) / NULLIF(SUM(total_accepts), 0), 0), 2) AS \"Applies per Accept\"\nFROM _tool_cursor_daily_usage\nWHERE $__timeFilter(day)",
+          "refId": "A"
+        }
+      ],
+      "title": "Iteration Pressure",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Proxy for rework pressure: lines deleted relative to accepted AI-added lines. This is not true post-merge rework, but it does show churn around accepted output.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 35
+              },
+              {
+                "color": "red",
+                "value": 60
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 4
+      },
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ROUND(COALESCE(SUM(total_lines_deleted) / NULLIF(SUM(accepted_lines_added), 0) * 100, 0), 1) AS \"Deleted / Accepted Added %\"\nFROM _tool_cursor_daily_usage\nWHERE $__timeFilter(day)",
+          "refId": "A"
+        }
+      ],
+      "title": "Rework Pressure Proxy",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Tracks suggestion acceptance quality, apply outcome quality, and how many apply attempts are needed for each accepted outcome.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT day AS time,\n  ROUND(COALESCE(SUM(total_tabs_accepted) / NULLIF(SUM(total_tabs_shown), 0) * 100, 0), 1) AS \"Tab Acceptance %\",\n  ROUND(COALESCE(SUM(total_accepts) / NULLIF(SUM(total_accepts) + SUM(total_rejects), 0) * 100, 0), 1) AS \"Apply Success %\",\n  ROUND(COALESCE(SUM(total_applies) / NULLIF(SUM(total_accepts), 0), 0), 2) AS \"Applies per Accept\"\nFROM _tool_cursor_daily_usage\nWHERE $__timeFilter(day)\nGROUP BY day\nORDER BY day",
+          "refId": "A"
+        }
+      ],
+      "title": "Feedback Cycle Efficiency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Accepted AI-added lines versus deleted lines. If deleted lines stay elevated relative to accepted additions, the agent-human feedback loop may be producing churn.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT day AS time,\n  SUM(accepted_lines_added) AS \"Accepted AI-Added Lines\",\n  SUM(total_lines_deleted) AS \"Deleted Lines\",\n  ROUND(COALESCE(SUM(total_lines_deleted) / NULLIF(SUM(accepted_lines_added), 0) * 100, 0), 1) AS \"Deleted / Accepted Added %\"\nFROM _tool_cursor_daily_usage\nWHERE $__timeFilter(day)\nGROUP BY day\nORDER BY day",
+          "refId": "A"
+        }
+      ],
+      "title": "Accepted Output vs Rework Pressure",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Normalizes request volume by active users and shows how much of the interaction is agent-led. Higher requests per active user can mean either productive iteration or excessive back-and-forth, so it should be read alongside acceptance and reject signals.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH daily AS (\n  SELECT\n    day,\n    COUNT(DISTINCT user_email) AS active_users,\n    SUM(composer_requests + chat_requests + agent_requests + cmdk_usages) AS total_requests,\n    SUM(agent_requests) AS agent_requests\n  FROM _tool_cursor_daily_usage\n  WHERE $__timeFilter(day)\n  GROUP BY day\n)\nSELECT day AS time,\n  active_users AS \"Active Users\",\n  ROUND(COALESCE(total_requests / NULLIF(active_users, 0), 0), 2) AS \"Requests / Active User\",\n  ROUND(COALESCE(agent_requests / NULLIF(total_requests, 0) * 100, 0), 1) AS \"Agent Share %\"\nFROM daily\nORDER BY day",
+          "refId": "A"
+        }
+      ],
+      "title": "Interaction Intensity per Active User",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Shows whether interaction patterns are shifting toward agentic workflows, synchronous chat, or composer-heavy editing. This is useful for understanding how teams collaborate with the agent, not just how much they use it.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 0,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT day AS time,\n  SUM(composer_requests) AS \"Composer\",\n  SUM(chat_requests) AS \"Chat\",\n  SUM(agent_requests) AS \"Agent\",\n  SUM(cmdk_usages) AS \"Cmd-K\",\n  SUM(bugbot_usages) AS \"Bugbot\"\nFROM _tool_cursor_daily_usage\nWHERE $__timeFilter(day)\nGROUP BY day\nORDER BY day",
+          "refId": "A"
+        }
+      ],
+      "title": "Collaboration Mode Mix",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Weekly team-level rollup of quality signals. This is the best level for tracking adoption quality without turning the dashboard into individual performance monitoring.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "id": 10,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH weekly AS (\n  SELECT\n    DATE_SUB(day, INTERVAL WEEKDAY(day) DAY) AS week_start,\n    COUNT(DISTINCT user_email) AS active_users,\n    SUM(total_tabs_shown) AS tabs_shown,\n    SUM(total_tabs_accepted) AS tabs_accepted,\n    SUM(total_applies) AS applies,\n    SUM(total_accepts) AS accepts,\n    SUM(total_rejects) AS rejects,\n    SUM(accepted_lines_added) AS accepted_lines_added,\n    SUM(total_lines_deleted) AS lines_deleted,\n    SUM(composer_requests + chat_requests + agent_requests + cmdk_usages) AS total_requests,\n    SUM(agent_requests) AS agent_requests\n  FROM _tool_cursor_daily_usage\n  WHERE $__timeFilter(day)\n  GROUP BY DATE_SUB(day, INTERVAL WEEKDAY(day) DAY)\n)\nSELECT\n  week_start AS \"Week\",\n  active_users AS \"Active Users\",\n  ROUND(COALESCE(tabs_accepted / NULLIF(tabs_shown, 0) * 100, 0), 1) AS \"Tab Acceptance %\",\n  ROUND(COALESCE(accepts / NULLIF(accepts + rejects, 0) * 100, 0), 1) AS \"Apply Success %\",\n  ROUND(COALESCE(applies / NULLIF(accepts, 0), 0), 2) AS \"Applies / Accept\",\n  ROUND(COALESCE(lines_deleted / NULLIF(accepted_lines_added, 0) * 100, 0), 1) AS \"Deleted / Accepted Added %\",\n  ROUND(COALESCE(total_requests / NULLIF(active_users, 0), 0), 1) AS \"Requests / Active User\",\n  ROUND(COALESCE(agent_requests / NULLIF(total_requests, 0) * 100, 0), 1) AS \"Agent Share %\"\nFROM weekly\nORDER BY week_start DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Weekly Team Collaboration Quality Snapshot",
+      "type": "table"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Per-user outlier view for coaching and workflow design, not individual ranking. Useful for finding pockets of repeated iteration or low acceptance that may warrant prompt, workflow, or policy changes.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "id": 11,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  user_email AS \"User\",\n  COUNT(DISTINCT day) AS \"Active Days\",\n  ROUND(COALESCE(SUM(total_tabs_accepted) / NULLIF(SUM(total_tabs_shown), 0) * 100, 0), 1) AS \"Tab Acceptance %\",\n  ROUND(COALESCE(SUM(total_accepts) / NULLIF(SUM(total_accepts) + SUM(total_rejects), 0) * 100, 0), 1) AS \"Apply Success %\",\n  ROUND(COALESCE(SUM(total_applies) / NULLIF(SUM(total_accepts), 0), 0), 2) AS \"Applies / Accept\",\n  ROUND(COALESCE(SUM(total_lines_deleted) / NULLIF(SUM(accepted_lines_added), 0) * 100, 0), 1) AS \"Deleted / Accepted Added %\",\n  SUM(agent_requests) AS \"Agent Reqs\",\n  SUM(chat_requests) AS \"Chat Reqs\",\n  SUM(composer_requests) AS \"Composer Reqs\"\nFROM _tool_cursor_daily_usage\nWHERE $__timeFilter(day)\nGROUP BY user_email\nORDER BY SUM(total_applies) / NULLIF(SUM(total_accepts), 0) DESC, SUM(total_rejects) DESC\nLIMIT 25",
+          "refId": "A"
+        }
+      ],
+      "title": "User Outliers in Feedback Friction",
+      "type": "table"
+    },
+    {
+      "datasource": "mysql",
+      "description": "How requests are being made at the event level. Growing headless or max-mode share changes the collaboration pattern and can explain shifts in acceptance and iteration metrics.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "id": 12,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT DATE(timestamp) AS time,\n  ROUND(COALESCE(SUM(CASE WHEN is_headless THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) * 100, 0), 1) AS \"Headless Share %\",\n  ROUND(COALESCE(SUM(CASE WHEN max_mode THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) * 100, 0), 1) AS \"Max Mode Share %\",\n  ROUND(COALESCE(SUM(CASE WHEN is_chargeable THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) * 100, 0), 1) AS \"Chargeable Share %\"\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)\nGROUP BY DATE(timestamp)\nORDER BY DATE(timestamp)",
+          "refId": "A"
+        }
+      ],
+      "title": "Request Mode Shift",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 38,
+  "tags": [
+    "cursor",
+    "devlake",
+    "ai",
+    "collaboration",
+    "quality"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "utc",
+  "title": "Cursor Collaboration Quality",
+  "uid": "cursor_collab_quality",
+  "version": 1,
+  "weekStart": ""
+}

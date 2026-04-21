@@ -32,5 +32,7 @@ func GetSubTaskMetas() []plugin.SubTaskMeta {
 		ExtractOrgMetricsMeta,
 		ExtractEnterpriseMetricsMeta,
 		ExtractUserMetricsMeta,
+		// Converters
+		ConvertUserMetricsMeta,
 	}
 }

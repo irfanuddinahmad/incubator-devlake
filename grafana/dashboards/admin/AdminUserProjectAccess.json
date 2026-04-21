@@ -1,0 +1,284 @@
+{
+  "__inputs": [],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "11.0.0"
+    },
+    {
+      "type": "datasource",
+      "id": "mysql",
+      "name": "MySQL",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "text",
+      "name": "Text",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "volkovlabs-form-panel",
+      "name": "Business Forms",
+      "version": "6.0.0"
+    }
+  ],
+  "annotations": {
+    "list": []
+  },
+  "description": "Manage which Grafana users can access which DevLake projects on dashboards.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "content": "## User Project Access\nSelect a **User Login** and **Project** from the dropdowns above, then click Add or Remove below.",
+        "mode": "markdown"
+      },
+      "title": "",
+      "transparent": true,
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "grafana"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 0,
+        "y": 3
+      },
+      "id": 3,
+      "options": {
+        "initial": {
+          "method": "-"
+        },
+        "update": {
+          "method": "POST",
+          "url": "https://aperture.arbisoft.com/api/user-project-mappings/${userLogin}",
+          "header": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "contentType": "application/json",
+          "confirm": false,
+          "payloadMode": "custom",
+          "getPayload": "return { projectName: '${project}' };",
+          "code": "if (context.panel.response && context.panel.response.ok) { context.grafana.notifySuccess(['Mapping Added', '${userLogin} \u2192 ${project}']); context.grafana.refresh(); } else { context.grafana.notifyError(['Error', 'Failed to add mapping. Check DevLake API URL and try again.']); }"
+        },
+        "resetAction": "initial",
+        "layout": {
+          "variant": "none",
+          "padding": "normal",
+          "orientation": "vertical"
+        },
+        "buttonGroup": {
+          "orientation": "center"
+        },
+        "submit": {
+          "text": "Add Mapping",
+          "variant": "primary",
+          "icon": "plus"
+        },
+        "reset": {
+          "show": false
+        },
+        "elements": [
+          {
+            "id": "_x",
+            "type": "string",
+            "title": "",
+            "value": "",
+            "width": 1,
+            "labelWidth": 1,
+            "hidden": true,
+            "readOnly": true
+          }
+        ]
+      },
+      "title": "Add: ${userLogin} \u2192 ${project}",
+      "type": "volkovlabs-form-panel"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "grafana"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 12,
+        "y": 3
+      },
+      "id": 4,
+      "options": {
+        "initial": {
+          "method": "-"
+        },
+        "update": {
+          "method": "DELETE",
+          "url": "https://aperture.arbisoft.com/api/user-project-mappings/${userLogin}/${project}",
+          "header": [],
+          "contentType": "application/json",
+          "confirm": false,
+          "payloadMode": "all",
+          "code": "if (context.panel.response && context.panel.response.ok) { context.grafana.notifySuccess(['Mapping Removed', '${userLogin} \u2192 ${project}']); context.grafana.refresh(); } else { context.grafana.notifyError(['Error', 'Failed to remove mapping.']); }"
+        },
+        "resetAction": "initial",
+        "layout": {
+          "variant": "none",
+          "padding": "normal",
+          "orientation": "vertical"
+        },
+        "buttonGroup": {
+          "orientation": "center"
+        },
+        "submit": {
+          "text": "Remove Mapping",
+          "variant": "destructive",
+          "icon": "trash-alt"
+        },
+        "reset": {
+          "show": false
+        },
+        "elements": [
+          {
+            "id": "_x",
+            "type": "string",
+            "title": "",
+            "value": "",
+            "width": 1,
+            "labelWidth": 1,
+            "hidden": true,
+            "readOnly": true
+          }
+        ]
+      },
+      "title": "Remove: ${userLogin} \u2192 ${project}",
+      "type": "volkovlabs-form-panel"
+    },
+    {
+      "datasource": "mysql",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 2,
+      "options": {
+        "footer": {
+          "enablePagination": true,
+          "show": false
+        },
+        "frameIndex": 0,
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "User Login"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": "mysql",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT user_login AS 'User Login', project_name AS 'Project' FROM user_project_mapping ORDER BY user_login, project_name",
+          "refId": "A"
+        }
+      ],
+      "title": "Current Mappings",
+      "transformations": [],
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "admin"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "",
+          "value": ""
+        },
+        "hide": 0,
+        "label": "User Login",
+        "name": "userLogin",
+        "options": [],
+        "query": "",
+        "skipUrlSync": false,
+        "type": "textbox",
+        "description": "Grafana username to grant or revoke project access for"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "",
+          "value": ""
+        },
+        "datasource": "mysql",
+        "definition": "SELECT name FROM projects ORDER BY name",
+        "hide": 0,
+        "label": "Project",
+        "name": "project",
+        "options": [],
+        "query": "SELECT name FROM projects ORDER BY name",
+        "refresh": 2,
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query",
+        "description": "DevLake project to grant or revoke"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "timepicker": {
+    "hidden": true
+  },
+  "timezone": "browser",
+  "title": "Admin: User Project Access",
+  "uid": "admin-user-project-access",
+  "version": 1
+}

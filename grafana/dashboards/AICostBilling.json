@@ -1,0 +1,678 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "datasource": "mysql",
+      "description": "Estimated Claude USD spend in period.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ROUND(SUM(estimated_cost_usd),2) AS \"Cost (USD)\"\nFROM _tool_claude_usage\nWHERE $__timeFilter(date)",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Estimated Cost (Claude)",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Prompt cache tokens reused (saves cost).",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT SUM(cache_read_tokens) AS \"Cache Read Tokens\"\nFROM _tool_claude_usage\nWHERE $__timeFilter(date)",
+          "refId": "A"
+        }
+      ],
+      "title": "Claude Cache Tokens (Read)",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "New prompt cache entries written.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT SUM(cache_creation_tokens) AS \"Cache Creation Tokens\"\nFROM _tool_claude_usage\nWHERE $__timeFilter(date)",
+          "refId": "A"
+        }
+      ],
+      "title": "Claude Cache Tokens (Created)",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Total Cursor usage charges in cents.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ROUND(SUM(charged_cents),2) AS \"Charged (cents)\"\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)",
+          "refId": "A"
+        }
+      ],
+      "title": "Cursor Charged Cents (Total)",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Estimated USD spend per Claude model per day. Use to track Sonnet vs Opus cost allocation over time.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 0,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT date AS time,\n  CASE\n    WHEN model LIKE '%sonnet%' OR model LIKE '%Sonnet%' THEN 'Sonnet'\n    WHEN model LIKE '%opus%'   OR model LIKE '%Opus%'   THEN 'Opus'\n    WHEN model LIKE '%haiku%'  OR model LIKE '%Haiku%'  THEN 'Haiku'\n    ELSE COALESCE(NULLIF(model,''), 'Unknown')\n  END AS metric,\n  SUM(estimated_cost_usd) AS value\nFROM _tool_claude_usage\nWHERE $__timeFilter(date)\nGROUP BY date, metric\nORDER BY date",
+          "refId": "A"
+        }
+      ],
+      "title": "Claude Daily Cost by Model",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Ratio of cache_read_tokens / (cache_read_tokens + cache_creation_tokens). Higher = better prompt reuse and lower cost.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT date AS time,\n  ROUND(\n    SUM(cache_read_tokens) / NULLIF(SUM(cache_read_tokens)+SUM(cache_creation_tokens), 0) * 100\n  , 1) AS \"Cache Hit Rate %\"\nFROM _tool_claude_usage\nWHERE $__timeFilter(date)\nGROUP BY date\nORDER BY date",
+          "refId": "A"
+        }
+      ],
+      "title": "Claude Cache Hit Rate Over Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Charged cents per day broken down by billing category: subscription-included, usage-based, API key.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 0,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT DATE(timestamp) AS time,\n  COALESCE(NULLIF(kind,''), 'Unknown') AS metric,\n  SUM(charged_cents) AS value\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)\nGROUP BY DATE(timestamp), metric\nORDER BY DATE(timestamp)",
+          "refId": "A"
+        }
+      ],
+      "title": "Cursor Daily Charges by Billing Kind",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Number of requests with max_mode=true per day. Max mode is significantly more expensive than standard mode.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 0,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT DATE(timestamp) AS time,\n  SUM(CASE WHEN max_mode = 1 THEN 1 ELSE 0 END) AS \"Max Mode\",\n  SUM(CASE WHEN max_mode = 0 THEN 1 ELSE 0 END) AS \"Standard\"\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)\nGROUP BY DATE(timestamp)\nORDER BY DATE(timestamp)",
+          "refId": "A"
+        }
+      ],
+      "title": "Cursor Max Mode Requests Over Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Total charges grouped by model and billing category. Identifies which models and usage patterns drive the most cost.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 9,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  COALESCE(NULLIF(model,''), 'Unknown') AS \"Model\",\n  COALESCE(NULLIF(kind,''), 'Unknown') AS \"Billing Kind\",\n  COUNT(*) AS \"Requests\",\n  SUM(CASE WHEN max_mode=1 THEN 1 ELSE 0 END) AS \"Max Mode Reqs\",\n  SUM(input_tokens) AS \"Input Tokens\",\n  SUM(output_tokens) AS \"Output Tokens\",\n  SUM(cache_read_tokens) AS \"Cache Read\",\n  ROUND(SUM(charged_cents)/100, 4) AS \"Charged (USD)\",\n  ROUND(SUM(total_cents)/100, 4) AS \"Total Before Credits (USD)\"\nFROM _tool_cursor_usage_events\nWHERE $__timeFilter(timestamp)\nGROUP BY model, kind\nORDER BY SUM(charged_cents) DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Cursor Cost Breakdown by Model & Kind",
+      "type": "table"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Daily OpenAI credits consumed per client surface (cli, ide, cloud, code_review). Credits are OpenAI's internal billing unit.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 0,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT date AS time,\n  COALESCE(NULLIF(client_surface,''), 'Unknown') AS metric,\n  SUM(credits) AS value\nFROM _tool_codex_usage\nWHERE $__timeFilter(date)\nGROUP BY date, metric\nORDER BY date",
+          "refId": "A"
+        }
+      ],
+      "title": "Codex Credits Consumed by Surface",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Total credits consumed per user per surface in the period.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
+      "id": 11,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  COALESCE(NULLIF(user_email,''), '(workspace total)') AS \"User\",\n  COALESCE(NULLIF(client_surface,''), 'Unknown') AS \"Surface\",\n  SUM(threads) AS \"Sessions\",\n  SUM(turns) AS \"Turns\",\n  ROUND(SUM(credits), 2) AS \"Credits\"\nFROM _tool_codex_usage\nWHERE $__timeFilter(date)\nGROUP BY user_email, client_surface\nORDER BY SUM(credits) DESC\nLIMIT 50",
+          "refId": "A"
+        }
+      ],
+      "title": "Codex Credits by User & Surface",
+      "type": "table"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 38,
+  "tags": [
+    "ai",
+    "cost",
+    "billing",
+    "claude",
+    "cursor",
+    "codex",
+    "devlake"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-90d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "utc",
+  "title": "AI Cost & Billing Analysis",
+  "uid": "ai_cost_billing",
+  "version": 1,
+  "weekStart": ""
+}

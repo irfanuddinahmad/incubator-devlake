@@ -74,7 +74,16 @@ export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
               dbUrl: isEqual(connection?.dbUrl, values.dbUrl) ? undefined : values.dbUrl,
               companyId: isEqual(connection?.companyId, values.companyId) ? undefined : values.companyId,
               organization: isEqual(connection?.organization, values.organization) ? undefined : values.organization,
-            })
+              organizationId: isEqual(connection?.organizationId, values.organizationId)
+                ? undefined
+                : values.organizationId,
+              enableWebhook: isEqual((connection as any)?.enableWebhook, values.enableWebhook)
+                ? undefined
+                : values.enableWebhook,
+              webhookSharedKey: isEqual((connection as any)?.webhookSharedKey, values.webhookSharedKey)
+                ? undefined
+                : values.webhookSharedKey,
+            } as any)
           : API.connection.testOld(
               plugin,
               pick({ ...initialValues, ...values }, [
@@ -99,6 +108,9 @@ export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
                 'dbUrl',
                 'companyId',
                 'organization',
+                'organizationId',
+                'enableWebhook',
+                'webhookSharedKey',
               ]),
             ),
       {

@@ -53,6 +53,7 @@ export const test = (
       | 'dbUrl'
       | 'companyId'
       | 'organization'
+      | 'organizationId'
     >
   >,
 ): Promise<IConnectionTestResult> =>
@@ -72,5 +73,6 @@ export const testOld = (
     | 'proxy'
     | 'dbUrl'
     | 'organization'
+    | 'organizationId'
   >,
 ): Promise<IConnectionOldTestResult> => request(`/plugins/${plugin}/test`, { method: 'post', data: payload });

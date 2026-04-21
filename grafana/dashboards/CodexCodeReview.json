@@ -1,0 +1,540 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "datasource": "mysql",
+      "description": "Total Codex code reviews finished in period.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT SUM(reviews_completed) AS \"Reviews\"\nFROM _tool_codex_code_reviews\nWHERE $__timeFilter(date)",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Reviews Completed",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Total review comments posted by Codex.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT SUM(comments_generated) AS \"Comments\"\nFROM _tool_codex_code_reviews\nWHERE $__timeFilter(date)",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Comments Generated",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "High-severity findings \u2013 items that most need attention.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT SUM(severity_critical)+SUM(severity_high) AS \"Critical+High\"\nFROM _tool_codex_code_reviews\nWHERE $__timeFilter(date)",
+          "refId": "A"
+        }
+      ],
+      "title": "Critical + High Issues Found",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Upvotes / (upvotes + downvotes) across all review responses.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ROUND(\n  SUM(upvotes) / NULLIF(SUM(upvotes)+SUM(downvotes), 0) * 100\n, 1) AS \"Approval %\"\nFROM _tool_codex_code_review_responses\nWHERE $__timeFilter(date)",
+          "refId": "A"
+        }
+      ],
+      "title": "Community Approval Rate",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Daily breakdown of Codex review comment severity. Rising Critical/High counts indicate increasing code quality risk.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 0,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT date AS time,\n  SUM(severity_critical) AS \"Critical\",\n  SUM(severity_high) AS \"High\",\n  SUM(severity_medium) AS \"Medium\",\n  SUM(severity_low) AS \"Low\"\nFROM _tool_codex_code_reviews\nWHERE $__timeFilter(date)\nGROUP BY date\nORDER BY date",
+          "refId": "A"
+        }
+      ],
+      "title": "Code Review Comments by Severity Over Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Daily engagement with Codex review comments. High downvote trend may indicate comment quality needs improvement.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT date AS time,\n  SUM(upvotes) AS \"Upvotes\",\n  SUM(downvotes) AS \"Downvotes\",\n  SUM(replies) AS \"Replies\"\nFROM _tool_codex_code_review_responses\nWHERE $__timeFilter(date)\nGROUP BY date\nORDER BY date",
+          "refId": "A"
+        }
+      ],
+      "title": "Review Engagement \u2013 Upvotes / Downvotes / Replies",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Ratio of comments per review over time. Rising comments/review may indicate more complex PRs or noisier review output.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT date AS time,\n  SUM(reviews_completed) AS \"Reviews Completed\",\n  SUM(comments_generated) AS \"Comments Generated\",\n  ROUND(SUM(comments_generated)/NULLIF(SUM(reviews_completed),0), 1) AS \"Comments per Review\"\nFROM _tool_codex_code_reviews\nWHERE $__timeFilter(date)\nGROUP BY date\nORDER BY date",
+          "refId": "A"
+        }
+      ],
+      "title": "Reviews Completed vs Comments Generated",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "mysql",
+      "description": "PRs ranked by critical and high severity findings. Prioritise these for manual review attention.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "id": 8,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  pr_url AS \"PR\",\n  SUM(reviews_completed) AS \"Reviews\",\n  SUM(comments_generated) AS \"Comments\",\n  SUM(severity_critical) AS \"Critical\",\n  SUM(severity_high) AS \"High\",\n  SUM(severity_medium) AS \"Medium\",\n  SUM(severity_low) AS \"Low\"\nFROM _tool_codex_code_reviews\nWHERE $__timeFilter(date)\nGROUP BY pr_url\nORDER BY SUM(severity_critical) DESC, SUM(severity_high) DESC\nLIMIT 50",
+          "refId": "A"
+        }
+      ],
+      "title": "High-Risk PRs \u2013 Severity Breakdown",
+      "type": "table"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Per-user upvote, downvote and reply counts. Low approval % highlights friction between developer and Codex suggestions.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "id": 9,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  user_email AS \"User\",\n  SUM(upvotes) AS \"Upvotes\",\n  SUM(downvotes) AS \"Downvotes\",\n  SUM(replies) AS \"Replies\",\n  ROUND(SUM(upvotes)/NULLIF(SUM(upvotes)+SUM(downvotes),0)*100, 1) AS \"Approval %\"\nFROM _tool_codex_code_review_responses\nWHERE $__timeFilter(date)\nGROUP BY user_email\nORDER BY SUM(upvotes)+SUM(downvotes)+SUM(replies) DESC\nLIMIT 25",
+          "refId": "A"
+        }
+      ],
+      "title": "Developer Engagement with Codex Reviews",
+      "type": "table"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 38,
+  "tags": [
+    "codex",
+    "openai",
+    "code-review",
+    "quality",
+    "devlake"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-90d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "utc",
+  "title": "Codex Code Review Quality",
+  "uid": "codex_code_review",
+  "version": 1,
+  "weekStart": ""
+}

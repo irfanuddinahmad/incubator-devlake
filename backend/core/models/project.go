@@ -87,6 +87,18 @@ func (Store) TableName() string {
 	return "_devlake_store"
 }
 
+// UserProjectMapping maps a Grafana user login to a DevLake project name,
+// allowing per-user project visibility in Grafana dashboards.
+type UserProjectMapping struct {
+	UserLogin   string `json:"userLogin" gorm:"primaryKey;type:varchar(255)" validate:"required"`
+	ProjectName string `json:"projectName" gorm:"primaryKey;type:varchar(255);index" validate:"required"`
+	common.NoPKModel
+}
+
+func (UserProjectMapping) TableName() string {
+	return "user_project_mapping"
+}
+
 type ProjectScopeOutput struct {
 	Projects []ProjectScope `json:"projects"`
 	Count    int            `json:"count"`

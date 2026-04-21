@@ -238,10 +238,11 @@ func CollectPrs(taskCtx plugin.SubTaskContext) errors.Error {
 	}
 	prUpdatedAt := make(map[int]time.Time)
 	err = apiCollector.InitGraphQLCollector(api.GraphqlCollectorArgs{
-		GraphqlClient: data.GraphqlClient,
-		Input:         iterator,
-		InputStep:     100,
-		Incremental:   true,
+		GraphqlClient:     data.GraphqlClient,
+		Input:             iterator,
+		InputStep:         100,
+		Incremental:       true,
+		IgnoreQueryErrors: true,
 		BuildQuery: func(reqData *api.GraphqlRequestData) (interface{}, map[string]interface{}, error) {
 			query := &GraphqlQueryPrDetailWrapper{}
 			if reqData == nil {

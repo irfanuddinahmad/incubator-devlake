@@ -31,6 +31,7 @@ export interface IConnectionAPI {
   proxy: string;
   rateLimitPerHour?: number;
   organization?: string;
+  organizationId?: string;
 }
 
 export interface IConnectionTestResult {
@@ -85,4 +86,5 @@ export interface IConnection {
   proxy: string;
   rateLimitPerHour?: number;
   organization?: string;
+  organizationId?: string;
 }
