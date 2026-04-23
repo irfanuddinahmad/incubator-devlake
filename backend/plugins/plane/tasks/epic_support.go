@@ -42,7 +42,7 @@ type planeApiEpic struct {
 	State               string             `json:"state"`
 	Priority            string             `json:"priority"`
 	Assignees           []planeApiAssignee `json:"assignees"`
-	EstimatePoint       *float64           `json:"estimate_point"`
+	EstimatePoint       planeApiFloat64    `json:"estimate_point"`
 	// Plane may expose both a floating estimate and a legacy integer point value.
 	Point       *int       `json:"point"`
 	CreatedAt   *time.Time `json:"created_at"`
@@ -155,6 +155,7 @@ func mapPlaneEpic(
 	projectId string,
 	states map[string]models.PlaneState,
 	workItemTypes map[string]models.PlaneWorkItemType,
+	estimateMap map[string]*float64,
 ) (*models.PlaneEpic, errors.Error) {
 	epic := &models.PlaneEpic{
 		ConnectionId:  connectionId,
@@ -166,20 +167,16 @@ func mapPlaneEpic(
 		TypeId:        apiEpic.Type,
 		StateId:       apiEpic.State,
 		Priority:      apiEpic.Priority,
-		EstimatePoint: apiEpic.EstimatePoint,
+		EstimatePoint: resolvePlaneEstimatePoint(apiEpic.EstimatePoint, estimateMap),
 		Point:         apiEpic.Point,
 		CreatedDate:   apiEpic.CreatedAt,
 		UpdatedDate:   apiEpic.UpdatedAt,
 		CompletedAt:   apiEpic.CompletedAt,
 		ParentId:      apiEpic.Parent,
 	}
-	startDate, err := parsePlaneDate(apiEpic.StartDate)
+	startDate, dueDate, err := applyPlaneDates(apiEpic.StartDate, apiEpic.TargetDate)
 	if err != nil {
-		return nil, errors.Default.Wrap(err, "error parsing Plane epic start_date")
-	}
-	dueDate, err := parsePlaneDate(apiEpic.TargetDate)
-	if err != nil {
-		return nil, errors.Default.Wrap(err, "error parsing Plane epic target_date")
+		return nil, err
 	}
 	epic.StartDate = startDate
 	epic.DueDate = dueDate

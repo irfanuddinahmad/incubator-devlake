@@ -31,6 +31,7 @@ var ExtractEpicsMeta = plugin.SubTaskMeta{
 	EnabledByDefault: true,
 	Description:      "Extract Plane epics into the tool layer",
 	DomainTypes:      []string{plugin.DOMAIN_TYPE_TICKET},
+	Dependencies:     []*plugin.SubTaskMeta{&ExtractStatesMeta, &ExtractEstimatesMeta, &ExtractWorkItemTypesMeta},
 }
 
 func ExtractEpics(taskCtx plugin.SubTaskContext) errors.Error {
@@ -41,6 +42,10 @@ func ExtractEpics(taskCtx plugin.SubTaskContext) errors.Error {
 		return err
 	}
 	workItemTypeMap, err := loadPlaneWorkItemTypeMap(taskCtx.GetDal(), data.Options.ConnectionId, data.Options.ProjectId)
+	if err != nil {
+		return err
+	}
+	estimateMap, err := loadPlaneEstimatePointMap(taskCtx.GetDal(), data.Options.ConnectionId, data.Options.ProjectId)
 	if err != nil {
 		return err
 	}
@@ -62,6 +67,7 @@ func ExtractEpics(taskCtx plugin.SubTaskContext) errors.Error {
 				data.Options.ProjectId,
 				stateMap,
 				workItemTypeMap,
+				estimateMap,
 			)
 			if err != nil {
 				return nil, err

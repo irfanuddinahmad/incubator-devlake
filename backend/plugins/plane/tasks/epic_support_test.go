@@ -18,6 +18,7 @@ limitations under the License.
 package tasks
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
@@ -132,7 +133,7 @@ func TestMapPlaneEpic_AssigneeResolvedFieldsAndIsClosed(t *testing.T) {
 				{Id: "user-1", Name: "Alice"},
 				{Id: "user-2", Name: "Bob"},
 			},
-			EstimatePoint: planeTestFloat64Ptr(8),
+			EstimatePoint: planeTestApiFloat64(8),
 			Point:         planeTestIntPtr(13),
 			CreatedAt:     createdAt,
 			UpdatedAt:     updatedAt,
@@ -156,6 +157,7 @@ func TestMapPlaneEpic_AssigneeResolvedFieldsAndIsClosed(t *testing.T) {
 				Name:   "Feature",
 			},
 		},
+		map[string]*float64{},
 	)
 	require.NoError(t, err)
 	require.NotNil(t, epic)
@@ -170,8 +172,63 @@ func TestMapPlaneEpic_AssigneeResolvedFieldsAndIsClosed(t *testing.T) {
 	assert.Equal(t, "completed", epic.StateGroup)
 	assert.Equal(t, "Feature", epic.TypeName)
 	assert.True(t, epic.IsClosed)
+	require.NotNil(t, epic.EstimatePoint)
+	assert.Equal(t, 8.0, *epic.EstimatePoint)
 	require.NotNil(t, epic.Point)
 	assert.Equal(t, 13, *epic.Point)
+}
+
+func TestPlaneApiEpicEstimatePointAcceptsString(t *testing.T) {
+	var epic planeApiEpic
+
+	err := json.Unmarshal([]byte(`{
+		"id":"epic-1",
+		"estimate_point":"3.5"
+	}`), &epic)
+
+	require.NoError(t, err)
+	require.NotNil(t, epic.EstimatePoint.Float64Ptr())
+	assert.Equal(t, 3.5, *epic.EstimatePoint.Float64Ptr())
+}
+
+func TestMapPlaneEpicResolvesEstimateUUID(t *testing.T) {
+	epic, err := mapPlaneEpic(
+		&planeApiEpic{
+			Id:            "epic-1",
+			EstimatePoint: planeApiFloat64{rawString: "point-1"},
+		},
+		7,
+		"project-1",
+		map[string]models.PlaneState{},
+		map[string]models.PlaneWorkItemType{},
+		map[string]*float64{
+			"point-1": planeTestFloat64Ptr(13),
+		},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, epic)
+	require.NotNil(t, epic.EstimatePoint)
+	assert.Equal(t, 13.0, *epic.EstimatePoint)
+}
+
+func TestMapPlaneEpicFallsBackToLegacyPointWhenEstimateUUIDUnknown(t *testing.T) {
+	epic, err := mapPlaneEpic(
+		&planeApiEpic{
+			Id:            "epic-1",
+			EstimatePoint: planeApiFloat64{rawString: "missing"},
+			Point:         planeTestIntPtr(21),
+		},
+		7,
+		"project-1",
+		map[string]models.PlaneState{},
+		map[string]models.PlaneWorkItemType{},
+		map[string]*float64{},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, epic)
+	assert.Nil(t, epic.EstimatePoint)
+	require.NotNil(t, planeEpicStoryPoint(epic))
+	assert.Equal(t, 21.0, *planeEpicStoryPoint(epic))
 }
 
 func TestPlaneEpicStoryPointFallback(t *testing.T) {

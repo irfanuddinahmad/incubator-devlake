@@ -39,6 +39,7 @@ type PlaneTaskData struct {
 const RAW_PROJECT_TABLE = "plane_api_projects"
 const RAW_WORK_ITEM_TABLE = "plane_api_work_items"
 const RAW_STATE_TABLE = "plane_api_states"
+const RAW_ESTIMATE_TABLE = "plane_api_estimates"
 const RAW_WORK_ITEM_TYPE_TABLE = "plane_api_work_item_types"
 const RAW_EPIC_TABLE = "plane_api_epics"
 const RAW_CYCLE_TABLE = "plane_api_cycles"

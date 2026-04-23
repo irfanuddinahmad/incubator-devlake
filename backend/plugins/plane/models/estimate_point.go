@@ -15,18 +15,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package migrationscripts
+package models
 
-import "github.com/apache/incubator-devlake/core/plugin"
+import "github.com/apache/incubator-devlake/core/models/common"
 
-func All() []plugin.MigrationScript {
-	return []plugin.MigrationScript{
-		new(addInitTables20260415),
-		new(addScopeTables20260416),
-		new(addRawDataColumns20260416),
-		new(addWorkItemTables20260417),
-		new(addEpicTable20260420),
-		new(addCycleTables20260421),
-		new(addEstimatePointTable20260422),
-	}
+type PlaneEstimatePoint struct {
+	ConnectionId uint64 `gorm:"primaryKey"`
+	ProjectId    string `gorm:"primaryKey;type:varchar(255);index"`
+	PointId      string `gorm:"primaryKey;type:varchar(100)"`
+	EstimateId   string `gorm:"type:varchar(100);index"`
+	Key          int
+	Value        *float64
+	ValueLabel   string `gorm:"type:varchar(100)"`
+	Description  string `gorm:"type:text"`
+	common.NoPKModel
+}
+
+func (PlaneEstimatePoint) TableName() string {
+	return "_tool_plane_estimate_points"
 }

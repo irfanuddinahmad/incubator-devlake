@@ -69,6 +69,23 @@ func TestExtractPlaneCycleHandlesNullDescription(t *testing.T) {
 	assert.Equal(t, "draft", cycle.Status)
 }
 
+func TestExtractPlaneCycleAcceptsTimestampDates(t *testing.T) {
+	cycle, err := extractPlaneCycle([]byte(`{
+		"id": "cycle-2",
+		"name": "Cycle B",
+		"description": "",
+		"status": "current",
+		"start_date": "2026-04-21T17:11:30.247304Z",
+		"end_date": "2026-04-28T17:11:30.247304Z"
+	}`), 7, "project-1")
+	require.NoError(t, err)
+	require.NotNil(t, cycle)
+	require.NotNil(t, cycle.StartDate)
+	require.NotNil(t, cycle.EndDate)
+	assert.Equal(t, mustParsePlaneTime(t, "2026-04-21T17:11:30.247304Z"), cycle.StartDate)
+	assert.Equal(t, mustParsePlaneTime(t, "2026-04-28T17:11:30.247304Z"), cycle.EndDate)
+}
+
 func TestExtractPlaneCycleItem(t *testing.T) {
 	cycleItem, err := extractPlaneCycleItem([]byte(`{
 		"id": "membership-1",

@@ -101,7 +101,8 @@ type planeApiWorkItem struct {
 }
 
 type planeApiFloat64 struct {
-	value *float64
+	value     *float64
+	rawString string
 }
 
 func (f planeApiFloat64) MarshalJSON() ([]byte, error) {
@@ -114,12 +115,14 @@ func (f planeApiFloat64) MarshalJSON() ([]byte, error) {
 func (f *planeApiFloat64) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		f.value = nil
+		f.rawString = ""
 		return nil
 	}
 
 	var floatValue float64
 	if err := json.Unmarshal(data, &floatValue); err == nil {
 		f.value = &floatValue
+		f.rawString = ""
 		return nil
 	}
 
@@ -129,22 +132,30 @@ func (f *planeApiFloat64) UnmarshalJSON(data []byte) error {
 	}
 	if strings.TrimSpace(stringValue) == "" {
 		f.value = nil
+		f.rawString = ""
 		return nil
 	}
 
-	parsed, err := strconv.ParseFloat(strings.TrimSpace(stringValue), 64)
+	trimmed := strings.TrimSpace(stringValue)
+	parsed, err := strconv.ParseFloat(trimmed, 64)
 	if err != nil {
 		// Plane may return a non-numeric estimate identifier instead of a score.
 		// Treat that as "no numeric estimate" instead of failing the whole extractor.
 		f.value = nil
+		f.rawString = trimmed
 		return nil
 	}
 	f.value = &parsed
+	f.rawString = ""
 	return nil
 }
 
 func (f planeApiFloat64) Float64Ptr() *float64 {
 	return f.value
+}
+
+func (f planeApiFloat64) RawString() string {
+	return f.rawString
 }
 
 type planeApiState struct {
@@ -255,6 +266,7 @@ func mapPlaneWorkItem(
 	projectId string,
 	states map[string]models.PlaneState,
 	workItemTypes map[string]models.PlaneWorkItemType,
+	estimateMap map[string]*float64,
 ) (*models.PlaneWorkItem, errors.Error) {
 	workItem := &models.PlaneWorkItem{
 		ConnectionId:  connectionId,
@@ -266,19 +278,15 @@ func mapPlaneWorkItem(
 		TypeId:        apiWorkItem.Type,
 		StateId:       apiWorkItem.State,
 		Priority:      apiWorkItem.Priority,
-		EstimatePoint: apiWorkItem.EstimatePoint.Float64Ptr(),
+		EstimatePoint: resolvePlaneEstimatePoint(apiWorkItem.EstimatePoint, estimateMap),
 		CreatedDate:   apiWorkItem.CreatedAt,
 		UpdatedDate:   apiWorkItem.UpdatedAt,
 		CompletedAt:   apiWorkItem.CompletedAt,
 		ParentId:      apiWorkItem.Parent,
 	}
-	startDate, err := parsePlaneDate(apiWorkItem.StartDate)
+	startDate, dueDate, err := applyPlaneDates(apiWorkItem.StartDate, apiWorkItem.TargetDate)
 	if err != nil {
-		return nil, errors.Default.Wrap(err, "error parsing Plane work item start_date")
-	}
-	dueDate, err := parsePlaneDate(apiWorkItem.TargetDate)
-	if err != nil {
-		return nil, errors.Default.Wrap(err, "error parsing Plane work item target_date")
+		return nil, err
 	}
 	workItem.StartDate = startDate
 	workItem.DueDate = dueDate
@@ -297,15 +305,43 @@ func mapPlaneWorkItem(
 	return workItem, nil
 }
 
+func resolvePlaneEstimatePoint(estimatePoint planeApiFloat64, estimateMap map[string]*float64) *float64 {
+	resolved := estimatePoint.Float64Ptr()
+	if resolved == nil && estimatePoint.RawString() != "" {
+		resolved = estimateMap[estimatePoint.RawString()]
+	}
+	return resolved
+}
+
+func applyPlaneDates(startDate string, targetDate string) (*time.Time, *time.Time, errors.Error) {
+	parsedStartDate, err := parsePlaneDate(startDate)
+	if err != nil {
+		return nil, nil, errors.Default.Wrap(err, "error parsing Plane item start_date")
+	}
+	parsedTargetDate, err := parsePlaneDate(targetDate)
+	if err != nil {
+		return nil, nil, errors.Default.Wrap(err, "error parsing Plane item target_date")
+	}
+	return parsedStartDate, parsedTargetDate, nil
+}
+
 func parsePlaneDate(value string) (*time.Time, errors.Error) {
 	if value == "" {
 		return nil, nil
 	}
-	parsed, err := time.Parse("2006-01-02", value)
-	if err != nil {
-		return nil, errors.Default.Wrap(err, "error parsing Plane date")
+
+	layouts := []string{
+		"2006-01-02",
+		time.RFC3339Nano,
+		time.RFC3339,
 	}
-	return &parsed, nil
+	for _, layout := range layouts {
+		parsed, err := time.Parse(layout, value)
+		if err == nil {
+			return &parsed, nil
+		}
+	}
+	return nil, errors.Default.Wrap(&time.ParseError{Layout: "2006-01-02|RFC3339Nano|RFC3339", Value: value}, "error parsing Plane date")
 }
 
 func planeStateGroupToStandardStatus(group string) string {

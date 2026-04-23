@@ -81,7 +81,7 @@ func TestExtractPlaneWorkItem_AssigneeAndResolvedFields(t *testing.T) {
 				{Id: "user-1", Name: "Alice"},
 				{Id: "user-2", Name: "Bob"},
 			},
-			EstimatePoint: planeApiFloat64{value: planeTestFloat64Ptr(5)},
+			EstimatePoint: planeTestApiFloat64(5),
 			CreatedAt:     createdAt,
 			UpdatedAt:     updatedAt,
 			CompletedAt:   completedAt,
@@ -104,6 +104,7 @@ func TestExtractPlaneWorkItem_AssigneeAndResolvedFields(t *testing.T) {
 				Name:   "Bug",
 			},
 		},
+		map[string]*float64{},
 	)
 	require.NoError(t, err)
 	require.NotNil(t, workItem)
@@ -156,12 +157,13 @@ func TestPlaneApiWorkItemEstimatePointIgnoresNonNumericString(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Nil(t, workItem.EstimatePoint.Float64Ptr())
+	assert.Equal(t, "3d44f7f0-fa5c-4fac-b7b0-d99d504975ed", workItem.EstimatePoint.RawString())
 }
 
 func TestPlaneApiWorkItemEstimatePointMarshalsAsNumberOrNull(t *testing.T) {
 	workItemWithEstimate := planeApiWorkItem{
 		Id:            "work-item-1",
-		EstimatePoint: planeApiFloat64{value: planeTestFloat64Ptr(3.5)},
+		EstimatePoint: planeTestApiFloat64(3.5),
 	}
 
 	data, err := json.Marshal(workItemWithEstimate)
@@ -176,6 +178,43 @@ func TestPlaneApiWorkItemEstimatePointMarshalsAsNumberOrNull(t *testing.T) {
 	data, err = json.Marshal(workItemWithoutEstimate)
 	require.NoError(t, err)
 	assert.Contains(t, string(data), `"estimate_point":null`)
+}
+
+func TestMapPlaneWorkItemResolvesEstimateUUID(t *testing.T) {
+	workItem, err := mapPlaneWorkItem(
+		&planeApiWorkItem{
+			Id:            "work-item-1",
+			EstimatePoint: planeApiFloat64{rawString: "point-1"},
+		},
+		7,
+		"project-1",
+		map[string]models.PlaneState{},
+		map[string]models.PlaneWorkItemType{},
+		map[string]*float64{
+			"point-1": planeTestFloat64Ptr(8),
+		},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, workItem)
+	require.NotNil(t, workItem.EstimatePoint)
+	assert.Equal(t, 8.0, *workItem.EstimatePoint)
+}
+
+func TestMapPlaneWorkItemUnknownEstimateUUIDFallsBackToNil(t *testing.T) {
+	workItem, err := mapPlaneWorkItem(
+		&planeApiWorkItem{
+			Id:            "work-item-1",
+			EstimatePoint: planeApiFloat64{rawString: "missing-point"},
+		},
+		7,
+		"project-1",
+		map[string]models.PlaneState{},
+		map[string]models.PlaneWorkItemType{},
+		map[string]*float64{},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, workItem)
+	assert.Nil(t, workItem.EstimatePoint)
 }
 
 func TestParsePlaneWorkItemResultsForCollectorFullRefresh(t *testing.T) {
@@ -322,6 +361,10 @@ func planePaginatedResponse(t *testing.T, payload map[string]any) *http.Response
 
 func planeTestFloat64Ptr(value float64) *float64 {
 	return &value
+}
+
+func planeTestApiFloat64(value float64) planeApiFloat64 {
+	return planeApiFloat64{value: planeTestFloat64Ptr(value)}
 }
 
 func planeTestStringPtr(value string) *string {

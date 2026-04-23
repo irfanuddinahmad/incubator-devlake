@@ -33,6 +33,7 @@ var ExtractWorkItemsMeta = plugin.SubTaskMeta{
 	EnabledByDefault: true,
 	Description:      "Extract Plane work items into the tool layer",
 	DomainTypes:      []string{plugin.DOMAIN_TYPE_TICKET},
+	Dependencies:     []*plugin.SubTaskMeta{&ExtractStatesMeta, &ExtractEstimatesMeta, &ExtractWorkItemTypesMeta},
 }
 
 func ExtractWorkItems(taskCtx plugin.SubTaskContext) errors.Error {
@@ -47,6 +48,10 @@ func ExtractWorkItems(taskCtx plugin.SubTaskContext) errors.Error {
 	if err != nil {
 		return err
 	}
+	estimateMap, err := loadPlaneEstimatePointMap(db, data.Options.ConnectionId, data.Options.ProjectId)
+	if err != nil {
+		return err
+	}
 
 	extractor, err := api.NewStatefulApiExtractor(&api.StatefulApiExtractorArgs[planeApiWorkItem]{
 		SubtaskCommonArgs: &api.SubtaskCommonArgs{
@@ -58,16 +63,27 @@ func ExtractWorkItems(taskCtx plugin.SubTaskContext) errors.Error {
 				ProjectId:     data.Options.ProjectId,
 			},
 		},
-		Extract: func(body *planeApiWorkItem, _ *api.RawData) ([]any, errors.Error) {
+		Extract: func(body *planeApiWorkItem, row *api.RawData) ([]any, errors.Error) {
 			workItem, err := mapPlaneWorkItem(
 				body,
 				data.Options.ConnectionId,
 				data.Options.ProjectId,
 				stateMap,
 				workItemTypeMap,
+				estimateMap,
 			)
 			if err != nil {
 				return nil, err
+			}
+			if workItem.EstimatePoint == nil {
+				rawEstimatePoint := extractPlaneRawEstimatePointValue(row.Data)
+				if rawEstimatePoint != "" {
+					if mappedEstimate, ok := estimateMap[rawEstimatePoint]; ok {
+						workItem.EstimatePoint = mappedEstimate
+					} else if parsedEstimate, _ := parsePlaneEstimatePointValue(rawEstimatePoint); parsedEstimate != nil {
+						workItem.EstimatePoint = parsedEstimate
+					}
+				}
 			}
 			return []interface{}{workItem}, nil
 		},
