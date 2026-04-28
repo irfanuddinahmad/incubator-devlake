@@ -18,14 +18,12 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 35,
   "links": [],
-  "liveNow": false,
   "panels": [
     {
-      "datasource": {
-        "type": "datasource",
-        "uid": "grafana"
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
       },
       "gridPos": {
         "h": 3,
@@ -50,26 +48,12 @@
         "content": "- Use Cases: This dashboard shows the basic Git and Code Review metrics from GitHub.\n- Data Source Required: GitHub",
         "mode": "markdown"
       },
-      "pluginVersion": "9.5.15",
-      "targets": [
-        {
-          "datasource": {
-            "type": "datasource",
-            "uid": "grafana"
-          },
-          "queryType": "randomWalk",
-          "refId": "A"
-        }
-      ],
+      "pluginVersion": "11.6.2",
       "title": "Dashboard Introduction",
       "type": "text"
     },
     {
       "collapsed": false,
-      "datasource": {
-        "type": "datasource",
-        "uid": "grafana"
-      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -78,15 +62,6 @@
       },
       "id": 89,
       "panels": [],
-      "targets": [
-        {
-          "datasource": {
-            "type": "datasource",
-            "uid": "grafana"
-          },
-          "refId": "A"
-        }
-      ],
       "title": "1. User Requirements (Issues)",
       "type": "row"
     },
@@ -103,8 +78,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
-                "value": null
+                "color": "blue"
               }
             ]
           }
@@ -130,6 +104,7 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -137,10 +112,12 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "9.5.15",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -196,13 +173,14 @@
     },
     {
       "datasource": "mysql",
-              "description": "",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "Issue Count",
@@ -228,8 +206,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
-                "value": null
+                "color": "blue"
               }
             ]
           }
@@ -270,13 +247,14 @@
           "valueSize": 12
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         },
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 0
       },
-      "pluginVersion": "8.0.6",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -332,10 +310,6 @@
     },
     {
       "collapsed": false,
-      "datasource": {
-        "type": "datasource",
-        "uid": "grafana"
-      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -344,15 +318,6 @@
       },
       "id": 87,
       "panels": [],
-      "targets": [
-        {
-          "datasource": {
-            "type": "datasource",
-            "uid": "grafana"
-          },
-          "refId": "A"
-        }
-      ],
       "title": "2. How issues are handled?",
       "type": "row"
     },
@@ -369,8 +334,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           }
@@ -396,6 +360,7 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -403,10 +368,12 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "9.5.15",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -444,13 +411,14 @@
     },
     {
       "datasource": "mysql",
-              "description": "",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "fixed"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -475,8 +443,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -535,13 +502,14 @@
           "valueSize": 12
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         },
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 0
       },
-      "pluginVersion": "8.0.6",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -608,8 +576,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -640,6 +607,7 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -647,10 +615,12 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "9.5.15",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -688,13 +658,14 @@
     },
     {
       "datasource": "mysql",
-              "description": "",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -720,8 +691,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -765,13 +735,14 @@
           "valueSize": 12
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         },
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 0
       },
-      "pluginVersion": "8.0.6",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -827,13 +798,14 @@
     },
     {
       "datasource": "mysql",
-              "description": "",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "Queue Time",
@@ -859,8 +831,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -879,7 +850,6 @@
         "y": 23
       },
       "id": 93,
-      "links": [],
       "options": {
         "barRadius": 0,
         "barWidth": 0.25,
@@ -900,13 +870,14 @@
           "valueSize": 12
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         },
         "xTickLabelRotation": 45,
         "xTickLabelSpacing": 0
       },
-      "pluginVersion": "8.0.6",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -981,8 +952,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1080,7 +1050,6 @@
         "y": 29
       },
       "id": 92,
-      "links": [],
       "options": {
         "cellHeight": "sm",
         "footer": {
@@ -1094,7 +1063,7 @@
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "9.5.15",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -1132,10 +1101,6 @@
     },
     {
       "collapsed": false,
-      "datasource": {
-        "type": "datasource",
-        "uid": "grafana"
-      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1144,15 +1109,6 @@
       },
       "id": 83,
       "panels": [],
-      "targets": [
-        {
-          "datasource": {
-            "type": "datasource",
-            "uid": "grafana"
-          },
-          "refId": "A"
-        }
-      ],
       "title": "3. Contribution (PRs)",
       "type": "row"
     },
@@ -1169,8 +1125,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
-                "value": null
+                "color": "blue"
               }
             ]
           }
@@ -1196,6 +1151,7 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -1203,10 +1159,12 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "9.5.15",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -1262,13 +1220,14 @@
     },
     {
       "datasource": "mysql",
-              "description": "",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -1294,8 +1253,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
-                "value": null
+                "color": "blue"
               }
             ]
           }
@@ -1350,13 +1308,14 @@
           "valueSize": 12
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         },
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 0
       },
-      "pluginVersion": "8.0.6",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -1412,13 +1371,14 @@
     },
     {
       "datasource": "mysql",
-              "description": "",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "Merged PR Count",
@@ -1444,8 +1404,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1489,13 +1448,14 @@
           "valueSize": 12
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         },
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 0
       },
-      "pluginVersion": "8.0.6",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -1550,34 +1510,295 @@
       "type": "barchart"
     },
     {
-      "collapsed": false,
-      "datasource": {
-        "type": "datasource",
-        "uid": "grafana"
+      "datasource": "mysql",
+      "description": "Aggregate CQTest coverage across all selected GitHub repos, based on SonarQube file metrics. Matches SonarQube projects by full repo name (e.g. \"owner/repo\") with fallback to the repo slug (\"repo\") for projects registered without an org prefix; project IDs are deduplicated so a slug-keyed project shared across selected repos is counted once. Filtered by file metric update time.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 1,
+          "mappings": [],
+          "noValue": "No coverage data",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red"
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "green",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
       },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 48
+      },
+      "id": 116,
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "Code Quality Test",
+          "url": "https://devlake.apache.org/docs/Metrics/CQTest"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {},
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.2",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "editorMode": "code",
+          "format": "table",
+          "group": [],
+          "hide": false,
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "-- CQTest coverage from SonarQube file metrics.\n-- Match selected repos to SonarQube projects by full name first, falling back to the\n-- repo slug. Project IDs are deduplicated via the _matched CTE so each project's file\n-- metrics are counted at most once -- even when the slug fallback would otherwise\n-- attach a single SonarQube project to multiple selected repos sharing a slug.\nwith _matched as (\n  select distinct cqp.id as project_key\n  from cq_projects cqp\n  join repos r\n    on r.name = cqp.name\n    or substring_index(r.name, '/', -1) = cqp.name\n  where r.id in (${repo_id})\n)\nselect\n  round(\n    (sum(fm.lines_to_cover) - sum(fm.uncovered_lines)) * 100.0\n    / nullif(sum(fm.lines_to_cover), 0),\n    1\n  ) as \"Unit Test Coverage %\"\nfrom\n  _matched m\n  join cq_file_metrics fm on fm.project_key = m.project_key\nwhere\n  $__timeFilter(fm.updated_at)",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "id"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          },
+          "table": "cq_file_metrics",
+          "timeColumn": "updated_at",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "title": "3.4 Aggregate Unit Test Coverage",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Per-PR coverage view from SonarQube CQTest metrics. The Coverage % column reflects the SonarQube project's coverage at PR time -- exact PR-head-commit match where SonarQube scanned that commit (rare), otherwise the repository's most recent project status. Slug-fallback project matches are annotated in the Coverage Source column. Capped at 50 rows for performance.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red"
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "green",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Repo Coverage at PR Time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PR URL"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "Open PR",
+                    "url": "${__data.fields[\"PR URL\"]}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 18,
+        "x": 6,
+        "y": 48
+      },
+      "id": 117,
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "Code Quality Test",
+          "url": "https://devlake.apache.org/docs/Metrics/CQTest"
+        }
+      ],
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "11.6.2",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "editorMode": "code",
+          "format": "table",
+          "group": [],
+          "hide": false,
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "-- PR view with exact commit match first, then repository SonarQube project fallback.\n-- Match SonarQube projects by full repo name (\"owner/repo\") first, falling back to the\n-- repo slug for projects registered without an org prefix. Slug-fallback rows are\n-- annotated as such in the Coverage Source column.\n--\n-- The dashboard time range filters PR creation date only; coverage uses the latest\n-- available SonarQube data regardless of when the scan ran. Result is capped at 50\n-- rows ordered by PR creation date desc to keep the panel responsive on active repos.\nwith _selected_repos as (\n  select\n    r.id,\n    r.name as repo_name,\n    substring_index(r.name, '/', -1) as repo_slug\n  from repos r\n  where r.id in (${repo_id})\n),\n_project_coverage as (\n  select\n    cqp.id as project_key,\n    cqp.name,\n    cqp.commit_sha,\n    cqp.last_analysis_date,\n    cqp.updated_at as project_updated_at,\n    sr.repo_name,\n    case when cqp.name = sr.repo_name then 'full' else 'slug' end as match_type,\n    count(fm.id) as files,\n    sum(fm.lines_to_cover) as lines_to_cover,\n    sum(fm.uncovered_lines) as uncovered_lines\n  from\n    cq_projects cqp\n    join _selected_repos sr\n      on sr.repo_name = cqp.name\n      or sr.repo_slug = cqp.name\n    left join cq_file_metrics fm on fm.project_key = cqp.id\n  group by\n    cqp.id,\n    cqp.name,\n    cqp.commit_sha,\n    cqp.last_analysis_date,\n    cqp.updated_at,\n    sr.repo_name,\n    case when cqp.name = sr.repo_name then 'full' else 'slug' end\n),\n_repo_project as (\n  select\n    pc.*,\n    row_number() over(partition by pc.repo_name order by coalesce(pc.last_analysis_date, pc.project_updated_at) desc, pc.files desc, pc.project_key desc) as rn\n  from _project_coverage pc\n),\n_prs as (\n  select\n    pr.pull_request_key,\n    pr.title,\n    pr.author_name,\n    pr.status,\n    pr.created_date,\n    pr.url,\n    pr.head_commit_sha,\n    r.name as repo_name\n  from\n    pull_requests pr\n    join repos r on r.id = pr.base_repo_id\n  where\n    $__timeFilter(pr.created_date)\n    and pr.base_repo_id in (${repo_id})\n)\nselect\n  cast(pr.pull_request_key as unsigned) as \"PR Number\",\n  pr.title as \"PR Title\",\n  pr.author_name as \"Author\",\n  case upper(pr.status)\n    when 'OPEN' then 'Open'\n    when 'MERGED' then 'Merged'\n    when 'CLOSED' then 'Closed'\n    else pr.status\n  end as \"Status\",\n  pr.created_date as \"Created Date\",\n  pr.url as \"PR URL\",\n  coalesce(exact.project_key, rp.project_key) as \"SonarQube Project\",\n  case\n    when exact.project_key is not null then concat('PR commit match', case when exact.match_type = 'slug' then ' (slug)' else '' end)\n    when rp.project_key is not null then concat('Repo project fallback', case when rp.match_type = 'slug' then ' (slug)' else '' end)\n    else 'No SonarQube project'\n  end as \"Coverage Source\",\n  coalesce(exact.files, rp.files) as \"Files Scanned\",\n  coalesce(exact.lines_to_cover, rp.lines_to_cover) as \"Lines To Cover\",\n  round(\n    (coalesce(exact.lines_to_cover, rp.lines_to_cover) - coalesce(exact.uncovered_lines, rp.uncovered_lines)) * 100.0\n    / nullif(coalesce(exact.lines_to_cover, rp.lines_to_cover), 0),\n    1\n  ) as \"Repo Coverage at PR Time\",\n  case\n    when exact.project_key is null and rp.project_key is null then 'No SonarQube project matched this repo by full repo name or slug'\n    when exact.project_key is null then 'No PR commit match; showing repository SonarQube project status'\n    when coalesce(exact.lines_to_cover, rp.lines_to_cover) is null then 'No SonarQube file metrics'\n    when coalesce(exact.lines_to_cover, rp.lines_to_cover) = 0 then 'SonarQube imported files, but no LCOV lines_to_cover'\n    else 'Coverage available'\n  end as \"Coverage Data Status\"\nfrom\n  _prs pr\n  left join _project_coverage exact on exact.commit_sha = pr.head_commit_sha and exact.repo_name = pr.repo_name\n  left join _repo_project rp on rp.repo_name = pr.repo_name and rp.rn = 1\norder by\n  pr.created_date desc\nlimit 50",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "id"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          },
+          "table": "pull_requests",
+          "timeColumn": "created_date",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "title": "3.5 PR Unit Test Coverage Details",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 48
+        "y": 56
       },
       "id": 85,
       "panels": [],
-      "targets": [
-        {
-          "datasource": {
-            "type": "datasource",
-            "uid": "grafana"
-          },
-          "refId": "A"
-        }
-      ],
       "title": "4. How PRs are handled?",
       "type": "row"
     },
     {
       "datasource": "mysql",
-              "description": "",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1588,8 +1809,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1605,7 +1825,7 @@
         "h": 6,
         "w": 6,
         "x": 0,
-        "y": 49
+        "y": 57
       },
       "id": 66,
       "links": [
@@ -1620,15 +1840,18 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [],
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "9.5.15",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -1684,13 +1907,14 @@
     },
     {
       "datasource": "mysql",
-              "description": "",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -1715,8 +1939,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           }
@@ -1773,7 +1996,7 @@
         "h": 6,
         "w": 18,
         "x": 6,
-        "y": 49
+        "y": 57
       },
       "id": 79,
       "links": [
@@ -1801,13 +2024,14 @@
           "valueSize": 12
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         },
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 0
       },
-      "pluginVersion": "8.0.6",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -1874,8 +2098,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
-                "value": null
+                "color": "red"
               }
             ]
           }
@@ -1886,7 +2109,7 @@
         "h": 6,
         "w": 6,
         "x": 0,
-        "y": 55
+        "y": 63
       },
       "id": 80,
       "links": [
@@ -1901,6 +2124,7 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -1908,10 +2132,12 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "9.5.15",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -1967,18 +2193,20 @@
     },
     {
       "datasource": "mysql",
-              "description": "",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "Ratio",
             "axisPlacement": "auto",
             "barAlignment": 1,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 1,
             "gradientMode": "opacity",
@@ -1987,6 +2215,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineStyle": {
               "fill": "solid"
@@ -2011,8 +2240,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -2024,7 +2252,7 @@
         "h": 6,
         "w": 18,
         "x": 6,
-        "y": 55
+        "y": 63
       },
       "id": 81,
       "links": [
@@ -2042,11 +2270,12 @@
           "showLegend": false
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "8.0.6",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -2113,8 +2342,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2130,7 +2358,7 @@
         "h": 6,
         "w": 6,
         "x": 0,
-        "y": 61
+        "y": 69
       },
       "id": 72,
       "links": [
@@ -2145,6 +2373,7 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -2152,10 +2381,12 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "9.5.15",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -2193,13 +2424,14 @@
     },
     {
       "datasource": "mysql",
-              "description": "",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -2225,8 +2457,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2241,7 +2472,7 @@
         "h": 6,
         "w": 18,
         "x": 6,
-        "y": 61
+        "y": 69
       },
       "id": 95,
       "links": [
@@ -2269,13 +2500,14 @@
           "valueSize": 12
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         },
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 0
       },
-      "pluginVersion": "8.0.6",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -2342,8 +2574,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2359,7 +2590,7 @@
         "h": 6,
         "w": 6,
         "x": 0,
-        "y": 67
+        "y": 75
       },
       "id": 96,
       "links": [
@@ -2374,15 +2605,18 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [],
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "9.5.15",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -2420,13 +2654,14 @@
     },
     {
       "datasource": "mysql",
-              "description": "",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -2452,8 +2687,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2468,7 +2702,7 @@
         "h": 6,
         "w": 18,
         "x": 6,
-        "y": 67
+        "y": 75
       },
       "id": 97,
       "links": [
@@ -2496,13 +2730,14 @@
           "valueSize": 12
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         },
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 0
       },
-      "pluginVersion": "8.0.6",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -2562,7 +2797,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 73
+        "y": 81
       },
       "id": 102,
       "panels": [],
@@ -2579,8 +2814,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
-                "value": null
+                "color": "blue"
               }
             ]
           },
@@ -2592,7 +2826,7 @@
         "h": 6,
         "w": 6,
         "x": 0,
-        "y": 74
+        "y": 82
       },
       "id": 103,
       "links": [
@@ -2607,6 +2841,7 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "mean"
@@ -2614,10 +2849,12 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "9.5.15",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -2682,8 +2919,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
-                "value": null
+                "color": "red"
               },
               {
                 "color": "green",
@@ -2699,7 +2935,7 @@
         "h": 6,
         "w": 6,
         "x": 6,
-        "y": 74
+        "y": 82
       },
       "id": 104,
       "links": [
@@ -2714,6 +2950,7 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -2721,10 +2958,12 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "9.5.15",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -2779,13 +3018,14 @@
     },
     {
       "datasource": "mysql",
-              "description": "",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "fixed"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -2810,8 +3050,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2857,7 +3096,7 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 74
+        "y": 82
       },
       "id": 109,
       "links": [
@@ -2885,13 +3124,14 @@
           "valueSize": 12
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         },
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 0
       },
-      "pluginVersion": "8.0.6",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -2947,7 +3187,7 @@
     },
     {
       "datasource": "mysql",
-        "description": "Number of successful workflow runs / Number of total workflow runs",
+      "description": "Number of successful workflow runs / Number of total workflow runs",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -3041,7 +3281,7 @@
         "h": 6,
         "w": 6,
         "x": 0,
-        "y": 80
+        "y": 88
       },
       "id": 105,
       "links": [
@@ -3075,11 +3315,12 @@
           "values": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
-      "pluginVersion": "8.0.6",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -3134,13 +3375,14 @@
     },
     {
       "datasource": "mysql",
-              "description": "1. Mean Workflow Runs success rate over time.\n2. The workflow runs being calculated are filtered by \"workflow runs starting time\" (time filter at the upper-right corner) and \"Jira board\" (\"Choose Board\" filter at the upper-left corner)",
+      "description": "1. Mean Workflow Runs success rate over time.\n2. The workflow runs being calculated are filtered by \"workflow runs starting time\" (time filter at the upper-right corner) and \"Jira board\" (\"Choose Board\" filter at the upper-left corner)",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "Rate(%)",
@@ -3166,8 +3408,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -3199,10 +3440,9 @@
         "h": 6,
         "w": 18,
         "x": 6,
-        "y": 80
+        "y": 88
       },
       "id": 108,
-      "interval": "",
       "links": [
         {
           "targetBlank": true,
@@ -3230,13 +3470,14 @@
           "valueSize": 12
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         },
         "xTickLabelRotation": 45,
         "xTickLabelSpacing": 0
       },
-      "pluginVersion": "8.0.6",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -3301,8 +3542,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "light-orange",
-                "value": null
+                "color": "light-orange"
               }
             ]
           },
@@ -3314,7 +3554,7 @@
         "h": 6,
         "w": 6,
         "x": 0,
-        "y": 86
+        "y": 94
       },
       "id": 106,
       "links": [
@@ -3329,15 +3569,18 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [],
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "9.5.15",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -3392,13 +3635,14 @@
     },
     {
       "datasource": "mysql",
-              "description": "",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -3424,8 +3668,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "purple",
-                "value": null
+                "color": "purple"
               },
               {
                 "color": "red",
@@ -3457,7 +3700,7 @@
         "h": 6,
         "w": 18,
         "x": 6,
-        "y": 86
+        "y": 94
       },
       "id": 110,
       "links": [
@@ -3485,13 +3728,14 @@
           "valueSize": 12
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         },
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 0
       },
-      "pluginVersion": "8.0.6",
+      "pluginVersion": "11.6.2",
       "targets": [
         {
           "datasource": "mysql",
@@ -3546,15 +3790,15 @@
       "type": "barchart"
     },
     {
-      "datasource": {
-        "type": "datasource",
-        "uid": "grafana"
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
       },
       "gridPos": {
         "h": 2,
         "w": 24,
         "x": 0,
-        "y": 92
+        "y": 100
       },
       "id": 101,
       "options": {
@@ -3566,17 +3810,8 @@
         "content": "<br/>\n\nThis dashboard is created based on this [data schema](https://devlake.apache.org/docs/DataModels/DevLakeDomainLayerSchema). Want to add more metrics? Please follow the [guide](https://devlake.apache.org/docs/Configuration/Dashboards/GrafanaUserGuide).",
         "mode": "markdown"
       },
-      "pluginVersion": "9.5.15",
-      "targets": [
-        {
-          "datasource": {
-            "type": "datasource",
-            "uid": "grafana"
-          },
-          "queryType": "randomWalk",
-          "refId": "A"
-        }
-      ],
+      "pluginVersion": "11.6.2",
+      "title": "",
       "type": "text"
     },
     {
@@ -3585,7 +3820,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 94
+        "y": 102
       },
       "id": 112,
       "panels": [],
@@ -3615,7 +3850,7 @@
         "h": 3,
         "w": 4,
         "x": 0,
-        "y": 95
+        "y": 103
       },
       "id": 113,
       "options": {
@@ -3713,7 +3948,7 @@
         "h": 8,
         "w": 12,
         "x": 4,
-        "y": 95
+        "y": 103
       },
       "id": 114,
       "options": {
@@ -3784,7 +4019,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 95
+        "y": 103
       },
       "id": 115,
       "options": {
@@ -3824,9 +4059,9 @@
       "type": "table"
     }
   ],
+  "preload": false,
   "refresh": "",
-  "schemaVersion": 38,
-  "style": "dark",
+  "schemaVersion": 41,
   "tags": [
     "Data Source Dashboard",
     "Stable Data Sources"
@@ -3834,9 +4069,7 @@
   "templating": {
     "list": [
       {
-        "allValue": "",
         "current": {
-          "selected": true,
           "text": [
             "All"
           ],
@@ -3845,8 +4078,7 @@
           ]
         },
         "datasource": "mysql",
-                  "definition": "select concat(name, '--', id) as text from repos where id like 'github%'",
-        "hide": 0,
+        "definition": "select concat(name, '--', id) as text from repos where id like 'github%'",
         "includeAll": true,
         "label": "Repo",
         "multi": true,
@@ -3855,20 +4087,15 @@
         "query": "select concat(name, '--', id) as text from repos where id like 'github%'",
         "refresh": 1,
         "regex": "/^(?<text>.*)--(?<value>.*)$/",
-        "skipUrlSync": false,
-        "sort": 0,
         "type": "query"
       },
       {
         "current": {
-          "selected": false,
           "text": "Month",
           "value": "DAYOFMONTH"
         },
-        "hide": 0,
         "includeAll": false,
         "label": "Time Interval",
-        "multi": false,
         "name": "interval",
         "options": [
           {
@@ -3883,8 +4110,6 @@
           }
         ],
         "query": "Month : DAYOFMONTH, Week : WEEKDAY",
-        "queryValue": "",
-        "skipUrlSync": false,
         "type": "custom"
       }
     ]
@@ -3896,7 +4121,5 @@
   "timepicker": {},
   "timezone": "utc",
   "title": "GitHub",
-  "uid": "KXWvOFQnz",
-  "version": 25,
-  "weekStart": ""
+  "uid": "KXWvOFQnz"
 }
