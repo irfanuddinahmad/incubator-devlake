@@ -88,12 +88,34 @@ func CollectActivityPolling(taskCtx plugin.SubTaskContext) errors.Error {
 				break
 			}
 		}
-		if err := collector.Close(); err != nil {
+		if err := closeSalesforceActivityCollector(collector, since, until); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func closeSalesforceActivityCollector(collector *helper.StatefulApiCollector, since *time.Time, until *time.Time) errors.Error {
+	if until == nil {
+		return collector.Close()
+	}
+
+	return collector.CloseWithUntil(resolveSalesforceActivityCheckpoint(since, until, collector.GetUntil()))
+}
+
+func resolveSalesforceActivityCheckpoint(since *time.Time, until *time.Time, runUntil *time.Time) time.Time {
+	checkpoint := until.UTC()
+	if runUntil != nil && runUntil.Before(checkpoint) {
+		checkpoint = runUntil.UTC()
+	}
+	if since != nil {
+		normalizedSince := since.UTC()
+		if checkpoint.Before(normalizedSince) {
+			checkpoint = normalizedSince
+		}
+	}
+	return checkpoint
 }
 
 func buildSalesforceActivityQuery(objectType string, since *time.Time, until *time.Time) string {

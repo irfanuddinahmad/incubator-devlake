@@ -93,7 +93,7 @@ type localConfig struct {
 
 func main() {
 	if err := run(os.Args[1:], os.Stdout, os.Stderr); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -124,18 +124,18 @@ func run(args []string, stdout io.Writer, stderr io.Writer) error {
 	defer shutdownServer(server)
 
 	authURL := buildAuthorizeURL(opts.loginURL, opts.clientID, callbackURL, opts.scope, state)
-	fmt.Fprintf(stdout, "Listening for Salesforce OAuth callback on %s\n", listener.Addr().String())
-	fmt.Fprintf(stdout, "Callback URL configured in Salesforce must be: %s\n", callbackURL)
+	_, _ = fmt.Fprintf(stdout, "Listening for Salesforce OAuth callback on %s\n", listener.Addr().String())
+	_, _ = fmt.Fprintf(stdout, "Callback URL configured in Salesforce must be: %s\n", callbackURL)
 
 	if opts.openBrowser {
 		if err := openBrowser(authURL); err != nil {
-			fmt.Fprintf(stderr, "Could not open browser automatically: %v\n", err)
-			fmt.Fprintf(stdout, "Open this URL manually:\n%s\n", authURL)
+			_, _ = fmt.Fprintf(stderr, "Could not open browser automatically: %v\n", err)
+			_, _ = fmt.Fprintf(stdout, "Open this URL manually:\n%s\n", authURL)
 		} else {
-			fmt.Fprintln(stdout, "Opened Salesforce authorization URL in your browser.")
+			_, _ = fmt.Fprintln(stdout, "Opened Salesforce authorization URL in your browser.")
 		}
 	} else {
-		fmt.Fprintf(stdout, "Open this URL in your browser:\n%s\n", authURL)
+		_, _ = fmt.Fprintf(stdout, "Open this URL in your browser:\n%s\n", authURL)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), opts.timeout)
@@ -154,7 +154,7 @@ func run(args []string, stdout io.Writer, stderr io.Writer) error {
 		return err
 	}
 	if strings.TrimSpace(token.RefreshToken) == "" {
-		fmt.Fprintln(stderr, "Salesforce did not return a refresh_token. Check that the OAuth app includes refresh_token/offline_access scope.")
+		_, _ = fmt.Fprintln(stderr, "Salesforce did not return a refresh_token. Check that the OAuth app includes refresh_token/offline_access scope.")
 	}
 
 	if opts.writeConfig {
@@ -168,11 +168,11 @@ func run(args []string, stdout io.Writer, stderr io.Writer) error {
 		if err := writeLocalTestConfig(configPath, opts, token); err != nil {
 			return err
 		}
-		fmt.Fprintf(stdout, "Wrote ignored local Salesforce e2e config: %s\n", configPath)
+		_, _ = fmt.Fprintf(stdout, "Wrote ignored local Salesforce e2e config: %s\n", configPath)
 	}
 
-	fmt.Fprintf(stdout, "Salesforce instance URL: %s\n", token.InstanceURL)
-	fmt.Fprintf(stdout, "Refresh token returned: %t\n", strings.TrimSpace(token.RefreshToken) != "")
+	_, _ = fmt.Fprintf(stdout, "Salesforce instance URL: %s\n", token.InstanceURL)
+	_, _ = fmt.Fprintf(stdout, "Refresh token returned: %t\n", strings.TrimSpace(token.RefreshToken) != "")
 	if opts.printTokens || !opts.writeConfig {
 		encoder := json.NewEncoder(stdout)
 		encoder.SetIndent("", "  ")
@@ -435,10 +435,10 @@ func writeLocalTestConfig(path string, opts options, token tokenResponse) error 
 
 func renderLocalConfig(cfg localConfig) ([]byte, error) {
 	var builder strings.Builder
-	builder.WriteString("package salesforce\n\n")
-	builder.WriteString("import \"github.com/apache/incubator-devlake/test/helper\"\n\n")
-	builder.WriteString("func init() {\n")
-	builder.WriteString("\thelper.SetTestConfig(TestConfig{\n")
+	_, _ = builder.WriteString("package salesforce\n\n")
+	_, _ = builder.WriteString("import \"github.com/apache/incubator-devlake/test/helper\"\n\n")
+	_, _ = builder.WriteString("func init() {\n")
+	_, _ = builder.WriteString("\thelper.SetTestConfig(TestConfig{\n")
 	writeConfigString(&builder, "AuthMode", cfg.AuthMode)
 	writeConfigString(&builder, "AccessToken", cfg.AccessToken)
 	writeConfigString(&builder, "RefreshToken", cfg.RefreshToken)
@@ -448,18 +448,18 @@ func renderLocalConfig(cfg localConfig) ([]byte, error) {
 	writeConfigString(&builder, "InstanceUrl", cfg.InstanceURL)
 	writeConfigString(&builder, "ApiVersion", cfg.APIVersion)
 	if len(cfg.ObjectTypes) > 0 {
-		builder.WriteString("\t\tObjectTypes: []string{")
+		_, _ = builder.WriteString("\t\tObjectTypes: []string{")
 		for i, objectType := range cfg.ObjectTypes {
 			if i > 0 {
-				builder.WriteString(", ")
+				_, _ = builder.WriteString(", ")
 			}
-			builder.WriteString(strconv.Quote(objectType))
+			_, _ = builder.WriteString(strconv.Quote(objectType))
 		}
-		builder.WriteString("},\n")
+		_, _ = builder.WriteString("},\n")
 	}
 	writeConfigString(&builder, "OccurredAfter", cfg.OccurredAfter)
-	builder.WriteString("\t})\n")
-	builder.WriteString("}\n")
+	_, _ = builder.WriteString("\t})\n")
+	_, _ = builder.WriteString("}\n")
 
 	formatted, err := format.Source([]byte(builder.String()))
 	if err != nil {
@@ -472,11 +472,11 @@ func writeConfigString(builder *strings.Builder, field string, value string) {
 	if strings.TrimSpace(value) == "" {
 		return
 	}
-	builder.WriteString("\t\t")
-	builder.WriteString(field)
-	builder.WriteString(": ")
-	builder.WriteString(strconv.Quote(strings.TrimSpace(value)))
-	builder.WriteString(",\n")
+	_, _ = builder.WriteString("\t\t")
+	_, _ = builder.WriteString(field)
+	_, _ = builder.WriteString(": ")
+	_, _ = builder.WriteString(strconv.Quote(strings.TrimSpace(value)))
+	_, _ = builder.WriteString(",\n")
 }
 
 func parseObjectTypes(raw string) ([]string, error) {

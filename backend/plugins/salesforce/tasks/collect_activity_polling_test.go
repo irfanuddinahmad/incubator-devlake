@@ -69,3 +69,23 @@ func TestBuildSalesforceActivityQuery_UsesUnquotedDateTimeLiterals(t *testing.T)
 	assert.False(t, strings.Contains(query, "'2026-04-17T10:11:12Z'"))
 	assert.False(t, strings.Contains(query, "'2026-04-18T13:14:15Z'"))
 }
+
+func TestResolveSalesforceActivityCheckpoint_CapsAtOccurredBefore(t *testing.T) {
+	since := time.Date(2026, 4, 17, 10, 0, 0, 0, time.UTC)
+	until := time.Date(2026, 4, 18, 10, 0, 0, 0, time.UTC)
+	runUntil := time.Date(2026, 4, 19, 10, 0, 0, 0, time.UTC)
+
+	checkpoint := resolveSalesforceActivityCheckpoint(&since, &until, &runUntil)
+
+	assert.Equal(t, until, checkpoint)
+}
+
+func TestResolveSalesforceActivityCheckpoint_DoesNotMoveBackBeforeSince(t *testing.T) {
+	since := time.Date(2026, 4, 19, 10, 0, 0, 0, time.UTC)
+	until := time.Date(2026, 4, 18, 10, 0, 0, 0, time.UTC)
+	runUntil := time.Date(2026, 4, 20, 10, 0, 0, 0, time.UTC)
+
+	checkpoint := resolveSalesforceActivityCheckpoint(&since, &until, &runUntil)
+
+	assert.Equal(t, since, checkpoint)
+}
