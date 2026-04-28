@@ -1216,7 +1216,7 @@
           "hide": false,
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "select\n\tcount(distinct pr.id) as pull_request_count\nfrom \n\tpull_requests pr\nwhere\n  $__timeFilter(created_date)\n\tand base_repo_id in (${repo_id})\n\t\n\n",
+          "rawSql": "select\n\tcount(distinct pr.id) as pull_request_count\nfrom \n\tpull_requests pr\nwhere\n  $__timeFilter(created_date)\n\tand base_repo_id in (${repo_id})\n\tand is_draft = false\n\t\n\n",
           "refId": "A",
           "select": [
             [
@@ -1366,7 +1366,7 @@
           "hide": false,
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "with _prs as(\n  SELECT\n    DATE_ADD(date(created_date), INTERVAL -$interval(date(created_date))+1 DAY) as time,\n    count(distinct id) as pr_count\n  FROM pull_requests\n  WHERE\n    base_repo_id in (${repo_id})\n    and $__timeFilter(created_date)\n    -- Enable the following condition to remove the month with incomplete data\n    -- and created_date >= DATE_ADD(DATE_ADD($__timeFrom(), INTERVAL -DAY($__timeFrom())+1 DAY), INTERVAL +1 MONTH)\n  group by 1\n)\n\nSELECT \n  case when '$interval' = 'DAYOFMONTH' then date_format(time,'%M %Y') else concat('W', date_format(time,'%u %Y')) end as _time,\n  pr_count as \"Pull Request Count\"\nFROM _prs\nORDER BY time\n",
+          "rawSql": "with _prs as(\n  SELECT\n    DATE_ADD(date(created_date), INTERVAL -$interval(date(created_date))+1 DAY) as time,\n    count(distinct id) as pr_count\n  FROM pull_requests\n  WHERE\n    base_repo_id in (${repo_id})\n    and $__timeFilter(created_date)\n    and is_draft = false\n    -- Enable the following condition to remove the month with incomplete data\n    -- and created_date >= DATE_ADD(DATE_ADD($__timeFrom(), INTERVAL -DAY($__timeFrom())+1 DAY), INTERVAL +1 MONTH)\n  group by 1\n)\n\nSELECT \n  case when '$interval' = 'DAYOFMONTH' then date_format(time,'%M %Y') else concat('W', date_format(time,'%u %Y')) end as _time,\n  pr_count as \"Pull Request Count\"\nFROM _prs\nORDER BY time\n",
           "refId": "A",
           "select": [
             [
@@ -1505,7 +1505,7 @@
           "hide": false,
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "-- The PR/MR statuses are standardized to 'OPEN', 'MERGED' and 'CLOSED'. You can check out the original status from the field `original_status`\nselect\n  author_name,\n\tcount(distinct pr.id) as merged_pull_request_count\nfrom \n\tpull_requests pr\nwhere\n  $__timeFilter(created_date)\n\tand base_repo_id in (${repo_id})\n  and pr.status = 'MERGED'\ngroup by 1\norder by 2 desc\nlimit 20\n",
+          "rawSql": "-- The PR/MR statuses are standardized to 'OPEN', 'MERGED' and 'CLOSED'. You can check out the original status from the field `original_status`\nselect\n  author_name,\n\tcount(distinct pr.id) as merged_pull_request_count\nfrom \n\tpull_requests pr\nwhere\n  $__timeFilter(created_date)\n\tand base_repo_id in (${repo_id})\n  and pr.status = 'MERGED'\n  and is_draft = false\ngroup by 1\norder by 2 desc\nlimit 20\n",
           "refId": "A",
           "select": [
             [
@@ -1638,7 +1638,7 @@
           "hide": false,
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "-- The PR/MR statuses are standardized to 'OPEN', 'MERGED' and 'CLOSED'. You can check out the original status from the field `original_status`\nselect\n  count(distinct case when status = 'CLOSED' then id else null end)/count(distinct case when status in ('CLOSED', 'MERGED') then id else null end) as ratio\nfrom \n\tpull_requests pr\nwhere\n  $__timeFilter(created_date)\n\tand base_repo_id in (${repo_id})",
+          "rawSql": "-- The PR/MR statuses are standardized to 'OPEN', 'MERGED' and 'CLOSED'. You can check out the original status from the field `original_status`\nselect\n  count(distinct case when status = 'CLOSED' then id else null end)/count(distinct case when status in ('CLOSED', 'MERGED') then id else null end) as ratio\nfrom \n\tpull_requests pr\nwhere\n  $__timeFilter(created_date)\n\tand base_repo_id in (${repo_id})\n\tand is_draft = false",
           "refId": "A",
           "select": [
             [
@@ -1817,7 +1817,7 @@
           "hide": false,
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "-- The PR/MR statuses are standardized to 'OPEN', 'MERGED' and 'CLOSED'. You can check out the original status from the field `original_status`\nwith _prs as(\n  SELECT\n    DATE_ADD(date(created_date), INTERVAL -$interval(date(created_date))+1 DAY) as time,\n    count(distinct case when status = 'OPEN' then id else null end) as open,\n    count(distinct case when status = 'CLOSED' then id else null end) as closed,\n    count(distinct case when status = 'MERGED' then id else null end) as merged\n  FROM pull_requests\n  WHERE\n    $__timeFilter(created_date)\n    -- Enable the following condition to remove the month with incomplete data\n    -- and created_date >= DATE_ADD(DATE_ADD($__timeFrom(), INTERVAL -DAY($__timeFrom())+1 DAY), INTERVAL +1 MONTH)\n    and base_repo_id in (${repo_id})\n  group by 1\n)\n\nSELECT \n  case when '$interval' = 'DAYOFMONTH' then date_format(time,'%M %Y') else concat('W', date_format(time,'%u %Y')) end as _time,\n  open as \"PR: Open\",\n  closed as \"PR: Closed without merging\",\n  merged as \"PR: Closed and merged\"\nFROM _prs\nORDER BY time",
+          "rawSql": "-- The PR/MR statuses are standardized to 'OPEN', 'MERGED' and 'CLOSED'. You can check out the original status from the field `original_status`\nwith _prs as(\n  SELECT\n    DATE_ADD(date(created_date), INTERVAL -$interval(date(created_date))+1 DAY) as time,\n    count(distinct case when status = 'OPEN' then id else null end) as open,\n    count(distinct case when status = 'CLOSED' then id else null end) as closed,\n    count(distinct case when status = 'MERGED' then id else null end) as merged\n  FROM pull_requests\n  WHERE\n    $__timeFilter(created_date)\n    -- Enable the following condition to remove the month with incomplete data\n    -- and created_date >= DATE_ADD(DATE_ADD($__timeFrom(), INTERVAL -DAY($__timeFrom())+1 DAY), INTERVAL +1 MONTH)\n    and base_repo_id in (${repo_id})\n    and is_draft = false\n  group by 1\n)\n\nSELECT \n  case when '$interval' = 'DAYOFMONTH' then date_format(time,'%M %Y') else concat('W', date_format(time,'%u %Y')) end as _time,\n  open as \"PR: Open\",\n  closed as \"PR: Closed without merging\",\n  merged as \"PR: Closed and merged\"\nFROM _prs\nORDER BY time",
           "refId": "A",
           "select": [
             [
@@ -1921,7 +1921,7 @@
           "hide": false,
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "-- The PR/MR statuses are standardized to DevLake's statuses 'OPEN', 'MERGED' and 'CLOSED'. You can check out the original status from the field `original_status`\nselect\n\tcount(distinct pr.id) as merged_pull_request_count\nfrom \n\tpull_requests pr\nwhere\n  $__timeFilter(created_date)\n\tand base_repo_id in (${repo_id})\n\tand pr.status = 'CLOSED'",
+          "rawSql": "-- The PR/MR statuses are standardized to DevLake's statuses 'OPEN', 'MERGED' and 'CLOSED'. You can check out the original status from the field `original_status`\nselect\n\tcount(distinct pr.id) as merged_pull_request_count\nfrom \n\tpull_requests pr\nwhere\n  $__timeFilter(created_date)\n\tand base_repo_id in (${repo_id})\n\tand pr.status = 'CLOSED'\n\tand is_draft = false",
           "refId": "A",
           "select": [
             [
@@ -2056,7 +2056,7 @@
           "hide": false,
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "-- The PR/MR statuses are standardized to DevLake's statuses 'OPEN', 'MERGED' and 'CLOSED'. You can check out the original status from the field `original_status`\nSELECT\n  DATE_ADD(date(created_date), INTERVAL -$interval(date(created_date))+1 DAY) as time,\n  count(distinct case when status = 'CLOSED' then id else null end)/count(distinct case when status in ('CLOSED', 'MERGED') then id else null end) as ratio\nFROM pull_requests\nWHERE\n  $__timeFilter(created_date)\n  and base_repo_id in (${repo_id})\ngroup by 1\n",
+          "rawSql": "-- The PR/MR statuses are standardized to DevLake's statuses 'OPEN', 'MERGED' and 'CLOSED'. You can check out the original status from the field `original_status`\nSELECT\n  DATE_ADD(date(created_date), INTERVAL -$interval(date(created_date))+1 DAY) as time,\n  count(distinct case when status = 'CLOSED' then id else null end)/count(distinct case when status in ('CLOSED', 'MERGED') then id else null end) as ratio\nFROM pull_requests\nWHERE\n  $__timeFilter(created_date)\n  and base_repo_id in (${repo_id})\n  and is_draft = false\ngroup by 1\n",
           "refId": "A",
           "select": [
             [
@@ -2164,7 +2164,7 @@
           "hide": false,
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "select\n\tavg(TIMESTAMPDIFF(Minute,created_date,merged_date)/1440)\nfrom \n\tpull_requests\nwhere \n  $__timeFilter(created_date)\n\tand base_repo_id in (${repo_id})\n\tand merged_date is not null\n\n\n",
+          "rawSql": "select\n\tavg(TIMESTAMPDIFF(Minute,created_date,merged_date)/1440)\nfrom \n\tpull_requests\nwhere \n  $__timeFilter(created_date)\n\tand base_repo_id in (${repo_id})\n\tand merged_date is not null\n\tand is_draft = false\n\n\n",
           "refId": "A",
           "select": [
             [
@@ -2285,7 +2285,7 @@
           "hide": false,
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "with _prs as(\n  SELECT\n    DATE_ADD(date(created_date), INTERVAL -$interval(date(created_date))+1 DAY) as time,\n    avg(TIMESTAMPDIFF(Minute,created_date,merged_date)/1440) as time_to_merge\n  FROM pull_requests\n  WHERE\n    $__timeFilter(created_date)\n    -- Enable the following condition to remove the month with incomplete data\n    -- and created_date >= DATE_ADD(DATE_ADD($__timeFrom(), INTERVAL -DAY($__timeFrom())+1 DAY), INTERVAL +1 MONTH)\n    and base_repo_id in (${repo_id})\n  group by 1\n)\n\nSELECT \n  case when '$interval' = 'DAYOFMONTH' then date_format(time,'%M %Y') else concat('W', date_format(time,'%u %Y')) end as _time,\n  time_to_merge as \"Time to Merge\"\nFROM _prs\nORDER BY time\n",
+          "rawSql": "with _prs as(\n  SELECT\n    DATE_ADD(date(created_date), INTERVAL -$interval(date(created_date))+1 DAY) as time,\n    avg(TIMESTAMPDIFF(Minute,created_date,merged_date)/1440) as time_to_merge\n  FROM pull_requests\n  WHERE\n    $__timeFilter(created_date)\n    -- Enable the following condition to remove the month with incomplete data\n    -- and created_date >= DATE_ADD(DATE_ADD($__timeFrom(), INTERVAL -DAY($__timeFrom())+1 DAY), INTERVAL +1 MONTH)\n    and base_repo_id in (${repo_id})\n    and is_draft = false\n  group by 1\n)\n\nSELECT \n  case when '$interval' = 'DAYOFMONTH' then date_format(time,'%M %Y') else concat('W', date_format(time,'%u %Y')) end as _time,\n  time_to_merge as \"Time to Merge\"\nFROM _prs\nORDER BY time\n",
           "refId": "A",
           "select": [
             [
@@ -2391,7 +2391,7 @@
           "hide": false,
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "select\n\tavg(TIMESTAMPDIFF(Minute,created_date,closed_date)/1440) as time_to_close\nfrom \n\tpull_requests\nwhere \n  $__timeFilter(created_date)\n\tand base_repo_id in (${repo_id})\n\tand status in ('CLOSED', 'MERGED')\n\n\n",
+          "rawSql": "select\n\tavg(TIMESTAMPDIFF(Minute,created_date,closed_date)/1440) as time_to_close\nfrom \n\tpull_requests\nwhere \n  $__timeFilter(created_date)\n\tand base_repo_id in (${repo_id})\n\tand status in ('CLOSED', 'MERGED')\n\tand is_draft = false\n\n\n",
           "refId": "A",
           "select": [
             [
@@ -2512,7 +2512,7 @@
           "hide": false,
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "with _prs as(\n  SELECT\n    DATE_ADD(date(created_date), INTERVAL -$interval(date(created_date))+1 DAY) as time,\n    avg(TIMESTAMPDIFF(Minute,created_date,closed_date)/1440) as time_to_close\n  FROM pull_requests\n  WHERE\n    $__timeFilter(created_date)\n    -- Enable the following condition to remove the month with incomplete data\n    -- and created_date >= DATE_ADD(DATE_ADD($__timeFrom(), INTERVAL -DAY($__timeFrom())+1 DAY), INTERVAL +1 MONTH)\n    and base_repo_id in (${repo_id})\n    and status in ('CLOSED', 'MERGED')\n  group by 1\n)\n\nSELECT \n  case when '$interval' = 'DAYOFMONTH' then date_format(time,'%M %Y') else concat('W', date_format(time,'%u %Y')) end as _time,\n  time_to_close as \"Time to Close\"\nFROM _prs\nORDER BY time\n",
+          "rawSql": "with _prs as(\n  SELECT\n    DATE_ADD(date(created_date), INTERVAL -$interval(date(created_date))+1 DAY) as time,\n    avg(TIMESTAMPDIFF(Minute,created_date,closed_date)/1440) as time_to_close\n  FROM pull_requests\n  WHERE\n    $__timeFilter(created_date)\n    -- Enable the following condition to remove the month with incomplete data\n    -- and created_date >= DATE_ADD(DATE_ADD($__timeFrom(), INTERVAL -DAY($__timeFrom())+1 DAY), INTERVAL +1 MONTH)\n    and base_repo_id in (${repo_id})\n    and status in ('CLOSED', 'MERGED')\n    and is_draft = false\n  group by 1\n)\n\nSELECT \n  case when '$interval' = 'DAYOFMONTH' then date_format(time,'%M %Y') else concat('W', date_format(time,'%u %Y')) end as _time,\n  time_to_close as \"Time to Close\"\nFROM _prs\nORDER BY time\n",
           "refId": "A",
           "select": [
             [
@@ -3578,6 +3578,250 @@
         }
       ],
       "type": "text"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 94
+      },
+      "id": 112,
+      "panels": [],
+      "title": "6. Draft PRs",
+      "type": "row"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Number of open draft PRs created in the selected time range",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 0,
+        "y": 95
+      },
+      "id": 113,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.15",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "editorMode": "code",
+          "format": "table",
+          "group": [],
+          "hide": false,
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "select\n\tcount(distinct pr.id) as \"Draft PR Count\"\nfrom \n\tpull_requests pr\nwhere\n  $__timeFilter(created_date)\n\tand base_repo_id in (${repo_id})\n\tand is_draft = true\n\tand status = 'OPEN'\n",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": ["id"],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "created_date",
+          "where": []
+        }
+      ],
+      "title": "Draft PR Count",
+      "type": "stat"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Number of open draft PRs created over time",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 4,
+        "y": 95
+      },
+      "id": 114,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.5.15",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "editorMode": "code",
+          "format": "table",
+          "group": [],
+          "hide": false,
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "with _prs as(\n  SELECT\n    DATE_ADD(date(created_date), INTERVAL -$interval(date(created_date))+1 DAY) as time,\n    count(distinct id) as draft_pr_count\n  FROM pull_requests\n  WHERE\n    base_repo_id in (${repo_id})\n    and $__timeFilter(created_date)\n    and is_draft = true\n    and status = 'OPEN'\n  group by 1\n)\n\nSELECT \n  case when '$interval' = 'DAYOFMONTH' then date_format(time,'%M %Y') else concat('W', date_format(time,'%u %Y')) end as _time,\n  draft_pr_count as \"Open Draft PR Count\"\nFROM _prs\nORDER BY time\n",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": ["id"],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "created_date",
+          "where": []
+        }
+      ],
+      "title": "6.1 Open Draft PRs Over Time",
+      "type": "barchart"
+    },
+    {
+      "datasource": "mysql",
+      "description": "Top contributors with open draft PRs in the selected time range",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 95
+      },
+      "id": 115,
+      "options": {
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": ["sum"],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "9.5.15",
+      "targets": [
+        {
+          "datasource": "mysql",
+          "editorMode": "code",
+          "format": "table",
+          "group": [],
+          "hide": false,
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "select\n  author_name as \"Author Name\",\n\tcount(distinct pr.id) as \"Open Draft PR Count\"\nfrom \n\tpull_requests pr\nwhere\n  $__timeFilter(created_date)\n\tand base_repo_id in (${repo_id})\n  and is_draft = true\n  and status = 'OPEN'\ngroup by 1\norder by 2 desc\nlimit 20\n",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": ["id"],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "created_date",
+          "where": []
+        }
+      ],
+      "title": "6.2 Top Contributors with Open Draft PRs",
+      "type": "table"
     }
   ],
   "refresh": "",

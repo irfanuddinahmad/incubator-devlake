@@ -143,6 +143,7 @@ lake
 *.so
 
 NOTES.md
+.plans/
 
 main
 vendor
