@@ -65,6 +65,9 @@ services:
     ports:
       - 3002:3000
     volumes:
+      - ./grafana/dashboards:/etc/grafana/dashboards
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
       - grafana-storage:/var/lib/grafana
       - ./grafana/dashboards:/etc/grafana/dashboards
     environment:

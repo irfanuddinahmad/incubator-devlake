@@ -20,6 +20,7 @@ export interface IConnectionAPI {
   id: ID;
   name: string;
   endpoint: string;
+  apiKey?: string;
   authMethod?: string;
   token?: string;
   username?: string;
@@ -32,6 +33,7 @@ export interface IConnectionAPI {
   rateLimitPerHour?: number;
   organization?: string;
   organizationId?: string;
+  workspaceSlug?: string;
 }
 
 export interface IConnectionTestResult {
@@ -75,6 +77,7 @@ export interface IConnection {
   name: string;
   status: IConnectionStatus;
   endpoint: string;
+  apiKey?: string;
   authMethod?: string;
   token?: string;
   username?: string;
@@ -87,4 +90,5 @@ export interface IConnection {
   rateLimitPerHour?: number;
   organization?: string;
   organizationId?: string;
+  workspaceSlug?: string;
 }

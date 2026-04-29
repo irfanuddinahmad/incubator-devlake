@@ -168,7 +168,8 @@ func validateBlueprintAndMakePlan(blueprint *models.Blueprint) errors.Error {
 		if len(blueprint.Plan) == 0 {
 			return errors.BadInput.New("invalid plan")
 		}
-	} else if blueprint.Mode == models.BLUEPRINT_MODE_NORMAL {
+	}
+	if blueprint.Mode == models.BLUEPRINT_MODE_NORMAL {
 		var e errors.Error
 		blueprint.Plan, e = MakePlanForBlueprint(blueprint, &blueprint.SyncPolicy)
 		if e != nil {

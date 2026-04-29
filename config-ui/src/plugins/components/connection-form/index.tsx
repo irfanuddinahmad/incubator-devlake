@@ -77,6 +77,9 @@ export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
               organizationId: isEqual(connection?.organizationId, values.organizationId)
                 ? undefined
                 : values.organizationId,
+              workspaceSlug: isEqual(connection?.workspaceSlug, values.workspaceSlug)
+                ? undefined
+                : values.workspaceSlug,
               enableWebhook: isEqual((connection as any)?.enableWebhook, values.enableWebhook)
                 ? undefined
                 : values.enableWebhook,
@@ -109,6 +112,7 @@ export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
                 'companyId',
                 'organization',
                 'organizationId',
+                'workspaceSlug',
                 'enableWebhook',
                 'webhookSharedKey',
               ]),

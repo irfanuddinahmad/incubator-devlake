@@ -36,6 +36,7 @@ import { JiraConfig } from './jira';
 import { HubspotConfig } from './hubspot';
 import { NotionConfig } from './notion';
 import { PagerDutyConfig } from './pagerduty';
+import { PlaneConfig } from './plane';
 import { SonarQubeConfig } from './sonarqube';
 import { TAPDConfig } from './tapd';
 import { WebhookConfig } from './webhook';
@@ -66,6 +67,7 @@ export const pluginConfigs: IPluginConfig[] = [
   JiraConfig,
   NotionConfig,
   PagerDutyConfig,
+  PlaneConfig,
   SlackConfig,
   QDevConfig,
   SonarQubeConfig,

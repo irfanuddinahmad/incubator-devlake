@@ -16,6 +16,14 @@ limitations under the License.
 -->
 # Apache DevLake - AI Coding Agent Instructions
 
+## Response Style
+- Keep plans and responses concise by default
+- Prefer short bullets and short paragraphs over long explanations
+- For simple requests, give the minimum useful answer only
+- If brevity and polished grammar conflict, choose brevity
+- Avoid repeating context, restating the prompt, or adding filler
+- Summaries should be direct and approval-friendly so they are fast to scan
+
 ## Project Overview
 Apache DevLake is a dev data platform that ingests data from DevOps tools (GitHub, GitLab, Jira, Jenkins, etc.), transforms it into standardized domain models, and enables metrics/dashboards via Grafana.
 
