@@ -22,13 +22,13 @@ import (
 
 	"github.com/apache/incubator-devlake/core/context"
 	"github.com/apache/incubator-devlake/core/errors"
-	"github.com/apache/incubator-devlake/core/models/common"
+	"github.com/apache/incubator-devlake/core/models/migrationscripts/archived"
 	"github.com/apache/incubator-devlake/helpers/migrationhelper"
 )
 
 // PlaneProject20260416v2 includes the RawDataOrigin fields missing from the initial migration.
 type PlaneProject20260416v2 struct {
-	common.RawDataOrigin
+	archived.RawDataOrigin
 	ConnectionId  uint64 `gorm:"primaryKey"`
 	ProjectId     string `gorm:"primaryKey;type:varchar(255)"`
 	CreatedAt     time.Time

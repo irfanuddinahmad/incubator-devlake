@@ -22,7 +22,7 @@ import (
 
 	"github.com/apache/incubator-devlake/core/context"
 	"github.com/apache/incubator-devlake/core/errors"
-	"github.com/apache/incubator-devlake/core/models/common"
+	"github.com/apache/incubator-devlake/core/models/migrationscripts/archived"
 	"github.com/apache/incubator-devlake/helpers/migrationhelper"
 )
 
@@ -50,7 +50,7 @@ type PlaneEpic20260420 struct {
 	DueDate       *time.Time `gorm:"type:date"`
 	ParentId      *string    `gorm:"type:varchar(255);index"`
 	IsClosed      bool
-	common.NoPKModel
+	archived.NoPKModel
 }
 
 func (PlaneEpic20260420) TableName() string {

@@ -22,7 +22,7 @@ import (
 
 	"github.com/apache/incubator-devlake/core/context"
 	"github.com/apache/incubator-devlake/core/errors"
-	"github.com/apache/incubator-devlake/core/models/common"
+	"github.com/apache/incubator-devlake/core/models/migrationscripts/archived"
 	"github.com/apache/incubator-devlake/helpers/migrationhelper"
 )
 
@@ -38,7 +38,7 @@ type PlaneCycle20260421 struct {
 	CompletedAt  *time.Time
 	CreatedDate  *time.Time
 	UpdatedDate  *time.Time `gorm:"index"`
-	common.NoPKModel
+	archived.NoPKModel
 }
 
 func (PlaneCycle20260421) TableName() string {
@@ -53,7 +53,7 @@ type PlaneCycleItem20260421 struct {
 	ItemType     string `gorm:"primaryKey;type:varchar(40);index"`
 	CreatedDate  *time.Time
 	UpdatedDate  *time.Time `gorm:"index"`
-	common.NoPKModel
+	archived.NoPKModel
 }
 
 func (PlaneCycleItem20260421) TableName() string {

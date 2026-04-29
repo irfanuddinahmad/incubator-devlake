@@ -22,7 +22,7 @@ import (
 
 	"github.com/apache/incubator-devlake/core/context"
 	"github.com/apache/incubator-devlake/core/errors"
-	"github.com/apache/incubator-devlake/core/models/common"
+	"github.com/apache/incubator-devlake/core/models/migrationscripts/archived"
 	"github.com/apache/incubator-devlake/helpers/migrationhelper"
 )
 
@@ -49,7 +49,7 @@ type PlaneWorkItem20260417 struct {
 	DueDate       *time.Time `gorm:"type:date"`
 	ParentId      *string    `gorm:"type:varchar(255);index"`
 	IsClosed      bool
-	common.NoPKModel
+	archived.NoPKModel
 }
 
 func (PlaneWorkItem20260417) TableName() string {
@@ -64,7 +64,7 @@ type PlaneState20260417 struct {
 	Group        string  `gorm:"type:varchar(100)"`
 	Color        string  `gorm:"type:varchar(100)"`
 	Sequence     float64 `gorm:"type:double"`
-	common.NoPKModel
+	archived.NoPKModel
 }
 
 func (PlaneState20260417) TableName() string {
@@ -77,7 +77,7 @@ type PlaneWorkItemType20260417 struct {
 	TypeId       string `gorm:"primaryKey;type:varchar(255)"`
 	Name         string `gorm:"type:varchar(255)"`
 	IsDefault    bool
-	common.NoPKModel
+	archived.NoPKModel
 }
 
 func (PlaneWorkItemType20260417) TableName() string {

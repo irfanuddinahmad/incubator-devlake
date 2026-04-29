@@ -20,7 +20,7 @@ package migrationscripts
 import (
 	"github.com/apache/incubator-devlake/core/context"
 	"github.com/apache/incubator-devlake/core/errors"
-	"github.com/apache/incubator-devlake/core/models/common"
+	"github.com/apache/incubator-devlake/core/models/migrationscripts/archived"
 	"github.com/apache/incubator-devlake/helpers/migrationhelper"
 )
 
@@ -33,7 +33,7 @@ type PlaneEstimatePoint20260422 struct {
 	Value        *float64
 	ValueLabel   string `gorm:"type:varchar(100)"`
 	Description  string `gorm:"type:text"`
-	common.NoPKModel
+	archived.NoPKModel
 }
 
 func (PlaneEstimatePoint20260422) TableName() string {

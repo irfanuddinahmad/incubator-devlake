@@ -22,12 +22,12 @@ import (
 
 	"github.com/apache/incubator-devlake/core/context"
 	"github.com/apache/incubator-devlake/core/errors"
-	"github.com/apache/incubator-devlake/core/models/common"
+	"github.com/apache/incubator-devlake/core/models/migrationscripts/archived"
 	"github.com/apache/incubator-devlake/helpers/migrationhelper"
 )
 
 type PlaneProject20260416 struct {
-	common.RawDataOrigin
+	archived.RawDataOrigin
 	ConnectionId  uint64 `gorm:"primaryKey"`
 	ProjectId     string `gorm:"primaryKey;type:varchar(255)"`
 	CreatedAt     time.Time
@@ -45,7 +45,7 @@ func (PlaneProject20260416) TableName() string {
 }
 
 type PlaneScopeConfig20260416 struct {
-	ID            uint64    `gorm:"primaryKey"`
+	ID            uint64 `gorm:"primaryKey"`
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 	Entities      string `gorm:"type:json"`

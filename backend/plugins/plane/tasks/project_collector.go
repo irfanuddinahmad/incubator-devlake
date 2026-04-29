@@ -70,4 +70,3 @@ func CollectProjects(taskCtx plugin.SubTaskContext) errors.Error {
 	}
 	return collector.Execute()
 }
-
