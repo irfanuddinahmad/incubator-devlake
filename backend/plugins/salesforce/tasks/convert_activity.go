@@ -53,32 +53,49 @@ func ConvertActivity(taskCtx plugin.SubTaskContext) errors.Error {
 	connectionId := data.Options.ConnectionId
 	scopeId := data.Options.ScopeId
 
-	if err := db.Delete(
-		&crossdomain.UserActivity{},
+	deleteClauses := []dal.Clause{
 		dal.Where("source_system = ? AND connection_id = ? AND scope_id = ?", "salesforce", connectionId, scopeId),
-	); err != nil {
-		return err
 	}
-
-	cursor, err := db.Cursor(
+	cursorClauses := []dal.Clause{
 		dal.From(&models.SalesforceActivityEvent{}),
 		dal.Where("connection_id = ? AND scope_id = ?", connectionId, scopeId),
 		dal.Orderby("occurred_at ASC"),
-	)
+	}
+	if data.Options.OccurredAfter != nil {
+		bound := data.Options.OccurredAfter.UTC()
+		deleteClauses = append(deleteClauses, dal.Where("action_time >= ?", bound))
+		cursorClauses = append(cursorClauses, dal.Where("occurred_at >= ?", bound))
+	}
+	if data.Options.OccurredBefore != nil {
+		bound := data.Options.OccurredBefore.UTC()
+		deleteClauses = append(deleteClauses, dal.Where("action_time < ?", bound))
+		cursorClauses = append(cursorClauses, dal.Where("occurred_at < ?", bound))
+	}
+
+	if err := db.Delete(&crossdomain.UserActivity{}, deleteClauses...); err != nil {
+		return err
+	}
+
+	cursor, err := db.Cursor(cursorClauses...)
 	if err != nil {
 		return err
 	}
 	defer cursor.Close()
 
 	idGen := didgen.NewDomainIdGenerator(&models.SalesforceActivityEvent{})
-	userMap := loadSalesforceUserMap(db, connectionId)
-	activities, err := buildSalesforceActivities(db, cursor, idGen, userMap)
+	userMap, err := loadSalesforceUserMap(db, connectionId)
+	if err != nil {
+		return err
+	}
+	activities, err := buildSalesforceActivities(db, cursor, idGen.Generate, userMap)
 	if err != nil {
 		return err
 	}
 
 	return createUserActivitiesInBatches(db, activities)
 }
+
+type salesforceActivityIdFunc func(pks ...interface{}) string
 
 type salesforceGroupedActivity struct {
 	groupId    string
@@ -98,7 +115,7 @@ type salesforceGroupedActivity struct {
 func buildSalesforceActivities(
 	db dal.Dal,
 	cursor dal.Rows,
-	idGen *didgen.DomainIdGenerator,
+	generateId salesforceActivityIdFunc,
 	userMap map[string]models.SalesforceUser,
 ) ([]*crossdomain.UserActivity, errors.Error) {
 	events := make([]models.SalesforceActivityEvent, 0)
@@ -110,14 +127,14 @@ func buildSalesforceActivities(
 		events = append(events, *event)
 	}
 
-	return buildSalesforceActivitiesFromEvents(events, idGen, func(email string) string {
+	return buildSalesforceActivitiesFromEvents(events, generateId, func(email string) string {
 		return resolveAccountIdByEmail(db, email)
 	}, userMap), nil
 }
 
 func buildSalesforceActivitiesFromEvents(
 	events []models.SalesforceActivityEvent,
-	idGen *didgen.DomainIdGenerator,
+	generateId salesforceActivityIdFunc,
 	resolveAccountId func(email string) string,
 	userMap map[string]models.SalesforceUser,
 ) []*crossdomain.UserActivity {
@@ -212,7 +229,9 @@ func buildSalesforceActivitiesFromEvents(
 			ActionDay:     utcDay(group.lastTime),
 			Summary:       summary,
 		}
-		activity.Id = idGen.Generate(group.origin.ConnectionId, group.origin.ScopeId, group.groupId)
+		if generateId != nil {
+			activity.Id = generateId(group.origin.ConnectionId, group.origin.ScopeId, group.groupId)
+		}
 		activity.RawDataOrigin = group.origin.RawDataOrigin
 		activities = append(activities, activity)
 	}

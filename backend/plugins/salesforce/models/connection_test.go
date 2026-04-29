@@ -28,6 +28,39 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestComputeTokenExpiry_UsesExpiresInWithSafetyBuffer(t *testing.T) {
+	now := time.Date(2026, 4, 17, 10, 0, 0, 0, time.UTC)
+
+	expiry := computeTokenExpiry([]byte(`3600`), now)
+	assert.Equal(t, now.Add(3600*time.Second-60*time.Second), expiry)
+
+	// Salesforce sometimes returns expires_in as a JSON string.
+	expiry = computeTokenExpiry([]byte(`"7200"`), now)
+	assert.Equal(t, now.Add(7200*time.Second-60*time.Second), expiry)
+}
+
+func TestComputeTokenExpiry_FallsBackOnMissingOrInvalid(t *testing.T) {
+	now := time.Date(2026, 4, 17, 10, 0, 0, 0, time.UTC)
+	fallback := now.Add(25 * time.Minute)
+
+	assert.Equal(t, fallback, computeTokenExpiry(nil, now))
+	assert.Equal(t, fallback, computeTokenExpiry([]byte(``), now))
+	assert.Equal(t, fallback, computeTokenExpiry([]byte(`"not-a-number"`), now))
+	assert.Equal(t, fallback, computeTokenExpiry([]byte(`-1`), now))
+}
+
+func TestSanitizeOAuthError_PrefersStructuredFields(t *testing.T) {
+	body := []byte(`{"error":"invalid_grant","error_description":"expired authorization code","refresh_token":"sneaky"}`)
+	got := sanitizeOAuthError(body)
+	assert.Equal(t, "invalid_grant: expired authorization code", got)
+	assert.NotContains(t, got, "sneaky", "raw body fields must not leak through")
+}
+
+func TestSanitizeOAuthError_FallsBackForUnparseable(t *testing.T) {
+	got := sanitizeOAuthError([]byte("<html>something exploded</html>"))
+	assert.Equal(t, "unexpected response from salesforce oauth endpoint", got)
+}
+
 func TestSalesforceConnection_BeforeSaveAccessTokenValidation(t *testing.T) {
 	c := &SalesforceConnection{SalesforceConn: SalesforceConn{AuthMode: AuthModeAccessToken, AccessToken: "  ", InstanceUrl: "https://example.my.salesforce.com"}}
 	err := c.BeforeSave(nil)

@@ -23,6 +23,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -144,8 +145,10 @@ func (conn *SalesforceConn) refreshAccessToken() errors.Error {
 	}
 
 	var payload struct {
-		AccessToken string `json:"access_token"`
-		InstanceURL string `json:"instance_url"`
+		AccessToken string          `json:"access_token"`
+		InstanceURL string          `json:"instance_url"`
+		ExpiresIn   json.RawMessage `json:"expires_in"`
+		IssuedAt    string          `json:"issued_at"`
 	}
 	if err := json.Unmarshal(body, &payload); err != nil {
 		return errors.Convert(err)
@@ -159,8 +162,30 @@ func (conn *SalesforceConn) refreshAccessToken() errors.Error {
 		conn.InstanceUrl = strings.TrimSpace(payload.InstanceURL)
 		conn.Endpoint = conn.InstanceUrl
 	}
-	conn.tokenExpiresAt = time.Now().Add(50 * time.Minute)
+	conn.tokenExpiresAt = computeTokenExpiry(payload.ExpiresIn, time.Now())
 	return nil
+}
+
+// computeTokenExpiry returns the time at which the access token should be considered expired.
+// Salesforce returns expires_in as a string or number depending on grant flow; if missing, fall
+// back to a conservative 25-minute lifetime (Salesforce session timeouts can be as low as 15 min).
+func computeTokenExpiry(expiresIn json.RawMessage, now time.Time) time.Time {
+	const fallback = 25 * time.Minute
+	const safetyBuffer = 60 * time.Second
+
+	raw := strings.Trim(strings.TrimSpace(string(expiresIn)), `"`)
+	if raw == "" {
+		return now.Add(fallback)
+	}
+	seconds, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || seconds <= 0 {
+		return now.Add(fallback)
+	}
+	lifetime := time.Duration(seconds) * time.Second
+	if lifetime > safetyBuffer {
+		lifetime -= safetyBuffer
+	}
+	return now.Add(lifetime)
 }
 
 func (conn SalesforceConn) ResolveAuthMode() string {
@@ -202,7 +227,7 @@ func (connection SalesforceConnection) Sanitize() SalesforceConnection {
 	return connection
 }
 
-func (connection *SalesforceConnection) MergeFromRequest(target *SalesforceConnection, body map[string]interface{}) error {
+func (connection *SalesforceConnection) MergeFromRequest(target *SalesforceConnection, body map[string]interface{}) errors.Error {
 	if target == nil {
 		return nil
 	}

@@ -49,8 +49,15 @@ func CollectUsers(taskCtx plugin.SubTaskContext) errors.Error {
 	}
 
 	db := taskCtx.GetDal()
-	soql := "SELECT Id, Name, Username, Email, IsActive FROM User WHERE IsActive = true ORDER BY Id ASC"
+	logger := taskCtx.GetLogger()
+	maxUsers := data.Options.MaxUsers
+	if maxUsers <= 0 {
+		maxUsers = DefaultMaxUsers
+	}
+
+	soql := buildSalesforceUsersQuery()
 	next := ""
+	collected := 0
 
 	for {
 		response, _, err := executeSalesforceQuery(apiClient, data.Connection.GetVersion(), soql, next)
@@ -85,6 +92,11 @@ func CollectUsers(taskCtx plugin.SubTaskContext) errors.Error {
 			if saveErr := db.CreateOrUpdate(record, dal.Where("connection_id = ? AND user_id = ?", data.Options.ConnectionId, userId)); saveErr != nil {
 				return saveErr
 			}
+			collected++
+			if collected >= maxUsers {
+				logger.Warn(nil, "salesforce user collection hit MaxUsers cap of %d; further users will be skipped", maxUsers)
+				return nil
+			}
 		}
 
 		next = strings.TrimSpace(response.NextRecordsURL)
@@ -93,5 +105,10 @@ func CollectUsers(taskCtx plugin.SubTaskContext) errors.Error {
 		}
 	}
 
+	logger.Info("salesforce user collection completed: %d users persisted", collected)
 	return nil
+}
+
+func buildSalesforceUsersQuery() string {
+	return "SELECT Id, Name, Username, Email, IsActive FROM User WHERE IsActive = true ORDER BY Id ASC"
 }

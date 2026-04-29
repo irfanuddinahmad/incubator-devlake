@@ -46,7 +46,7 @@ func MakeDataSourcePipelinePlanV200(
 		return nil, nil, err
 	}
 
-	return plan, nil, nil
+	return plan, []plugin.Scope{}, nil
 }
 
 func makeDataSourcePipelinePlanV200(

@@ -97,11 +97,11 @@ func fallbackDisplay(name, email, nativeId, fallback string) string {
 	return fallback
 }
 
-func loadSalesforceUserMap(db dal.Dal, connectionId uint64) map[string]models.SalesforceUser {
+func loadSalesforceUserMap(db dal.Dal, connectionId uint64) (map[string]models.SalesforceUser, errors.Error) {
 	userMap := map[string]models.SalesforceUser{}
 	var users []models.SalesforceUser
 	if err := db.All(&users, dal.Where("connection_id = ?", connectionId)); err != nil {
-		return userMap
+		return nil, errors.Default.Wrap(err, "failed to load salesforce users for activity attribution")
 	}
 	for _, user := range users {
 		if strings.TrimSpace(user.UserId) != "" {
@@ -111,5 +111,5 @@ func loadSalesforceUserMap(db dal.Dal, connectionId uint64) map[string]models.Sa
 			userMap[strings.TrimSpace(user.Username)] = user
 		}
 	}
-	return userMap
+	return userMap, nil
 }

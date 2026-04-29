@@ -54,10 +54,14 @@ type SalesforceOptions struct {
 	ScopeId      string   `json:"scopeId" mapstructure:"scopeId"`
 	ObjectTypes  []string `json:"objectTypes" mapstructure:"objectTypes"`
 	UseCdc       bool     `json:"useCdc" mapstructure:"useCdc"`
+	// MaxUsers caps user-collection pagination. 0 means no cap (use the default).
+	MaxUsers int `json:"maxUsers" mapstructure:"maxUsers"`
 
 	OccurredAfter  *time.Time `json:"occurredAfter" mapstructure:"occurredAfter"`
 	OccurredBefore *time.Time `json:"occurredBefore" mapstructure:"occurredBefore"`
 }
+
+const DefaultMaxUsers = 50000
 
 type salesforceRawParams struct {
 	ConnectionId uint64 `json:"connectionId"`
