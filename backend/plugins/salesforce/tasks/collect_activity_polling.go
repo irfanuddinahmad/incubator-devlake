@@ -73,7 +73,10 @@ func CollectActivityPolling(taskCtx plugin.SubTaskContext) errors.Error {
 			return err
 		}
 
-		soql := buildSalesforceActivityQuery(objectType, since, until)
+		soql, err := buildSalesforceActivityQuery(objectType, since, until)
+		if err != nil {
+			return err
+		}
 		next := ""
 		for {
 			response, requestURL, err := executeSalesforceQuery(apiClient, data.Connection.GetVersion(), soql, next)
@@ -118,7 +121,11 @@ func resolveSalesforceActivityCheckpoint(since *time.Time, until *time.Time, run
 	return checkpoint
 }
 
-func buildSalesforceActivityQuery(objectType string, since *time.Time, until *time.Time) string {
+func buildSalesforceActivityQuery(objectType string, since *time.Time, until *time.Time) (string, errors.Error) {
+	if !IsCanonicalSalesforceObjectType(objectType) {
+		return "", errors.BadInput.New(fmt.Sprintf("unsupported salesforce object type %q", objectType))
+	}
+
 	filters := make([]string, 0, 2)
 	if since != nil {
 		filters = append(filters, fmt.Sprintf("SystemModstamp >= %s", formatSalesforceTimeLiteral(*since)))
@@ -135,5 +142,5 @@ func buildSalesforceActivityQuery(objectType string, since *time.Time, until *ti
 		query += " WHERE " + strings.Join(filters, " AND ")
 	}
 	query += " ORDER BY SystemModstamp ASC, Id ASC"
-	return query
+	return query, nil
 }

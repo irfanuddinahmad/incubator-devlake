@@ -62,12 +62,21 @@ func TestBuildSalesforceActivityQuery_UsesUnquotedDateTimeLiterals(t *testing.T)
 	since := time.Date(2026, 4, 17, 10, 11, 12, 0, time.UTC)
 	until := time.Date(2026, 4, 18, 13, 14, 15, 0, time.UTC)
 
-	query := buildSalesforceActivityQuery("Account", &since, &until)
+	query, err := buildSalesforceActivityQuery("Account", &since, &until)
+	assert.Nil(t, err)
 
 	assert.Contains(t, query, "SystemModstamp >= 2026-04-17T10:11:12Z")
 	assert.Contains(t, query, "SystemModstamp < 2026-04-18T13:14:15Z")
 	assert.False(t, strings.Contains(query, "'2026-04-17T10:11:12Z'"))
 	assert.False(t, strings.Contains(query, "'2026-04-18T13:14:15Z'"))
+}
+
+func TestBuildSalesforceActivityQuery_RejectsUnknownObjectType(t *testing.T) {
+	_, err := buildSalesforceActivityQuery("Account; DROP TABLE foo--", nil, nil)
+	assert.NotNil(t, err)
+
+	_, err = buildSalesforceActivityQuery("UnknownObject", nil, nil)
+	assert.NotNil(t, err)
 }
 
 func TestResolveSalesforceActivityCheckpoint_CapsAtOccurredBefore(t *testing.T) {

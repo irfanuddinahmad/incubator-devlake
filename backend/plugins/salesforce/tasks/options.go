@@ -73,6 +73,19 @@ func DefaultObjectTypes() []string {
 	return result
 }
 
+func IsCanonicalSalesforceObjectType(objectType string) bool {
+	trimmed := strings.TrimSpace(objectType)
+	if trimmed == "" {
+		return false
+	}
+	for _, canonical := range defaultSalesforceObjectTypes {
+		if canonical == trimmed {
+			return true
+		}
+	}
+	return false
+}
+
 func ResolveObjectTypes(requested []string) []string {
 	selected := requested
 	if len(selected) == 0 {

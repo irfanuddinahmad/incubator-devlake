@@ -140,7 +140,7 @@ func (conn *SalesforceConn) refreshAccessToken() errors.Error {
 		return errors.Convert(readErr)
 	}
 	if res.StatusCode != http.StatusOK {
-		return errors.Default.New(fmt.Sprintf("salesforce token refresh failed with status %d: %s", res.StatusCode, string(body)))
+		return errors.Default.New(fmt.Sprintf("salesforce token refresh failed with status %d: %s", res.StatusCode, sanitizeOAuthError(body)))
 	}
 
 	var payload struct {
@@ -303,6 +303,20 @@ func (connection *SalesforceConnection) Validate() errors.Error {
 	}
 	connection.Normalize()
 	return connection.validateForSave()
+}
+
+func sanitizeOAuthError(body []byte) string {
+	var payload struct {
+		Error            string `json:"error"`
+		ErrorDescription string `json:"error_description"`
+	}
+	if err := json.Unmarshal(body, &payload); err == nil && strings.TrimSpace(payload.Error) != "" {
+		if desc := strings.TrimSpace(payload.ErrorDescription); desc != "" {
+			return fmt.Sprintf("%s: %s", payload.Error, desc)
+		}
+		return payload.Error
+	}
+	return "unexpected response from salesforce oauth endpoint"
 }
 
 func validateHttpsURL(fieldName string, rawURL string) errors.Error {
