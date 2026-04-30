@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/apache/incubator-devlake/core/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -83,6 +84,16 @@ func TestSalesforceConnection_BeforeSaveAccessTokenRejectsInstanceUrlWithoutSche
 	assert.Contains(t, err.Error(), "instanceUrl must start with https://")
 }
 
+func TestSalesforceConnection_BeforeSaveAcceptsCaseInsensitiveHttpsScheme(t *testing.T) {
+	c := &SalesforceConnection{SalesforceConn: SalesforceConn{
+		AuthMode:    AuthModeAccessToken,
+		AccessToken: "token",
+		InstanceUrl: "Https://example.my.salesforce.com",
+	}}
+
+	assert.NoError(t, c.BeforeSave(nil))
+}
+
 func TestSalesforceConnection_BeforeSaveRefreshTokenValidation(t *testing.T) {
 	c := &SalesforceConnection{SalesforceConn: SalesforceConn{AuthMode: AuthModeRefreshToken, RefreshToken: "refresh", ClientId: "", ClientSecret: "secret"}}
 	err := c.BeforeSave(nil)
@@ -107,7 +118,7 @@ func TestSalesforceConnection_BeforeSaveRefreshTokenRejectsLoginUrlWithoutScheme
 	assert.Contains(t, err.Error(), "loginUrl must start with https://")
 }
 
-func TestSalesforceConnection_BeforeSaveRefreshTokenRejectsInstanceUrlWithoutHttps(t *testing.T) {
+func TestSalesforceConnection_BeforeSaveRefreshTokenIgnoresInvalidInstanceUrl(t *testing.T) {
 	c := &SalesforceConnection{SalesforceConn: SalesforceConn{
 		AuthMode:     AuthModeRefreshToken,
 		RefreshToken: "refresh",
@@ -118,8 +129,69 @@ func TestSalesforceConnection_BeforeSaveRefreshTokenRejectsInstanceUrlWithoutHtt
 	}}
 
 	err := c.BeforeSave(nil)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "instanceUrl must start with https://")
+	require.NoError(t, err)
+	assert.Equal(t, "https://login.salesforce.com", c.Endpoint)
+}
+
+func TestSalesforceConnection_MergeFromRequestPreservesAccessTokenFields(t *testing.T) {
+	target := &SalesforceConnection{SalesforceConn: SalesforceConn{
+		AuthMode:    AuthModeAccessToken,
+		AccessToken: "token",
+		InstanceUrl: "https://example.my.salesforce.com",
+		ApiVersion:  "v61.0",
+	}}
+
+	err := (&SalesforceConnection{}).MergeFromRequest(target, map[string]interface{}{
+		"apiVersion": "v62.0",
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, AuthModeAccessToken, target.AuthMode)
+	assert.Equal(t, "token", target.AccessToken)
+	assert.Equal(t, "https://example.my.salesforce.com", target.InstanceUrl)
+	assert.Equal(t, "v62.0", target.ApiVersion)
+}
+
+func TestSalesforceConnection_MergeFromRequestPreservesRefreshTokenFields(t *testing.T) {
+	target := &SalesforceConnection{SalesforceConn: SalesforceConn{
+		AuthMode:     AuthModeRefreshToken,
+		RefreshToken: "refresh",
+		ClientId:     "client",
+		ClientSecret: "secret",
+		LoginUrl:     "https://login.salesforce.com",
+		ApiVersion:   "v61.0",
+	}}
+
+	err := (&SalesforceConnection{}).MergeFromRequest(target, map[string]interface{}{
+		"apiVersion": "v62.0",
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, AuthModeRefreshToken, target.AuthMode)
+	assert.Equal(t, "refresh", target.RefreshToken)
+	assert.Equal(t, "client", target.ClientId)
+	assert.Equal(t, "secret", target.ClientSecret)
+	assert.Equal(t, "https://login.salesforce.com", target.LoginUrl)
+	assert.Equal(t, "v62.0", target.ApiVersion)
+}
+
+func TestSalesforceConnection_MergeFromRequestPreservesSanitizedSecrets(t *testing.T) {
+	target := &SalesforceConnection{SalesforceConn: SalesforceConn{
+		AuthMode:     AuthModeRefreshToken,
+		RefreshToken: "refresh",
+		ClientId:     "client",
+		ClientSecret: "secret",
+		LoginUrl:     "https://login.salesforce.com",
+	}}
+
+	err := (&SalesforceConnection{}).MergeFromRequest(target, map[string]interface{}{
+		"refreshToken": utils.SanitizeString(target.RefreshToken),
+		"clientSecret": utils.SanitizeString(target.ClientSecret),
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "refresh", target.RefreshToken)
+	assert.Equal(t, "secret", target.ClientSecret)
 }
 
 func TestSalesforceConn_SetupAuthenticationRefreshesOnFirstUse(t *testing.T) {
@@ -153,6 +225,33 @@ func TestSalesforceConn_SetupAuthenticationRefreshesOnFirstUse(t *testing.T) {
 	require.Equal(t, "Bearer fresh-token", req.Header.Get("Authorization"))
 	require.Equal(t, "fresh.my.salesforce.com", req.URL.Host)
 	require.False(t, conn.tokenExpiresAt.IsZero())
+}
+
+func TestSalesforceConn_SetupAuthenticationRefreshTokenIgnoresInvalidCachedInstanceURL(t *testing.T) {
+	refreshCalled := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/services/oauth2/token", r.URL.Path)
+		refreshCalled = true
+		_, _ = fmt.Fprint(w, `{"access_token":"fresh-token","instance_url":"https://fresh.my.salesforce.com"}`)
+	}))
+	defer server.Close()
+
+	conn := &SalesforceConn{
+		AuthMode:     AuthModeRefreshToken,
+		AccessToken:  "stale-token",
+		RefreshToken: "refresh",
+		ClientId:     "client",
+		ClientSecret: "secret",
+		LoginUrl:     server.URL,
+		InstanceUrl:  "example.my.salesforce.com",
+	}
+	req, err := http.NewRequest(http.MethodGet, server.URL+"/services/data/v61.0/query", nil)
+	require.NoError(t, err)
+
+	require.NoError(t, conn.SetupAuthentication(req))
+	require.True(t, refreshCalled)
+	require.Equal(t, "Bearer fresh-token", req.Header.Get("Authorization"))
+	require.Equal(t, "fresh.my.salesforce.com", req.URL.Host)
 }
 
 func TestSalesforceConn_SetupAuthenticationReusesUnexpiredRefreshTokenModeAccessToken(t *testing.T) {

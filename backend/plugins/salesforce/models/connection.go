@@ -84,7 +84,10 @@ func (conn *SalesforceConn) resolveCredentials() (string, string, errors.Error) 
 
 	authMode := conn.ResolveAuthMode()
 	instanceURL := strings.TrimSpace(conn.InstanceUrl)
-	if instanceURL == "" && strings.TrimSpace(conn.Endpoint) != "" && !strings.EqualFold(strings.TrimSpace(conn.Endpoint), strings.TrimSpace(conn.LoginUrl)) {
+	if !isValidHttpsURL(instanceURL) {
+		instanceURL = ""
+	}
+	if instanceURL == "" && isValidHttpsURL(conn.Endpoint) && !strings.EqualFold(strings.TrimSpace(conn.Endpoint), strings.TrimSpace(conn.LoginUrl)) {
 		instanceURL = strings.TrimSpace(conn.Endpoint)
 	}
 
@@ -95,9 +98,15 @@ func (conn *SalesforceConn) resolveCredentials() (string, string, errors.Error) 
 				return "", "", err
 			}
 			instanceURL = strings.TrimSpace(conn.InstanceUrl)
+			if !isValidHttpsURL(instanceURL) {
+				instanceURL = ""
+			}
 		}
 		if strings.TrimSpace(conn.AccessToken) == "" {
 			return "", "", errors.BadInput.New("accessToken is required after refresh")
+		}
+		if instanceURL == "" && isValidHttpsURL(conn.LoginUrl) {
+			instanceURL = strings.TrimSpace(conn.LoginUrl)
 		}
 		return strings.TrimSpace(conn.AccessToken), instanceURL, nil
 	default:
@@ -236,7 +245,7 @@ func (connection *SalesforceConnection) MergeFromRequest(target *SalesforceConne
 	originalRefreshToken := target.RefreshToken
 	originalClientSecret := target.ClientSecret
 
-	if err := helper.DecodeMapStruct(body, target, true); err != nil {
+	if err := helper.DecodeMapStruct(body, target, false); err != nil {
 		return err
 	}
 
@@ -272,7 +281,7 @@ func (connection *SalesforceConnection) Normalize() {
 
 	switch connection.ResolveAuthMode() {
 	case AuthModeRefreshToken:
-		if connection.InstanceUrl != "" {
+		if isValidHttpsURL(connection.InstanceUrl) {
 			connection.Endpoint = connection.InstanceUrl
 		} else {
 			connection.Endpoint = connection.LoginUrl
@@ -293,11 +302,6 @@ func (connection *SalesforceConnection) validateForSave() errors.Error {
 	case AuthModeRefreshToken:
 		if err := validateHttpsURL("loginUrl", connection.LoginUrl); err != nil {
 			return err
-		}
-		if strings.TrimSpace(connection.InstanceUrl) != "" {
-			if err := validateHttpsURL("instanceUrl", connection.InstanceUrl); err != nil {
-				return err
-			}
 		}
 		if strings.TrimSpace(connection.RefreshToken) == "" {
 			return errors.BadInput.New("refreshToken is required when authMode is refresh_token")
@@ -353,13 +357,22 @@ func validateHttpsURL(fieldName string, rawURL string) errors.Error {
 	if err != nil {
 		return errors.BadInput.New(fmt.Sprintf("%s must be a valid https URL", fieldName))
 	}
-	if parsed.Scheme != "https" {
+	if !strings.EqualFold(parsed.Scheme, "https") {
 		return errors.BadInput.New(fmt.Sprintf("%s must start with https://", fieldName))
 	}
 	if parsed.Host == "" {
 		return errors.BadInput.New(fmt.Sprintf("%s must be a valid https URL", fieldName))
 	}
 	return nil
+}
+
+func isValidHttpsURL(rawURL string) bool {
+	trimmed := strings.TrimSpace(rawURL)
+	if trimmed == "" {
+		return false
+	}
+	parsed, err := url.Parse(trimmed)
+	return err == nil && strings.EqualFold(parsed.Scheme, "https") && parsed.Host != ""
 }
 
 func (connection *SalesforceConnection) BeforeSave(_ *gorm.DB) error {

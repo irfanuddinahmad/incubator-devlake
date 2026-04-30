@@ -157,11 +157,11 @@ func buildSalesforceActivityEvent(
 	}
 
 	return &models.SalesforceActivityEvent{
-		ConnectionId:     connectionId,
-		ScopeId:          scopeId,
-		EventId:          fmt.Sprintf("%s:%s:%d", sourceType, strings.TrimSpace(record.Id), occurredAt.UnixMilli()),
-		OccurredAt:       occurredAt.UTC(),
-		ActingUserId:     actingUserId,
+		ConnectionId: connectionId,
+		ScopeId:      scopeId,
+		EventId:      fmt.Sprintf("%s:%s:%d", sourceType, strings.TrimSpace(record.Id), occurredAt.UnixMilli()),
+		OccurredAt:   occurredAt.UTC(),
+		ActingUserId: actingUserId,
 		// ActingUserEmail is left blank here; convert_activity enriches it from the
 		// SalesforceUser table since SOQL object queries do not include actor email.
 		ActingUserEmail:  "",
