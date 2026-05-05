@@ -36,18 +36,80 @@ interface Props {
   onSuccess?: (id: ID) => void;
 }
 
+const CONNECTION_FORM_FIELDS = [
+  'name',
+  'endpoint',
+  'authMethod',
+  'authMode',
+  'username',
+  'password',
+  'token',
+  'accessToken',
+  'refreshToken',
+  'appId',
+  'clientId',
+  'secretKey',
+  'clientSecret',
+  'proxy',
+  'dbUrl',
+  'companyId',
+  'organization',
+  'organizationId',
+  'workspaceSlug',
+  'loginUrl',
+  'instanceUrl',
+  'apiVersion',
+  'rateLimitPerHour',
+  'enableWebhook',
+  'webhookSharedKey',
+];
+
 export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
   const [type, setType] = useState<'create' | 'update'>('create');
   const [values, setValues] = useState<any>({});
   const [errors, setErrors] = useState<Record<string, any>>({});
-  const [operating, setOperating] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [connectionDetail, setConnectionDetail] = useState<any>();
 
   const dispatch = useAppDispatch();
   const connection = useAppSelector((state) => selectConnection(state, `${plugin}-${connectionId}`));
+  const selectedConnection = connectionDetail ?? connection;
 
   useEffect(() => {
     setType(connectionId ? 'update' : 'create');
   }, [connectionId]);
+
+  useEffect(() => {
+    let canceled = false;
+
+    setConnectionDetail(undefined);
+    setErrors({});
+
+    if (!connectionId) {
+      setValues({});
+      return;
+    }
+
+    setValues(connection ? pick(connection, CONNECTION_FORM_FIELDS) : {});
+
+    API.connection
+      .get(plugin, connectionId)
+      .then((res) => {
+        if (canceled) {
+          return;
+        }
+
+        setConnectionDetail(res);
+        setValues(pick(res, CONNECTION_FORM_FIELDS));
+        setErrors({});
+      })
+      .catch(() => undefined);
+
+    return () => {
+      canceled = true;
+    };
+  }, [plugin, connectionId]);
 
   const {
     name,
@@ -63,27 +125,47 @@ export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
       () =>
         type === 'update' && connectionId
           ? API.connection.test(plugin, connectionId, {
-              endpoint: isEqual(connection?.endpoint, values.endpoint) ? undefined : values.endpoint,
-              authMethod: isEqual(connection?.authMethod, values.authMethod) ? undefined : values.authMethod,
-              username: isEqual(connection?.username, values.username) ? undefined : values.username,
-              password: isEqual(connection?.password, values.password) ? undefined : values.password,
-              token: isEqual(connection?.token, values.token) ? undefined : values.token,
-              appId: isEqual(connection?.appId, values.appId) ? undefined : values.appId,
-              secretKey: isEqual(connection?.secretKey, values.secretKey) ? undefined : values.secretKey,
-              proxy: isEqual(connection?.proxy, values.proxy) ? undefined : values.proxy,
-              dbUrl: isEqual(connection?.dbUrl, values.dbUrl) ? undefined : values.dbUrl,
-              companyId: isEqual(connection?.companyId, values.companyId) ? undefined : values.companyId,
-              organization: isEqual(connection?.organization, values.organization) ? undefined : values.organization,
-              organizationId: isEqual(connection?.organizationId, values.organizationId)
+              endpoint: isEqual(selectedConnection?.endpoint, values.endpoint) ? undefined : values.endpoint,
+              authMethod: isEqual(selectedConnection?.authMethod, values.authMethod) ? undefined : values.authMethod,
+              authMode: isEqual((selectedConnection as any)?.authMode, values.authMode) ? undefined : values.authMode,
+              username: isEqual(selectedConnection?.username, values.username) ? undefined : values.username,
+              password: isEqual(selectedConnection?.password, values.password) ? undefined : values.password,
+              token: isEqual(selectedConnection?.token, values.token) ? undefined : values.token,
+              accessToken: isEqual((selectedConnection as any)?.accessToken, values.accessToken)
+                ? undefined
+                : values.accessToken,
+              refreshToken: isEqual((selectedConnection as any)?.refreshToken, values.refreshToken)
+                ? undefined
+                : values.refreshToken,
+              appId: isEqual(selectedConnection?.appId, values.appId) ? undefined : values.appId,
+              clientId: isEqual((selectedConnection as any)?.clientId, values.clientId) ? undefined : values.clientId,
+              secretKey: isEqual(selectedConnection?.secretKey, values.secretKey) ? undefined : values.secretKey,
+              clientSecret: isEqual((selectedConnection as any)?.clientSecret, values.clientSecret)
+                ? undefined
+                : values.clientSecret,
+              proxy: isEqual(selectedConnection?.proxy, values.proxy) ? undefined : values.proxy,
+              dbUrl: isEqual(selectedConnection?.dbUrl, values.dbUrl) ? undefined : values.dbUrl,
+              companyId: isEqual(selectedConnection?.companyId, values.companyId) ? undefined : values.companyId,
+              organization: isEqual(selectedConnection?.organization, values.organization)
+                ? undefined
+                : values.organization,
+              organizationId: isEqual(selectedConnection?.organizationId, values.organizationId)
                 ? undefined
                 : values.organizationId,
-              workspaceSlug: isEqual(connection?.workspaceSlug, values.workspaceSlug)
+              workspaceSlug: isEqual(selectedConnection?.workspaceSlug, values.workspaceSlug)
                 ? undefined
                 : values.workspaceSlug,
-              enableWebhook: isEqual((connection as any)?.enableWebhook, values.enableWebhook)
+              loginUrl: isEqual((selectedConnection as any)?.loginUrl, values.loginUrl) ? undefined : values.loginUrl,
+              instanceUrl: isEqual((selectedConnection as any)?.instanceUrl, values.instanceUrl)
+                ? undefined
+                : values.instanceUrl,
+              apiVersion: isEqual((selectedConnection as any)?.apiVersion, values.apiVersion)
+                ? undefined
+                : values.apiVersion,
+              enableWebhook: isEqual((selectedConnection as any)?.enableWebhook, values.enableWebhook)
                 ? undefined
                 : values.enableWebhook,
-              webhookSharedKey: isEqual((connection as any)?.webhookSharedKey, values.webhookSharedKey)
+              webhookSharedKey: isEqual((selectedConnection as any)?.webhookSharedKey, values.webhookSharedKey)
                 ? undefined
                 : values.webhookSharedKey,
             } as any)
@@ -93,12 +175,17 @@ export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
                 'name',
                 'endpoint',
                 'token',
+                'accessToken',
+                'refreshToken',
                 'username',
                 'password',
                 'proxy',
                 'authMethod',
+                'authMode',
                 'appId',
+                'clientId',
                 'secretKey',
+                'clientSecret',
                 'accessKeyId',
                 'secretAccessKey',
                 'region',
@@ -112,13 +199,16 @@ export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
                 'companyId',
                 'organization',
                 'organizationId',
+                'loginUrl',
+                'instanceUrl',
+                'apiVersion',
                 'workspaceSlug',
                 'enableWebhook',
                 'webhookSharedKey',
               ]),
             ),
       {
-        setOperating,
+        setOperating: setTesting,
         formatMessage: () => 'Test Connection Successfully.',
       },
     );
@@ -131,7 +221,7 @@ export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
           ? dispatch(addConnection({ plugin, ...values })).unwrap()
           : dispatch(updateConnection({ plugin, connectionId, ...values })).unwrap(),
       {
-        setOperating,
+        setOperating: setSaving,
         formatMessage: () => (!connectionId ? 'Create a New Connection Successful.' : 'Update Connection Successful.'),
       },
     );
@@ -156,17 +246,17 @@ export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
         type={type}
         name={name}
         fields={fields}
-        initialValues={{ ...initialValues, ...(connection ?? {}) }}
+        initialValues={{ ...initialValues, ...(selectedConnection ?? {}) }}
         values={values}
         errors={errors}
         setValues={setValues}
         setErrors={setErrors}
       />
       <Flex justify="flex-end" gap="small">
-        <Button loading={operating} disabled={disabled} onClick={handleTest}>
+        <Button htmlType="button" loading={testing} disabled={disabled || saving} onClick={handleTest}>
           Test Connection
         </Button>
-        <Button type="primary" loading={operating} disabled={disabled} onClick={handleSave}>
+        <Button htmlType="button" type="primary" loading={saving} disabled={disabled || testing} onClick={handleSave}>
           Save Connection
         </Button>
       </Flex>

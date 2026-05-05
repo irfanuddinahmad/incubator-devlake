@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/apache/incubator-devlake/helpers/pluginhelper/services"
 
@@ -89,6 +88,7 @@ func (d *DevlakeClient) CreateBasicBlueprintV2(name string, config *BlueprintV2C
 		IsManual:    true,
 		SyncPolicy: models.SyncPolicy{
 			SkipOnFail: config.SkipOnFail,
+			TimeAfter:  config.TimeAfter,
 		},
 		Labels: []string{"test-label"},
 		Connections: []*models.BlueprintConnection{
@@ -116,10 +116,7 @@ func (d *DevlakeClient) PatchBasicBlueprintV2(blueprintId uint64, name string, c
 		IsManual:    true,
 		SyncPolicy: models.SyncPolicy{
 			SkipOnFail: config.SkipOnFail,
-			TimeAfter: func() *time.Time {
-				t, _ := time.Parse(time.RFC3339, time.Now().AddDate(0, 0, 1).Format(time.RFC3339))
-				return &t
-			}(),
+			TimeAfter:  config.TimeAfter,
 		},
 		Labels: []string{"test-label"},
 		Connections: []*models.BlueprintConnection{

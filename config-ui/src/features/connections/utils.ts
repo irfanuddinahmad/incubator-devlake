@@ -23,11 +23,10 @@ import { IConnectionAPI, IConnection, IConnectionStatus, IWebhookAPI, IWebhook }
 export const transformConnection = (plugin: string, connection: IConnectionAPI): IConnection => {
   const config = getPluginConfig(plugin);
   return {
+    ...connection,
     unique: `${plugin}-${connection.id}`,
     plugin,
     pluginName: config.name,
-    id: connection.id,
-    name: connection.name,
     status: IConnectionStatus.IDLE,
     endpoint: connection.endpoint,
     apiKey: connection.apiKey,

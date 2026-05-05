@@ -148,6 +148,20 @@ func TestCollectorStateManager(t *testing.T) {
 	}
 }
 
+func TestCollectorStateManagerCloseWithUntil(t *testing.T) {
+	time1 := errors.Must1(time.Parse(time.RFC3339, "2021-01-01T00:00:00Z"))
+	time2 := errors.Must1(time.Parse(time.RFC3339, "2022-01-01T00:00:00+02:00"))
+	mockBasicRes := newMockBasicRes(&models.CollectorLatestState{LatestSuccessStart: &time1})
+	stateManager, err := NewCollectorStateManager(mockBasicRes, &models.SyncPolicy{}, "table", "params")
+	assert.Nil(t, err)
+
+	assert.Nil(t, stateManager.CloseWithUntil(time2))
+
+	expected := time2.UTC()
+	assert.Equal(t, &expected, stateManager.state.LatestSuccessStart)
+	mockBasicRes.AssertExpectations(t)
+}
+
 func newMockBasicRes(state *models.CollectorLatestState) *mockcontext.BasicRes {
 	// Refresh Global Variables and set the sql mock
 	return unithelper.DummyBasicRes(func(mockDal *mockdal.Dal) {

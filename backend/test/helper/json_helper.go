@@ -20,6 +20,7 @@ package helper
 import (
 	"encoding/json"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -63,19 +64,10 @@ func ToCleanJson(inline bool, x any) json.RawMessage {
 		panic(err)
 	}
 	var m any
-	if j[0] == '[' {
-		//it's a slice
-		m = x
-	} else {
-		m = map[string]any{}
-		err = json.Unmarshal(j, &m)
-		if err != nil {
-			panic(err)
-		}
-		if m != nil {
-			removeNullsFromMap(m.(map[string]any))
-		}
+	if err = json.Unmarshal(j, &m); err != nil {
+		panic(err)
 	}
+	m = cleanJsonValue(m)
 	var b []byte
 	if inline {
 		b, err = json.Marshal(m)
@@ -86,6 +78,22 @@ func ToCleanJson(inline bool, x any) json.RawMessage {
 		panic(err)
 	}
 	return b
+}
+
+func cleanJsonValue(value any) any {
+	switch valueCasted := value.(type) {
+	case map[string]any:
+		removeNullsFromMap(valueCasted)
+		redactSensitiveFields(valueCasted)
+		return valueCasted
+	case []any:
+		for i, arrayValue := range valueCasted {
+			valueCasted[i] = cleanJsonValue(arrayValue)
+		}
+		return valueCasted
+	default:
+		return value
+	}
 }
 
 func removeNullsFromMap(m map[string]any) {
@@ -113,6 +121,42 @@ func removeNullsFromMap(m map[string]any) {
 			}
 		}
 	}
+}
+
+func redactSensitiveFields(m map[string]any) {
+	for key, value := range m {
+		if isSensitiveKey(key) {
+			m[key] = redactValue(value)
+			continue
+		}
+		switch valueCasted := value.(type) {
+		case map[string]any:
+			redactSensitiveFields(valueCasted)
+		case []any:
+			for _, arrayValue := range valueCasted {
+				if item, ok := arrayValue.(map[string]any); ok {
+					redactSensitiveFields(item)
+				}
+			}
+		}
+	}
+}
+
+func isSensitiveKey(key string) bool {
+	normalized := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(key, "_", ""), "-", ""))
+	return strings.Contains(normalized, "token") ||
+		strings.Contains(normalized, "secret") ||
+		strings.Contains(normalized, "password") ||
+		strings.Contains(normalized, "authorization") ||
+		strings.Contains(normalized, "apikey") ||
+		strings.Contains(normalized, "privatekey")
+}
+
+func redactValue(value any) any {
+	if str, ok := value.(string); ok && strings.TrimSpace(str) == "" {
+		return str
+	}
+	return "******"
 }
 
 func isNullTime(value any) bool {

@@ -105,6 +105,12 @@ func (c *CollectorStateManager) GetUntil() *time.Time {
 	return c.until
 }
 
+func (c *CollectorStateManager) CloseWithUntil(until time.Time) errors.Error {
+	normalizedUntil := until.UTC()
+	c.until = &normalizedUntil
+	return c.Close()
+}
+
 func (c *CollectorStateManager) Close() errors.Error {
 	// update timeAfter in the database only for fullsync mode
 	if !c.isIncremental {

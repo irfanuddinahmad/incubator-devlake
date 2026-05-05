@@ -17,22 +17,31 @@
  */
 
 export interface IConnectionAPI {
+  [key: string]: any;
   id: ID;
   name: string;
   endpoint: string;
   apiKey?: string;
   authMethod?: string;
+  authMode?: string;
   token?: string;
+  accessToken?: string;
+  refreshToken?: string;
   username?: string;
   password?: string;
   appId?: string;
+  clientId?: string;
   secretKey?: string;
+  clientSecret?: string;
   dbUrl?: string;
   companyId?: number;
   proxy: string;
   rateLimitPerHour?: number;
   organization?: string;
   organizationId?: string;
+  loginUrl?: string;
+  instanceUrl?: string;
+  apiVersion?: string;
   workspaceSlug?: string;
 }
 
@@ -70,6 +79,7 @@ export enum IConnectionStatus {
 }
 
 export interface IConnection {
+  [key: string]: any;
   unique: string;
   plugin: string;
   pluginName: string;
@@ -79,16 +89,24 @@ export interface IConnection {
   endpoint: string;
   apiKey?: string;
   authMethod?: string;
+  authMode?: string;
   token?: string;
+  accessToken?: string;
+  refreshToken?: string;
   username?: string;
   password?: string;
   appId?: string;
+  clientId?: string;
   secretKey?: string;
+  clientSecret?: string;
   dbUrl?: string;
   companyId?: number;
   proxy: string;
   rateLimitPerHour?: number;
   organization?: string;
   organizationId?: string;
+  loginUrl?: string;
+  instanceUrl?: string;
+  apiVersion?: string;
   workspaceSlug?: string;
 }
