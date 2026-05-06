@@ -215,11 +215,12 @@ export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
   };
 
   const handleSave = async () => {
+    const payload = { ...initialValues, ...values };
     const [success, res] = await operator(
       () =>
         !connectionId
-          ? dispatch(addConnection({ plugin, ...values })).unwrap()
-          : dispatch(updateConnection({ plugin, connectionId, ...values })).unwrap(),
+          ? dispatch(addConnection({ plugin, ...payload })).unwrap()
+          : dispatch(updateConnection({ plugin, connectionId, ...payload })).unwrap(),
       {
         setOperating: setSaving,
         formatMessage: () => (!connectionId ? 'Create a New Connection Successful.' : 'Update Connection Successful.'),
