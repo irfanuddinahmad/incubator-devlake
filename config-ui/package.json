@@ -6,7 +6,7 @@
   "scripts": {
     "start": "vite --host --strictPort",
     "build": "vite build",
-    "test": "rm -rf .test-dist && tsc -p tsconfig.test.json && node --test .test-dist/plugins/components/connection-form/payload.test.js",
+    "test": "node -e \"require('fs').rmSync('.test-dist',{recursive:true,force:true})\" && tsc -p tsconfig.test.json && node --test \".test-dist/**/*.test.js\"",
     "preview": "vite preview",
     "lint": "tsc && eslint . --fix",
     "prettier": "prettier . --write",

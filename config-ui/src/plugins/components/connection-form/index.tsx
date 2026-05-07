@@ -29,41 +29,13 @@ import { getPluginConfig } from '@/plugins';
 import { operator } from '@/utils';
 
 import { Form } from './fields';
-import { buildConnectionSavePayload } from './payload';
+import { CONNECTION_FORM_FIELDS, buildConnectionSavePayload } from './payload';
 
 interface Props {
   plugin: string;
   connectionId?: ID;
   onSuccess?: (id: ID) => void;
 }
-
-const CONNECTION_FORM_FIELDS = [
-  'name',
-  'endpoint',
-  'authMethod',
-  'authMode',
-  'username',
-  'password',
-  'token',
-  'accessToken',
-  'refreshToken',
-  'appId',
-  'clientId',
-  'secretKey',
-  'clientSecret',
-  'proxy',
-  'dbUrl',
-  'companyId',
-  'organization',
-  'organizationId',
-  'workspaceSlug',
-  'loginUrl',
-  'instanceUrl',
-  'apiVersion',
-  'rateLimitPerHour',
-  'enableWebhook',
-  'webhookSharedKey',
-];
 
 export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
   const [type, setType] = useState<'create' | 'update'>('create');
@@ -217,9 +189,10 @@ export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
 
   const handleSave = async () => {
     // Save and Test diverge on the update path: handleTest sends only fields
-    // that changed vs `selectedConnection`, while handleSave sends the full
-    // merged payload (plugin defaults + form values). Don't unify these without
-    // first confirming the save and test endpoints accept the same shape.
+    // that changed vs `selectedConnection`, while handleSave sends the merged
+    // (plugin defaults + form values), whitelisted payload. Don't unify these
+    // without first confirming the save and test endpoints accept the same
+    // shape.
     const payload = buildConnectionSavePayload(initialValues, values);
     const [success, res] = await operator(
       () =>

@@ -18,12 +18,14 @@
 
 import { pick } from 'lodash';
 
-const SAVE_CONNECTION_FIELDS = [
+// Fields tracked in connection-form component state. These are the fields a
+// user can type into the form; values flow through React state as
+// `setValues({ ...pick(connection, CONNECTION_FORM_FIELDS) })`.
+export const CONNECTION_FORM_FIELDS = [
   'name',
   'endpoint',
   'authMethod',
   'authMode',
-  'authType',
   'username',
   'password',
   'token',
@@ -33,6 +35,27 @@ const SAVE_CONNECTION_FIELDS = [
   'clientId',
   'secretKey',
   'clientSecret',
+  'proxy',
+  'dbUrl',
+  'companyId',
+  'organization',
+  'organizationId',
+  'workspaceSlug',
+  'loginUrl',
+  'instanceUrl',
+  'apiVersion',
+  'rateLimitPerHour',
+  'enableWebhook',
+  'webhookSharedKey',
+];
+
+// Plugin `initialValues` may include defaults that are NOT user-typed form
+// fields but still need to flow to the save endpoint (e.g. AWS credentials in
+// q-dev, GitHub App fields). When a new plugin adds an `initialValues` key
+// outside CONNECTION_FORM_FIELDS, add it here or the default will be silently
+// dropped from the save payload.
+const PLUGIN_INITIAL_VALUE_FIELDS = [
+  'authType',
   'accessKeyId',
   'secretAccessKey',
   'region',
@@ -40,30 +63,20 @@ const SAVE_CONNECTION_FIELDS = [
   'identityStoreId',
   'identityStoreRegion',
   'installationId',
-  'proxy',
-  'dbUrl',
-  'companyId',
-  'organization',
-  'organizationId',
   'enterprise',
   'workspaceId',
-  'workspaceSlug',
   'projectId',
   'portalId',
-  'loginUrl',
-  'instanceUrl',
-  'apiVersion',
-  'rateLimitPerHour',
   'tenantId',
   'tenantType',
   'usesApiToken',
-  'enableWebhook',
-  'webhookSharedKey',
 ];
+
+const SAVE_CONNECTION_FIELDS = [...CONNECTION_FORM_FIELDS, ...PLUGIN_INITIAL_VALUE_FIELDS];
 
 type ConnectionFormValues = Record<string, unknown>;
 
 export const buildConnectionSavePayload = (
   initialValues: ConnectionFormValues | undefined,
   values: ConnectionFormValues,
-) => pick({ ...(initialValues ?? {}), ...values }, SAVE_CONNECTION_FIELDS);
+): ConnectionFormValues => pick({ ...(initialValues ?? {}), ...values }, SAVE_CONNECTION_FIELDS);

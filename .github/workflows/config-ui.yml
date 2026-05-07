@@ -36,3 +36,5 @@ jobs:
       run: cd config-ui; yarn
     - name: Run Lint
       run: cd config-ui; yarn tsc && yarn lint
+    - name: Run Tests
+      run: cd config-ui; yarn test

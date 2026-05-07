@@ -92,7 +92,9 @@ test('handles undefined initialValues without throwing', () => {
   });
 });
 
-test('emits defaults-only payload when values is empty', () => {
+// Empty `values` is not a realistic save (the backend requires a `name`),
+// but the helper itself must not throw or strip defaults if it ever happens.
+test('does not throw when values is empty and preserves defaults', () => {
   const payload = buildConnectionSavePayload(
     {
       endpoint: 'https://api.github.com/',
