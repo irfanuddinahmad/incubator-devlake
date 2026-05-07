@@ -24,7 +24,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apache/incubator-devlake/core/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -60,6 +59,92 @@ func TestSanitizeOAuthError_PrefersStructuredFields(t *testing.T) {
 func TestSanitizeOAuthError_FallsBackForUnparseable(t *testing.T) {
 	got := sanitizeOAuthError([]byte("<html>something exploded</html>"))
 	assert.Equal(t, "unexpected response from salesforce oauth endpoint", got)
+}
+
+func TestSalesforceConnection_SanitizeMasksCredentialFields(t *testing.T) {
+	tests := []struct {
+		name string
+		conn SalesforceConnection
+		want SalesforceConnection
+	}{
+		{
+			name: "empty and short credentials are fully masked",
+			conn: SalesforceConnection{SalesforceConn: SalesforceConn{
+				AccessToken:  "",
+				RefreshToken: "x",
+				ClientSecret: "xy",
+			}},
+			want: SalesforceConnection{SalesforceConn: SalesforceConn{
+				AccessToken:  "",
+				RefreshToken: "*",
+				ClientSecret: "**",
+			}},
+		},
+		{
+			name: "less than 16 chars keeps two characters on each side",
+			conn: SalesforceConnection{SalesforceConn: SalesforceConn{
+				AccessToken: "123456789abc",
+			}},
+			want: SalesforceConnection{SalesforceConn: SalesforceConn{
+				AccessToken: "12********bc",
+			}},
+		},
+		{
+			name: "exactly 16 chars boundary keeps two characters on each side",
+			conn: SalesforceConnection{SalesforceConn: SalesforceConn{
+				AccessToken: "1234567890abcdef",
+			}},
+			want: SalesforceConnection{SalesforceConn: SalesforceConn{
+				AccessToken: "12************ef",
+			}},
+		},
+		{
+			name: "mid-range credentials keep two characters on each side",
+			conn: SalesforceConnection{SalesforceConn: SalesforceConn{
+				AccessToken: "1234567890abcdefg",
+			}},
+			want: SalesforceConnection{SalesforceConn: SalesforceConn{
+				AccessToken: "12*************fg",
+			}},
+		},
+		{
+			name: "23 chars keeps two characters on each side",
+			conn: SalesforceConnection{SalesforceConn: SalesforceConn{
+				AccessToken: "1234567890abcdefghijklm",
+			}},
+			want: SalesforceConnection{SalesforceConn: SalesforceConn{
+				AccessToken: "12*******************lm",
+			}},
+		},
+		{
+			name: "long credentials keep eight characters on each side",
+			conn: SalesforceConnection{SalesforceConn: SalesforceConn{
+				AccessToken:  "access-token-1234567890-extra",
+				RefreshToken: "refresh-token-abcdef-extra",
+				ClientSecret: "client-secret-xyz-extra-value",
+			}},
+			want: SalesforceConnection{SalesforceConn: SalesforceConn{
+				AccessToken:  "access-t*************90-extra",
+				RefreshToken: "refresh-**********ef-extra",
+				ClientSecret: "client-s*************ra-value",
+			}},
+		},
+		{
+			name: "multi-byte boundary is sliced by rune",
+			conn: SalesforceConnection{SalesforceConn: SalesforceConn{
+				AccessToken: "abcdefgéqrstuvwxijklmnop",
+			}},
+			want: SalesforceConnection{SalesforceConn: SalesforceConn{
+				AccessToken: "abcdefgé********ijklmnop",
+			}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.conn.Sanitize())
+		})
+	}
 }
 
 func TestSalesforceConnection_BeforeSaveAccessTokenValidation(t *testing.T) {
@@ -152,6 +237,23 @@ func TestSalesforceConnection_MergeFromRequestPreservesAccessTokenFields(t *test
 	assert.Equal(t, "v62.0", target.ApiVersion)
 }
 
+func TestSalesforceConnection_MergeFromRequestPreservesSanitizedAccessToken(t *testing.T) {
+	target := &SalesforceConnection{SalesforceConn: SalesforceConn{
+		AuthMode:    AuthModeAccessToken,
+		AccessToken: "access-token-1234567890",
+		InstanceUrl: "https://example.my.salesforce.com",
+	}}
+
+	err := (&SalesforceConnection{}).MergeFromRequest(target, map[string]interface{}{
+		"accessToken": target.Sanitize().AccessToken,
+		"instanceUrl": "https://updated.my.salesforce.com",
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "access-token-1234567890", target.AccessToken)
+	assert.Equal(t, "https://updated.my.salesforce.com", target.InstanceUrl)
+}
+
 func TestSalesforceConnection_MergeFromRequestPreservesRefreshTokenFields(t *testing.T) {
 	target := &SalesforceConnection{SalesforceConn: SalesforceConn{
 		AuthMode:     AuthModeRefreshToken,
@@ -185,8 +287,8 @@ func TestSalesforceConnection_MergeFromRequestPreservesSanitizedSecrets(t *testi
 	}}
 
 	err := (&SalesforceConnection{}).MergeFromRequest(target, map[string]interface{}{
-		"refreshToken": utils.SanitizeString(target.RefreshToken),
-		"clientSecret": utils.SanitizeString(target.ClientSecret),
+		"refreshToken": target.Sanitize().RefreshToken,
+		"clientSecret": target.Sanitize().ClientSecret,
 	})
 
 	require.NoError(t, err)
