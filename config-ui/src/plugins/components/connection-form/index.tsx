@@ -29,6 +29,7 @@ import { getPluginConfig } from '@/plugins';
 import { operator } from '@/utils';
 
 import { Form } from './fields';
+import { buildConnectionSavePayload } from './payload';
 
 interface Props {
   plugin: string;
@@ -215,7 +216,11 @@ export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
   };
 
   const handleSave = async () => {
-    const payload = { ...initialValues, ...values };
+    // Save and Test diverge on the update path: handleTest sends only fields
+    // that changed vs `selectedConnection`, while handleSave sends the full
+    // merged payload (plugin defaults + form values). Don't unify these without
+    // first confirming the save and test endpoints accept the same shape.
+    const payload = buildConnectionSavePayload(initialValues, values);
     const [success, res] = await operator(
       () =>
         !connectionId
