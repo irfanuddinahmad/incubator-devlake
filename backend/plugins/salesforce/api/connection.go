@@ -92,7 +92,7 @@ func GetConnection(input *plugin.ApiResourceInput) (*plugin.ApiResourceOutput, e
 	if err := connectionHelper.First(connection, input.Params); err != nil {
 		return nil, err
 	}
-	return &plugin.ApiResourceOutput{Body: connection}, nil
+	return &plugin.ApiResourceOutput{Body: connection.Sanitize()}, nil
 }
 
 func validateConnection(connection *models.SalesforceConnection) errors.Error {

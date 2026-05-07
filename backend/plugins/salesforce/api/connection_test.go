@@ -20,8 +20,13 @@ package api
 import (
 	"testing"
 
+	"github.com/apache/incubator-devlake/core/plugin"
+	helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
+	"github.com/apache/incubator-devlake/helpers/unithelper"
+	mockdal "github.com/apache/incubator-devlake/mocks/core/dal"
 	"github.com/apache/incubator-devlake/plugins/salesforce/models"
 	"github.com/go-playground/validator/v10"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -81,4 +86,35 @@ func TestDecodeConnectionBodyRejectsRefreshTokenLoginUrlWithoutScheme(t *testing
 	})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "loginUrl must start with https://")
+}
+
+func TestGetConnectionSanitizesCredentialFields(t *testing.T) {
+	raw := models.SalesforceConnection{SalesforceConn: models.SalesforceConn{
+		AuthMode:     models.AuthModeRefreshToken,
+		AccessToken:  "access-token-1234567890",
+		RefreshToken: "refresh-token-abcdef",
+		ClientId:     "client-id",
+		ClientSecret: "client-secret-xyz",
+		LoginUrl:     "https://login.salesforce.com",
+	}}
+
+	var dalMock *mockdal.Dal
+	basicRes = unithelper.DummyBasicRes(func(mockDal *mockdal.Dal) {
+		dalMock = mockDal
+		mockDal.On("First", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+			connection := args.Get(0).(*models.SalesforceConnection)
+			*connection = raw
+		}).Return(nil).Once()
+	})
+	connectionHelper = helper.NewConnectionHelper(basicRes, validator.New(), "salesforce")
+
+	output, err := GetConnection(&plugin.ApiResourceInput{
+		Params: map[string]string{"connectionId": "1"},
+	})
+
+	require.NoError(t, err)
+	body, ok := output.Body.(models.SalesforceConnection)
+	require.True(t, ok)
+	require.Equal(t, raw.Sanitize(), body)
+	dalMock.AssertCalled(t, "First", mock.Anything, mock.Anything)
 }

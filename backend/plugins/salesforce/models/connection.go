@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/apache/incubator-devlake/core/errors"
-	"github.com/apache/incubator-devlake/core/utils"
 	helper "github.com/apache/incubator-devlake/helpers/pluginhelper/api"
 	"gorm.io/gorm"
 )
@@ -215,10 +214,30 @@ func (conn SalesforceConn) GetVersion() string {
 	return strings.TrimSpace(conn.ApiVersion)
 }
 
+func sanitizeCredential(value string) string {
+	const fullVisibleLen = 8
+	const minVisibleLen = 2
+	const minHiddenLen = 8
+
+	runes := []rune(value)
+	valueLen := len(runes)
+	if valueLen == 0 {
+		return value
+	}
+	if valueLen <= minVisibleLen*2 {
+		return strings.Repeat("*", valueLen)
+	}
+	visibleLen := minVisibleLen
+	if valueLen >= fullVisibleLen*2+minHiddenLen {
+		visibleLen = fullVisibleLen
+	}
+	return string(runes[:visibleLen]) + strings.Repeat("*", valueLen-visibleLen*2) + string(runes[valueLen-visibleLen:])
+}
+
 func (conn SalesforceConn) Sanitize() SalesforceConn {
-	conn.AccessToken = utils.SanitizeString(conn.AccessToken)
-	conn.RefreshToken = utils.SanitizeString(conn.RefreshToken)
-	conn.ClientSecret = utils.SanitizeString(conn.ClientSecret)
+	conn.AccessToken = sanitizeCredential(conn.AccessToken)
+	conn.RefreshToken = sanitizeCredential(conn.RefreshToken)
+	conn.ClientSecret = sanitizeCredential(conn.ClientSecret)
 	return conn
 }
 
@@ -249,13 +268,13 @@ func (connection *SalesforceConnection) MergeFromRequest(target *SalesforceConne
 		return err
 	}
 
-	if target.AccessToken == "" || target.AccessToken == utils.SanitizeString(originalAccessToken) {
+	if target.AccessToken == "" || target.AccessToken == sanitizeCredential(originalAccessToken) {
 		target.AccessToken = originalAccessToken
 	}
-	if target.RefreshToken == "" || target.RefreshToken == utils.SanitizeString(originalRefreshToken) {
+	if target.RefreshToken == "" || target.RefreshToken == sanitizeCredential(originalRefreshToken) {
 		target.RefreshToken = originalRefreshToken
 	}
-	if target.ClientSecret == "" || target.ClientSecret == utils.SanitizeString(originalClientSecret) {
+	if target.ClientSecret == "" || target.ClientSecret == sanitizeCredential(originalClientSecret) {
 		target.ClientSecret = originalClientSecret
 	}
 
