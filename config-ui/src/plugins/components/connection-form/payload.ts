@@ -16,7 +16,7 @@
  *
  */
 
-import { pick } from 'lodash';
+import { isUndefined, omitBy, pick } from 'lodash';
 
 // Fields tracked in connection-form component state. These are the fields a
 // user can type into the form; values flow through React state as
@@ -79,4 +79,4 @@ type ConnectionFormValues = Record<string, unknown>;
 export const buildConnectionSavePayload = (
   initialValues: ConnectionFormValues | undefined,
   values: ConnectionFormValues,
-): ConnectionFormValues => pick({ ...(initialValues ?? {}), ...values }, SAVE_CONNECTION_FIELDS);
+): ConnectionFormValues => pick({ ...(initialValues ?? {}), ...omitBy(values, isUndefined) }, SAVE_CONNECTION_FIELDS);

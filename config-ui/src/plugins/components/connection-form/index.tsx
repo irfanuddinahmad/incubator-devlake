@@ -193,7 +193,10 @@ export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
     // (plugin defaults + form values), whitelisted payload. Don't unify these
     // without first confirming the save and test endpoints accept the same
     // shape.
-    const payload = buildConnectionSavePayload(initialValues, values);
+    const payload = buildConnectionSavePayload(
+      type === 'update' ? { ...initialValues, ...(selectedConnection ?? {}) } : initialValues,
+      values,
+    );
     const [success, res] = await operator(
       () =>
         !connectionId
@@ -223,6 +226,7 @@ export const ConnectionForm = ({ plugin, connectionId, onSuccess }: Props) => {
       />
       <Form
         type={type}
+        connectionId={connectionId}
         name={name}
         fields={fields}
         initialValues={{ ...initialValues, ...(selectedConnection ?? {}) }}
