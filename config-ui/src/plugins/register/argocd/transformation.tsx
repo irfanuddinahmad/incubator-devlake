@@ -19,8 +19,7 @@
 import { CaretRightOutlined } from '@ant-design/icons';
 import { theme, Collapse, Tag, Input } from 'antd';
 
-import { ExternalLink, HelpTooltip } from '@/components';
-import { DOC_URL } from '@/release';
+import { HelpTooltip } from '@/components';
 
 interface Props {
   entities: string[];

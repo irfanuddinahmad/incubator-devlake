@@ -25,6 +25,7 @@ import { Block, ExternalLink, Loading } from '@/components';
 import { DOC_URL } from '@/release';
 
 import * as S from './styled';
+import { isMaskedGithubToken } from './token-utils';
 
 type TokenItem = {
   value: string;
@@ -59,6 +60,36 @@ export const Token = ({
   const [loading, setLoading] = useState(false);
   const [tokens, setTokens] = useState<TokenItem[]>([{ value: '' }]);
 
+  const buildTokenItem = (value: string, res: { success: boolean; login?: string; warning?: boolean }): TokenItem => ({
+    value,
+    isValid: !!res.login,
+    from: res.login,
+    status: !res.success ? 'error' : res.warning ? 'warning' : 'success',
+  });
+
+  const testSavedToken = async (token: string): Promise<TokenItem> => {
+    if (!connectionId) {
+      return {
+        value: token,
+        isValid: false,
+        status: 'error',
+      };
+    }
+
+    const res = await API.connection.test('github', connectionId);
+    const matchedToken = (res.tokens ?? []).find((it) => it.token === token);
+
+    if (!matchedToken) {
+      return {
+        value: token,
+        isValid: false,
+        status: 'error',
+      };
+    }
+
+    return buildTokenItem(matchedToken.token, matchedToken);
+  };
+
   const testToken = async (token: string): Promise<TokenItem> => {
     if (!endpoint || !token) {
       return {
@@ -67,18 +98,17 @@ export const Token = ({
     }
 
     try {
+      if (type === 'update' && isMaskedGithubToken(token)) {
+        return await testSavedToken(token);
+      }
+
       const res = await API.connection.testOld('github', {
         authMethod: 'AccessToken',
         endpoint,
         proxy,
         token,
       });
-      return {
-        value: token,
-        isValid: true,
-        from: res.login,
-        status: !res.success ? 'error' : res.warning ? 'warning' : 'success',
-      };
+      return buildTokenItem(token, { success: res.success, login: res.login, warning: !!res.warning });
     } catch {
       return {
         value: token,
@@ -91,14 +121,7 @@ export const Token = ({
   const checkTokens = async (connectionId: ID) => {
     setLoading(true);
     const res = await API.connection.test('github', connectionId);
-    setTokens(
-      (res.tokens ?? []).map((it) => ({
-        value: it.token,
-        isValid: !!it.login,
-        from: it.login,
-        status: !it.success ? 'error' : it.warning ? 'warning' : 'success',
-      })),
-    );
+    setTokens((res.tokens ?? []).map((it) => buildTokenItem(it.token, it)));
     setLoading(false);
   };
 

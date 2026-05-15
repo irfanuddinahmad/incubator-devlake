@@ -52,14 +52,14 @@ export const GitHubConfig: IPluginConfig = {
           setValue={(value) => setValues({ authMethod: value })}
         />
       ),
-      ({ type, initialValues, values, errors, setValues, setErrors }: any) =>
+      ({ type, connectionId, initialValues, values, errors, setValues, setErrors }: any) =>
         (values.authMethod || initialValues.authMethod) === 'AccessToken' ? (
           <Token
             key="token"
             type={type}
-            connectionId={initialValues.id}
-            endpoint={values.endpoint}
-            proxy={values.proxy}
+            connectionId={connectionId}
+            endpoint={values.endpoint ?? initialValues.endpoint}
+            proxy={values.proxy ?? initialValues.proxy}
             initialValue={initialValues.token ?? ''}
             value={values.token ?? ''}
             error={errors.token ?? ''}
@@ -69,8 +69,9 @@ export const GitHubConfig: IPluginConfig = {
         ) : (
           <GithubApp
             key="github-app"
-            endpoint={values.endpoint}
-            proxy={values.proxy}
+            connectionId={connectionId}
+            endpoint={values.endpoint ?? initialValues.endpoint}
+            proxy={values.proxy ?? initialValues.proxy}
             initialValue={initialValues ? pick(initialValues, ['appId', 'secretKey', 'installationId']) : {}}
             value={values ? pick(values, ['appId', 'secretKey', 'installationId']) : {}}
             error={errors ?? {}}

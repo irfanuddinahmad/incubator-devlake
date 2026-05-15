@@ -16,15 +16,23 @@
  *
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Select, Input } from 'antd';
 
 import API from '@/api';
 import { Block, ExternalLink } from '@/components';
 
 import * as S from './styled';
+import {
+  buildGithubInstallationOptions,
+  GithubAppSettings,
+  invalidateGithubAppConfig,
+  isMaskedGithubAppSecret,
+  shouldValidateGithubAppConfig,
+} from './githubapp-utils';
 
 interface Props {
+  connectionId?: ID;
   endpoint?: string;
   proxy: string;
   initialValue: any;
@@ -34,31 +42,62 @@ interface Props {
   setError: (error: any) => void;
 }
 
-interface GithubAppSettings {
-  appId?: string;
-  secretKey?: string;
-  installationId?: number;
+export const GithubApp = ({ connectionId, endpoint, proxy, initialValue, value, error, setValue, setError }: Props) => {
+  const [settings, setSettings] = useState<GithubAppSettings>({
+    appId: initialValue.appId,
+    secretKey: initialValue.secretKey,
+    installationId: initialValue.installationId,
+    status: 'idle',
+  });
 
-  status: 'idle' | 'valid' | 'invalid';
-  from?: string;
-  installations?: GithubInstallation[];
-}
+  const installationOptions = useMemo(
+    () => buildGithubInstallationOptions(settings.installations, settings.installationId),
+    [settings.installations, settings.installationId],
+  );
 
-interface GithubInstallation {
-  id: number;
-  account: {
-    login: string;
+  const testExistingConfiguration = async (
+    appId?: string,
+    secretKey?: string,
+    installationId?: number,
+  ): Promise<GithubAppSettings> => {
+    if (!connectionId) {
+      return {
+        appId,
+        secretKey,
+        installationId,
+        status: 'idle',
+        installations: settings.installations,
+      };
+    }
+
+    try {
+      const res: any = await API.connection.test('github', connectionId, {});
+      const testResult = res.tokens?.[0];
+
+      return {
+        appId,
+        secretKey,
+        installationId: installationId || testResult?.installationId,
+        status: testResult?.success === false ? 'invalid' : 'valid',
+        from: testResult?.login,
+        installations: testResult?.installations,
+      };
+    } catch {
+      return {
+        appId,
+        secretKey,
+        installationId,
+        status: 'invalid',
+        installations: settings.installations,
+      };
+    }
   };
-}
-
-export const GithubApp = ({ endpoint, proxy, initialValue, value, error, setValue, setError }: Props) => {
-  const [settings, setSettings] = useState<GithubAppSettings>({ status: 'idle' });
 
   useEffect(() => {
     setError({
-      appId: value.appId ? '' : 'AppId is required',
-      secretKey: value.secretKey ? '' : 'SecretKey is required',
-      installationId: value.installationId ? '' : 'InstallationId is required',
+      appId: settings.appId ? '' : 'AppId is required',
+      secretKey: settings.secretKey ? '' : 'SecretKey is required',
+      installationId: settings.installationId ? '' : 'InstallationId is required',
     });
 
     return () => {
@@ -68,29 +107,34 @@ export const GithubApp = ({ endpoint, proxy, initialValue, value, error, setValu
         installationId: '',
       });
     };
-  }, [value.appId, value.secretKey, value.installationId]);
+  }, [settings.appId, settings.secretKey, settings.installationId]);
 
   const testConfiguration = async (
     appId?: string,
     secretKey?: string,
     installationId?: number,
   ): Promise<GithubAppSettings> => {
-    if (!endpoint || !appId || !secretKey) {
+    if (isMaskedGithubAppSecret(secretKey)) {
+      return testExistingConfiguration(appId, secretKey, installationId);
+    }
+
+    if (!shouldValidateGithubAppConfig(endpoint, appId, secretKey)) {
       return {
         appId,
         secretKey,
         installationId,
         status: 'idle',
+        installations: settings.installations,
       };
     }
 
     try {
       const res = await API.connection.testOld('github', {
         authMethod: 'AppKey',
-        endpoint,
+        endpoint: endpoint!,
         proxy,
-        appId,
-        secretKey,
+        appId: appId!,
+        secretKey: secretKey!,
         token: '',
       });
       return {
@@ -112,11 +156,11 @@ export const GithubApp = ({ endpoint, proxy, initialValue, value, error, setValu
   };
 
   const handleChangeAppId = (value: string) => {
-    setSettings({ ...settings, appId: value });
+    setSettings((prev) => invalidateGithubAppConfig(prev, { appId: value }));
   };
 
   const handleChangeClientSecret = (value: string) => {
-    setSettings({ ...settings, secretKey: value });
+    setSettings((prev) => invalidateGithubAppConfig(prev, { secretKey: value }));
   };
 
   const handleTestConfiguration = async () => {
@@ -130,8 +174,19 @@ export const GithubApp = ({ endpoint, proxy, initialValue, value, error, setValu
   };
 
   useEffect(() => {
+    setSettings((prev) => ({
+      ...prev,
+      appId: initialValue.appId,
+      secretKey: initialValue.secretKey,
+      installationId: initialValue.installationId,
+      status: 'idle',
+      installations: undefined,
+    }));
+  }, [initialValue.appId, initialValue.secretKey, initialValue.installationId]);
+
+  useEffect(() => {
     checkConfig(initialValue.appId, initialValue.secretKey, initialValue.installationId);
-  }, [initialValue.appId, initialValue.secretKey, initialValue.installationId, endpoint]);
+  }, [initialValue.appId, initialValue.secretKey, initialValue.installationId, endpoint, connectionId]);
 
   useEffect(() => {
     setValue({ appId: settings.appId, secretKey: settings.secretKey, installationId: settings.installationId });
@@ -161,7 +216,9 @@ export const GithubApp = ({ endpoint, proxy, initialValue, value, error, setValu
           />
           <div className="info">
             {settings.status === 'invalid' && <span className="error">Invalid</span>}
-            {settings.status === 'valid' && <span className="success">Valid From: {settings.from}</span>}
+            {settings.status === 'valid' && (
+              <span className="success">Valid{settings.from ? ` From: ${settings.from}` : ''}</span>
+            )}
           </div>
         </div>
       </S.Input>
@@ -177,7 +234,9 @@ export const GithubApp = ({ endpoint, proxy, initialValue, value, error, setValu
           />
           <div className="info">
             {settings.status === 'invalid' && <span className="error">Invalid</span>}
-            {settings.status === 'valid' && <span className="success">Valid From: {settings.from}</span>}
+            {settings.status === 'valid' && (
+              <span className="success">Valid{settings.from ? ` From: ${settings.from}` : ''}</span>
+            )}
           </div>
         </div>
       </S.Input>
@@ -185,14 +244,8 @@ export const GithubApp = ({ endpoint, proxy, initialValue, value, error, setValu
         <Select
           style={{ width: 200 }}
           placeholder="Select App installation"
-          options={
-            settings.installations
-              ? settings.installations.map((it) => ({
-                  value: it.id,
-                  label: it.account.login,
-                }))
-              : []
-          }
+          value={settings.installationId}
+          options={installationOptions}
           onChange={(value) => setSettings({ ...settings, installationId: value })}
         />
       </S.Input>

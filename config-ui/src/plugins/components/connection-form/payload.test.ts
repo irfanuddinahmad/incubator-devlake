@@ -126,10 +126,7 @@ test('lets an explicit empty string in values clear a default', () => {
 });
 
 test('lets an explicit false in values override a true default', () => {
-  const payload = buildConnectionSavePayload(
-    { enableWebhook: true },
-    { name: 'GitHub', enableWebhook: false },
-  );
+  const payload = buildConnectionSavePayload({ enableWebhook: true }, { name: 'GitHub', enableWebhook: false });
 
   deepEqual(payload, {
     name: 'GitHub',
@@ -137,17 +134,41 @@ test('lets an explicit false in values override a true default', () => {
   });
 });
 
-// Documents current spread+pick semantics: an explicit `undefined` in `values`
-// replaces the default rather than falling through. Callers should omit a key
-// rather than set it to undefined if they want the plugin default to win.
-test('explicit undefined in values overrides the default', () => {
+test('ignores explicit undefined in values so defaults are preserved', () => {
   const payload = buildConnectionSavePayload(
     { endpoint: 'https://api.github.com/' },
     { endpoint: undefined, name: 'GitHub' },
   );
 
   deepEqual(payload, {
-    endpoint: undefined,
+    endpoint: 'https://api.github.com/',
     name: 'GitHub',
+  });
+});
+
+test('preserves saved github app fields when update values are incomplete', () => {
+  const payload = buildConnectionSavePayload(
+    {
+      endpoint: 'https://api.github.com/',
+      authMethod: 'AppKey',
+      appId: '3702997',
+      secretKey: '-----BEGIN RSA PRIVATE KEY-----***-----END RSA PRIVATE KEY-----',
+      installationId: 132075486,
+    },
+    {
+      name: 'Github App Tesing',
+      appId: '3702997',
+      secretKey: undefined,
+      installationId: undefined,
+    },
+  );
+
+  deepEqual(payload, {
+    endpoint: 'https://api.github.com/',
+    authMethod: 'AppKey',
+    appId: '3702997',
+    secretKey: '-----BEGIN RSA PRIVATE KEY-----***-----END RSA PRIVATE KEY-----',
+    installationId: 132075486,
+    name: 'Github App Tesing',
   });
 });
