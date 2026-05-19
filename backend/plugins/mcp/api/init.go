@@ -20,13 +20,10 @@ package api
 import (
 	"github.com/apache/incubator-devlake/core/context"
 	"github.com/apache/incubator-devlake/core/dal"
-	"github.com/apache/incubator-devlake/core/log"
 )
 
 var db dal.Dal
-var logger log.Logger
 
 func Init(basicRes context.BasicRes) {
 	db = basicRes.GetDal()
-	logger = basicRes.GetLogger()
 }
