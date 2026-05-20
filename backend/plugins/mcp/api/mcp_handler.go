@@ -106,6 +106,54 @@ type tableInfo struct {
 
 var schemaRegistry = buildSchemaRegistry()
 
+var tableDescriptions = map[string]string{
+	"repos":                    "Git repositories",
+	"commits":                  "Git commits",
+	"pull_requests":            "Pull requests / merge requests",
+	"pull_request_commits":     "Join: pull requests and commits",
+	"pull_request_labels":      "Labels attached to pull requests",
+	"pull_request_reviewers":   "Reviewers assigned to pull requests",
+	"pull_request_comments":    "Comments on pull requests",
+	"refs":                     "Git branches and tags",
+	"repo_commits":             "Join: repos and commits",
+	"commit_files":             "Files changed per commit",
+	"issues":                   "Issues, tickets, stories, bugs, tasks",
+	"issue_labels":             "Labels on issues",
+	"issue_changelogs":         "History of field changes on issues",
+	"issue_worklogs":           "Time logged against issues",
+	"issue_comments":           "Comments on issues",
+	"boards":                   "Issue boards / Kanban boards / projects",
+	"board_issues":             "Join: boards and issues",
+	"sprints":                  "Agile sprints",
+	"sprint_issues":            "Join: sprints and issues",
+	"cicd_scopes":              "CI/CD project scopes",
+	"cicd_pipelines":           "CI/CD pipeline runs",
+	"cicd_tasks":               "Individual tasks/jobs within a pipeline",
+	"cicd_deployments":         "CI/CD deployments",
+	"cicd_deployment_commits":  "Deployments linked to specific commits",
+	"cicd_pipeline_commits":    "Commits that triggered pipelines",
+	"cicd_releases":            "CI/CD releases",
+	"users":                    "Unified user identities across tools",
+	"accounts":                 "Tool-specific user accounts",
+	"user_accounts":            "Join: users and accounts",
+	"user_activities":          "User activity events across tools",
+	"teams":                    "Organizational teams",
+	"team_users":               "Join: teams and users",
+	"pull_request_issues":      "Links pull requests to the issues they fix",
+	"issue_commits":            "Links issues to related commits",
+	"project_mapping":          "Maps DevLake projects to data scopes",
+	"incidents":                "Production incidents",
+	"incident_assignees":       "Assignees on incidents",
+	"cq_projects":              "SonarQube / code quality analysis projects",
+	"cq_issues":                "Code quality issues / violations",
+	"cq_file_metrics":          "File-level code quality metrics",
+	"qa_apis":                  "QA API definitions",
+	"qa_test_cases":            "QA test cases",
+	"qa_test_case_executions":  "QA test case execution results",
+	"qa_test_case_issue_links": "Links QA test cases to issues",
+	"ai_activities":            "AI coding assistant usage metrics",
+}
+
 // ── Tool definitions ─────────────────────────────────────────────────────────
 
 func toolList() []toolDef {
@@ -118,7 +166,7 @@ func toolList() []toolDef {
 				"properties": map[string]interface{}{
 					"domain": map[string]interface{}{
 						"type":        "string",
-						"description": "Optional filter: 'code', 'ticket', 'devops', 'crossdomain', 'codequality', 'qa', or 'ai'. Omit to list all tables.",
+						"description": "Optional filter: 'code', 'ticket', 'devops', 'crossdomain', 'codequality', 'qa', 'ai', or 'unknown'. Omit to list all tables.",
 					},
 				},
 			},
@@ -256,7 +304,7 @@ func runListTables(args map[string]interface{}) callToolResult {
 		}
 	}
 
-	domains := []string{"code", "ticket", "devops", "crossdomain", "codequality", "qa", "ai"}
+	domains := []string{"code", "ticket", "devops", "crossdomain", "codequality", "qa", "ai", "unknown"}
 	found := false
 	for _, domain := range domains {
 		tables, ok := byDomain[domain]
@@ -379,14 +427,12 @@ func validateSQL(sql string) error {
 	if len(tokens) == 0 {
 		return fmt.Errorf("only SELECT (or WITH ... SELECT) statements are permitted")
 	}
-	if tokens[0] != "SELECT" && tokens[0] != "WITH" {
-		return fmt.Errorf("only SELECT (or WITH ... SELECT) statements are permitted")
-	}
 	for _, token := range tokens {
 		if token == "INSERT" || token == "UPDATE" || token == "DELETE" || token == "DROP" ||
 			token == "CREATE" || token == "ALTER" || token == "TRUNCATE" || token == "RENAME" ||
 			token == "REPLACE" || token == "MERGE" || token == "EXEC" || token == "EXECUTE" ||
-			token == "CALL" || token == "GRANT" || token == "REVOKE" || token == "LOAD" {
+			token == "CALL" || token == "GRANT" || token == "REVOKE" || token == "LOAD" ||
+			token == "COPY" {
 			return fmt.Errorf("statement contains disallowed keyword: %s", token)
 		}
 	}
@@ -394,6 +440,9 @@ func validateSQL(sql string) error {
 		if tokens[i] == "INTO" && tokens[i+1] == "OUTFILE" {
 			return fmt.Errorf("statement contains disallowed keyword: INTO OUTFILE")
 		}
+	}
+	if tokens[0] != "SELECT" && tokens[0] != "WITH" {
+		return fmt.Errorf("only SELECT (or WITH ... SELECT) statements are permitted")
 	}
 	if strings.ContainsRune(normalized, ';') {
 		return fmt.Errorf("multiple statements are not permitted")
@@ -403,10 +452,11 @@ func validateSQL(sql string) error {
 
 func buildSchemaRegistry() map[string]tableInfo {
 	registry := make(map[string]tableInfo)
+	schemaCache := &sync.Map{}
 	for _, table := range domaininfo.GetDomainTablesInfo() {
-		parsedSchema, err := schema.Parse(table, &sync.Map{}, schema.NamingStrategy{})
+		parsedSchema, err := schema.Parse(table, schemaCache, schema.NamingStrategy{})
 		if err != nil {
-			continue
+			panic(fmt.Sprintf("buildSchemaRegistry: failed to parse schema for %T: %v", table, err))
 		}
 		columns := make([]string, 0, len(parsedSchema.Fields))
 		seen := make(map[string]struct{}, len(parsedSchema.Fields))
@@ -420,9 +470,13 @@ func buildSchemaRegistry() map[string]tableInfo {
 			seen[field.DBName] = struct{}{}
 			columns = append(columns, field.DBName)
 		}
+		description := tableDescriptions[table.TableName()]
+		if description == "" {
+			description = fmt.Sprintf("Domain layer table %s", table.TableName())
+		}
 		registry[table.TableName()] = tableInfo{
 			Domain:      detectDomain(table),
-			Description: fmt.Sprintf("Domain layer table %s", table.TableName()),
+			Description: description,
 			Columns:     strings.Join(columns, ", "),
 		}
 	}
@@ -430,6 +484,9 @@ func buildSchemaRegistry() map[string]tableInfo {
 }
 
 func detectDomain(table interface{}) string {
+	if table == nil {
+		return "unknown"
+	}
 	tableType := reflect.TypeOf(table)
 	if tableType.Kind() == reflect.Ptr {
 		tableType = tableType.Elem()
@@ -448,8 +505,10 @@ func detectDomain(table interface{}) string {
 		return "qa"
 	case strings.Contains(pkgPath, "/ai"):
 		return "ai"
-	default:
+	case strings.Contains(pkgPath, "/code"):
 		return "code"
+	default:
+		return "unknown"
 	}
 }
 
@@ -460,11 +519,12 @@ func normalizeSQLForValidation(sql string) string {
 	inBacktick := false
 	inLineComment := false
 	inBlockComment := false
-	for i := 0; i < len(sql); i++ {
-		ch := sql[i]
-		next := byte(0)
-		if i+1 < len(sql) {
-			next = sql[i+1]
+	runes := []rune(sql)
+	for i := 0; i < len(runes); i++ {
+		ch := runes[i]
+		next := rune(0)
+		if i+1 < len(runes) {
+			next = runes[i+1]
 		}
 		if inLineComment {
 			if ch == '\n' {
@@ -537,8 +597,8 @@ func normalizeSQLForValidation(sql string) string {
 			sb.WriteByte(' ')
 			continue
 		}
-		if unicode.IsLetter(rune(ch)) || unicode.IsDigit(rune(ch)) || ch == '_' || ch == ';' {
-			sb.WriteByte(byte(unicode.ToUpper(rune(ch))))
+		if unicode.IsLetter(ch) || unicode.IsDigit(ch) || ch == '_' || ch == ';' {
+			sb.WriteRune(unicode.ToUpper(ch))
 			continue
 		}
 		sb.WriteByte(' ')

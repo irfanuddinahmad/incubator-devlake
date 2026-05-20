@@ -34,15 +34,37 @@ func TestValidateSQLRejectsMultipleStatements(t *testing.T) {
 	require.EqualError(t, err, "multiple statements are not permitted")
 }
 
+func TestValidateSQLRejectsCopy(t *testing.T) {
+	err := validateSQL("COPY (SELECT * FROM issues) TO '/tmp/out.csv'")
+	require.EqualError(t, err, "statement contains disallowed keyword: COPY")
+}
+
+func TestValidateSQLAllowsKeywordInStringLiteral(t *testing.T) {
+	err := validateSQL("SELECT * FROM issues WHERE title = 'DELETE this'")
+	require.NoError(t, err)
+}
+
+func TestValidateSQLAllowsKeywordInBlockComment(t *testing.T) {
+	err := validateSQL("SELECT/*DELETE*/1")
+	require.NoError(t, err)
+}
+
+func TestValidateSQLHandlesUTF8Literals(t *testing.T) {
+	err := validateSQL("SELECT * FROM issues WHERE title = '关闭 DELETE'")
+	require.NoError(t, err)
+}
+
 func TestBuildSchemaRegistryIncludesCurrentDomainTables(t *testing.T) {
 	issues, ok := schemaRegistry["issues"]
 	require.True(t, ok)
 	require.Equal(t, "ticket", issues.Domain)
+	require.Equal(t, "Issues, tickets, stories, bugs, tasks", issues.Description)
 	require.Contains(t, issues.Columns, "fix_versions")
 
 	deployments, ok := schemaRegistry["cicd_deployments"]
 	require.True(t, ok)
 	require.Equal(t, "devops", deployments.Domain)
+	require.Equal(t, "CI/CD deployments", deployments.Description)
 	require.Contains(t, deployments.Columns, "original_environment")
 
 	userActivities, ok := schemaRegistry["user_activities"]
@@ -52,6 +74,14 @@ func TestBuildSchemaRegistryIncludesCurrentDomainTables(t *testing.T) {
 	qaCases, ok := schemaRegistry["qa_test_cases"]
 	require.True(t, ok)
 	require.Equal(t, "qa", qaCases.Domain)
+
+	pullRequests, ok := schemaRegistry["pull_requests"]
+	require.True(t, ok)
+	require.Equal(t, "code", pullRequests.Domain)
+}
+
+func TestDetectDomainReturnsUnknownForNil(t *testing.T) {
+	require.Equal(t, "unknown", detectDomain(nil))
 }
 
 func TestRunListTablesIncludesQADomain(t *testing.T) {
