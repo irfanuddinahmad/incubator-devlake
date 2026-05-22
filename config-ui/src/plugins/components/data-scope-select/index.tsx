@@ -16,9 +16,9 @@
  *
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { RedoOutlined, PlusOutlined } from '@ant-design/icons';
-import { Flex, Select, Button } from 'antd';
+import { Flex, Select, Button, Checkbox, message } from 'antd';
 import { useDebounce } from 'ahooks';
 import type { McsItem } from 'miller-columns-select';
 import MillerColumnsSelect from 'miller-columns-select';
@@ -26,8 +26,10 @@ import MillerColumnsSelect from 'miller-columns-select';
 import API from '@/api';
 import { PATHS } from '@/config';
 import { Loading, Block, ExternalLink, Message } from '@/components';
-import { useRefreshData } from '@/hooks';
 import { getPluginScopeId, getPluginScopeName } from '@/plugins';
+
+const loadAllPageSize = 1000;
+const initialScopeLabelLookupLimit = 20;
 
 interface Props {
   plugin: string;
@@ -48,65 +50,236 @@ export const DataScopeSelect = ({
 }: Props) => {
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [searchOptions, setSearchOptions] = useState<Array<{ label: string; value: ID }>>([]);
   const [items, setItems] = useState<McsItem<{ data: any }>[]>([]);
   const [selectedIds, setSelectedIds] = useState<ID[]>([]);
-  // const [selectedItems, setSelecteItems] = useState<any>([]);
+  const [selectingAll, setSelectingAll] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [total, setTotal] = useState(0);
+  const [listKey, setListKey] = useState(0);
+  const requestVersionRef = useRef(0);
+  const initialScopeVersionRef = useRef(0);
+  const initialScopeKey = (initialScope ?? []).map((sc) => sc.id).join(',');
+  const search = useDebounce(query, { wait: 500 });
 
-  useEffect(() => {
-    setSelectedIds((initialScope ?? []).map((sc) => sc.id));
+  const toDataScopeItem = useCallback(
+    (sc: any) => ({
+      parentId: null,
+      id: getPluginScopeId(plugin, sc.scope),
+      title: getPluginScopeName(plugin, sc.scope) || sc.scope.fullName || sc.scope.name,
+      data: sc.scope,
+    }),
+    [plugin],
+  );
+
+  const mergeItems = useCallback((scopeItems: McsItem<{ data: any }>[]) => {
+    setItems((items) => {
+      const itemMap = new Map<ID, McsItem<{ data: any }>>();
+      [...items, ...scopeItems].forEach((item) => {
+        itemMap.set(item.id, item);
+      });
+      return Array.from(itemMap.values());
+    });
   }, []);
 
-  const getDataScope = async (page: number) => {
+  useEffect(() => {
+    const initialScopeIds = (initialScope ?? []).map((sc) => sc.id);
+    const requestVersion = initialScopeVersionRef.current + 1;
+    initialScopeVersionRef.current = requestVersion;
+    setSelectedIds(initialScopeIds);
+
+    const initialScopesWithData = (initialScope ?? []).filter((sc) => sc.scope);
+    if (initialScopesWithData.length) {
+      mergeItems(initialScopesWithData.map(toDataScopeItem));
+    }
+
+    const scopeIdsToLoad = initialScopeIds
+      .filter(
+        (scopeId) => !initialScopesWithData.some((sc) => `${getPluginScopeId(plugin, sc.scope)}` === `${scopeId}`),
+      )
+      .slice(0, initialScopeLabelLookupLimit);
+
+    if (!scopeIdsToLoad.length) {
+      return;
+    }
+
+    const loadInitialScopes = async () => {
+      const selectedScopeResults = await Promise.allSettled(
+        scopeIdsToLoad.map((scopeId) => API.scope.get(plugin, connectionId, scopeId)),
+      );
+      if (requestVersion !== initialScopeVersionRef.current) return;
+
+      const selectedScopeItems = selectedScopeResults
+        .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
+        .map((result) => toDataScopeItem(result.value));
+
+      if (selectedScopeItems.length) {
+        mergeItems(selectedScopeItems);
+      }
+
+      if (selectedScopeResults.some((result) => result.status === 'rejected')) {
+        message.error('Failed to load some selected data scopes.');
+      }
+    };
+
+    loadInitialScopes();
+  }, [connectionId, initialScopeKey, plugin, toDataScopeItem, mergeItems]);
+
+  const getDataScope = async (page: number, requestVersion = requestVersionRef.current) => {
     if (page === 1) {
       setLoading(true);
     }
 
-    const res = await API.scope.list(plugin, connectionId, { page, pageSize });
-    setItems((items) => [
-      ...items,
-      ...res.scopes.map((sc) => ({
-        parentId: null,
-        id: getPluginScopeId(plugin, sc.scope),
-        title: getPluginScopeName(plugin, sc.scope) || sc.scope.fullName || sc.scope.name,
-        data: sc.scope,
-      })),
-    ]);
+    try {
+      const res = await API.scope.list(plugin, connectionId, { page, pageSize });
+      if (requestVersion !== requestVersionRef.current) return;
 
-    setTotal(res.count);
-    setLoading(false);
+      mergeItems(res.scopes.map(toDataScopeItem));
+      setTotal(res.count);
+    } catch (err: any) {
+      if (requestVersion === requestVersionRef.current) {
+        message.error(err?.response?.data?.message ?? 'Failed to load data scopes.');
+      }
+    } finally {
+      if (page === 1 && requestVersion === requestVersionRef.current) {
+        setLoading(false);
+      }
+    }
   };
 
   useEffect(() => {
     getDataScope(page);
   }, [page]);
 
-  const search = useDebounce(query, { wait: 500 });
+  useEffect(() => {
+    const searchVersion = requestVersionRef.current;
 
-  const { ready, data } = useRefreshData(
-    async () => await API.scope.list(plugin, connectionId, { searchTerm: search }),
-    [search],
-  );
+    if (!search) {
+      setSearchOptions([]);
+      setSearching(false);
+      return;
+    }
 
-  const searchOptions = useMemo(
-    () =>
-      data?.scopes.map((sc) => ({
-        label: getPluginScopeName(plugin, sc.scope) || sc.scope.fullName || sc.scope.name,
-        value: getPluginScopeId(plugin, sc.scope),
-      })) ?? [],
-    [data],
-  );
+    const loadSearchOptions = async () => {
+      setSearching(true);
+      try {
+        const res = await API.scope.list(plugin, connectionId, { searchTerm: search });
+        if (searchVersion !== requestVersionRef.current) return;
 
-  const handleScroll = () => setPage(page + 1);
+        const scopeItems = res.scopes.map(toDataScopeItem);
+        mergeItems(scopeItems);
+        setSearchOptions(scopeItems.map((item) => ({ label: item.title, value: item.id })));
+      } catch (err: any) {
+        if (searchVersion === requestVersionRef.current) {
+          message.error(err?.response?.data?.message ?? 'Failed to search data scopes.');
+        }
+      } finally {
+        if (searchVersion === requestVersionRef.current) {
+          setSearching(false);
+        }
+      }
+    };
 
-  const handleSubmit = () => onSubmit?.(selectedIds);
+    loadSearchOptions();
+  }, [connectionId, mergeItems, plugin, search, toDataScopeItem]);
+
+  const allSelected = total > 0 && selectedIds.length >= total;
+  const partialSelected = selectedIds.length > 0 && !allSelected;
+  const itemById = new Map(items.map((item) => [`${item.id}`, item]));
+  const selectedScopeOptions = selectedIds.map((id) => ({
+    label: itemById.get(`${id}`)?.title ?? `${id}`,
+    value: id,
+  }));
+
+  const handleScroll = () => {
+    if (items.length >= total) return;
+    setPage((page) => page + 1);
+  };
+
+  const handleSubmit = () => {
+    if (selectingAll) return;
+    onSubmit?.(selectedIds);
+  };
+
+  const loadAllDataScopes = async () => {
+    const requestVersion = requestVersionRef.current + 1;
+    requestVersionRef.current = requestVersion;
+    setSelectingAll(true);
+
+    try {
+      const allItems = new Map<ID, McsItem<{ data: any }>>();
+      let nextPage = 1;
+      let count = 0;
+      let loadedCount = 0;
+
+      do {
+        const res = await API.scope.list(plugin, connectionId, {
+          page: nextPage,
+          pageSize: loadAllPageSize,
+        });
+        if (requestVersion !== requestVersionRef.current) return;
+
+        const loadedPageItems = res.scopes.map(toDataScopeItem);
+        loadedPageItems.forEach((item) => {
+          allItems.set(item.id, item);
+        });
+        count = res.count;
+        loadedCount += loadedPageItems.length;
+        nextPage += 1;
+
+        if (loadedPageItems.length < loadAllPageSize) {
+          break;
+        }
+      } while (loadedCount < count);
+
+      if (requestVersion !== requestVersionRef.current) return;
+
+      const loadedItems = Array.from(allItems.values());
+      mergeItems(loadedItems);
+      setTotal(count);
+      setSelectedIds(loadedItems.map((item) => item.id));
+    } catch (err: any) {
+      if (requestVersion === requestVersionRef.current) {
+        message.error(err?.response?.data?.message ?? 'Failed to load all data scopes.');
+      }
+    } finally {
+      if (requestVersion === requestVersionRef.current) {
+        setSelectingAll(false);
+      }
+    }
+  };
+
+  const handleSelectAllChange = (checked: boolean) => {
+    if (selectingAll) return;
+
+    if (checked) {
+      loadAllDataScopes();
+      return;
+    }
+    setSelectedIds([]);
+  };
+
+  const handleAddSearchScope = (scopeId: ID) => {
+    setSelectedIds((selectedIds) => (selectedIds.includes(scopeId) ? selectedIds : [...selectedIds, scopeId]));
+    setQuery('');
+    setSearchOptions([]);
+  };
 
   const handleRefresh = () => {
-    setQuery('');
+    const requestVersion = requestVersionRef.current + 1;
+    requestVersionRef.current = requestVersion;
     setItems([]);
-    getDataScope(1);
+    setTotal(0);
+    setListKey((listKey) => listKey + 1);
+
+    if (page === 1) {
+      getDataScope(1, requestVersion);
+      return;
+    }
+
+    setPage(1);
   };
 
   return (
@@ -149,34 +322,61 @@ export const DataScopeSelect = ({
             />
           ) : (
             <Flex>
-              <Button type="primary" icon={<RedoOutlined />} onClick={handleRefresh}>
+              <Button type="primary" icon={<RedoOutlined />} disabled={selectingAll} onClick={handleRefresh}>
                 Refresh Data Scope
               </Button>
             </Flex>
           )}
+          <Flex align="center" justify="space-between" gap="small">
+            <Checkbox
+              checked={allSelected}
+              indeterminate={partialSelected}
+              disabled={selectingAll}
+              onChange={(e) => handleSelectAllChange(e.target.checked)}
+            >
+              Select all data scopes ({total})
+            </Checkbox>
+            {selectingAll && <span>Loading all data scopes...</span>}
+          </Flex>
           <Select
             filterOption={false}
-            loading={!ready}
+            loading={searching}
+            placeholder="Search data scopes to add"
             showSearch
-            mode="multiple"
             options={searchOptions}
+            searchValue={query}
+            value={null}
+            onChange={handleAddSearchScope}
+            onSearch={setQuery}
+          />
+          <Select
+            allowClear
+            disabled={selectingAll}
+            mode="multiple"
+            open={false}
+            placeholder="Selected data scopes"
+            suffixIcon={null}
+            options={selectedScopeOptions}
             value={selectedIds}
             onChange={(value) => setSelectedIds(value)}
-            onSearch={(value) => setQuery(value)}
           />
           <MillerColumnsSelect
-            showSelectAll
+            key={listKey}
             columnCount={1}
             columnHeight={200}
             items={items}
             getHasMore={() => items.length < total}
             onScroll={handleScroll}
             selectedIds={selectedIds}
-            onSelectItemIds={setSelectedIds}
+            onSelectItemIds={(ids) => {
+              if (!selectingAll) {
+                setSelectedIds(ids);
+              }
+            }}
           />
           <Flex justify="flex-end" gap="small">
             <Button onClick={onCancel}>Cancel</Button>
-            <Button type="primary" disabled={!selectedIds.length} onClick={handleSubmit}>
+            <Button type="primary" disabled={!selectedIds.length || selectingAll} onClick={handleSubmit}>
               Save
             </Button>
           </Flex>
