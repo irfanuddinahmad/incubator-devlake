@@ -19,6 +19,7 @@ package impl
 
 import (
 	"github.com/apache/incubator-devlake/core/context"
+	"github.com/apache/incubator-devlake/core/dal"
 	"github.com/apache/incubator-devlake/core/errors"
 	"github.com/apache/incubator-devlake/core/plugin"
 	"github.com/apache/incubator-devlake/plugins/mcp/api"
@@ -28,6 +29,7 @@ var _ interface {
 	plugin.PluginMeta
 	plugin.PluginInit
 	plugin.PluginApi
+	plugin.PluginModel
 } = (*Mcp)(nil)
 
 type Mcp struct{}
@@ -55,4 +57,8 @@ func (p Mcp) ApiResources() map[string]map[string]plugin.ApiResourceHandler {
 			"GET":  api.McpHandler,
 		},
 	}
+}
+
+func (p Mcp) GetTablesInfo() []dal.Tabler {
+	return nil
 }

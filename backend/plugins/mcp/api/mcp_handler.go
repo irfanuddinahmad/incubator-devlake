@@ -20,10 +20,16 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"sort"
 	"strings"
+	"sync"
+	"unicode"
 
 	"github.com/apache/incubator-devlake/core/errors"
+	"github.com/apache/incubator-devlake/core/models/domainlayer/domaininfo"
 	"github.com/apache/incubator-devlake/core/plugin"
+	"gorm.io/gorm/schema"
 )
 
 const mcpProtocolVersion = "2024-11-05"
@@ -98,198 +104,54 @@ type tableInfo struct {
 	Columns     string
 }
 
-var schemaRegistry = map[string]tableInfo{
-	// CODE
-	"repos": {
-		Domain:      "code",
-		Description: "Git repositories",
-		Columns:     "id, name, url, description, owner_id, language, created_date, updated_date, deleted",
-	},
-	"commits": {
-		Domain:      "code",
-		Description: "Git commits",
-		Columns:     "sha, additions, deletions, message, author_name, author_email, authored_date, committer_name, committer_email, committed_date, author_id, committer_id",
-	},
-	"pull_requests": {
-		Domain:      "code",
-		Description: "Pull requests / merge requests",
-		Columns:     "id, base_repo_id, head_repo_id, title, status, original_status, author_name, author_id, created_date, merged_date, closed_date, type, component, additions, deletions, is_draft, base_ref, head_ref, merge_commit_sha",
-	},
-	"pull_request_commits": {
-		Domain:      "code",
-		Description: "Join: pull requests ↔ commits",
-		Columns:     "pull_request_id, commit_sha, commit_author_name, commit_author_email, commit_authored_date",
-	},
-	"pull_request_labels": {
-		Domain:      "code",
-		Description: "Labels attached to pull requests",
-		Columns:     "pull_request_id, label_name",
-	},
-	"pull_request_reviewers": {
-		Domain:      "code",
-		Description: "Reviewers assigned to pull requests",
-		Columns:     "pull_request_id, reviewer_id, name, user_name",
-	},
-	"pull_request_comments": {
-		Domain:      "code",
-		Description: "Comments on pull requests",
-		Columns:     "id, pull_request_id, body, account_id, created_date, type, status",
-	},
-	"refs": {
-		Domain:      "code",
-		Description: "Git branches and tags",
-		Columns:     "id, repo_id, name, commit_sha, is_default, ref_type, created_date",
-	},
-	"repo_commits": {
-		Domain:      "code",
-		Description: "Join: repos ↔ commits",
-		Columns:     "repo_id, commit_sha",
-	},
-	"commit_files": {
-		Domain:      "code",
-		Description: "Files changed per commit",
-		Columns:     "id, commit_sha, file_path, additions, deletions",
-	},
-	// TICKET
-	"issues": {
-		Domain:      "ticket",
-		Description: "Issues, tickets, stories, bugs, tasks",
-		Columns:     "id, title, type, original_type, status, original_status, priority, severity, story_point, created_date, updated_date, resolution_date, lead_time_minutes, assignee_id, assignee_name, creator_id, creator_name, parent_issue_id, is_subtask, component, epic_key, original_project, due_date",
-	},
-	"issue_labels": {
-		Domain:      "ticket",
-		Description: "Labels on issues",
-		Columns:     "issue_id, label_name",
-	},
-	"issue_changelogs": {
-		Domain:      "ticket",
-		Description: "History of field changes on issues",
-		Columns:     "id, issue_id, author_id, author_name, field_name, from_value, to_value, created_date",
-	},
-	"issue_worklogs": {
-		Domain:      "ticket",
-		Description: "Time logged against issues",
-		Columns:     "id, issue_id, author_id, time_spent_minutes, logged_date, started_date",
-	},
-	"issue_comments": {
-		Domain:      "ticket",
-		Description: "Comments on issues",
-		Columns:     "id, issue_id, body, account_id, created_date, updated_date",
-	},
-	"boards": {
-		Domain:      "ticket",
-		Description: "Issue boards / Kanban boards / projects",
-		Columns:     "id, name, description, url, type, created_date",
-	},
-	"board_issues": {
-		Domain:      "ticket",
-		Description: "Join: boards ↔ issues",
-		Columns:     "board_id, issue_id",
-	},
-	"sprints": {
-		Domain:      "ticket",
-		Description: "Agile sprints",
-		Columns:     "id, name, url, status, started_date, ended_date, completed_date, original_board_id",
-	},
-	"sprint_issues": {
-		Domain:      "ticket",
-		Description: "Join: sprints ↔ issues",
-		Columns:     "sprint_id, issue_id",
-	},
-	// DEVOPS
-	"cicd_scopes": {
-		Domain:      "devops",
-		Description: "CI/CD project scopes (pipelines belong to a scope)",
-		Columns:     "id, name, description, url, created_date, updated_date",
-	},
-	"cicd_pipelines": {
-		Domain:      "devops",
-		Description: "CI/CD pipeline runs",
-		Columns:     "id, name, display_title, url, result, status, type, duration_sec, queued_duration_sec, environment, created_date, queued_date, started_date, finished_date, cicd_scope_id",
-	},
-	"cicd_tasks": {
-		Domain:      "devops",
-		Description: "Individual tasks/jobs within a pipeline",
-		Columns:     "id, name, pipeline_id, result, status, type, duration_sec, environment, created_date, started_date, finished_date, cicd_scope_id",
-	},
-	"cicd_deployment_commits": {
-		Domain:      "devops",
-		Description: "Deployments linked to specific commits",
-		Columns:     "id, commit_sha, cicd_scope_id, cicd_deployment_id, name, result, status, environment, started_date, finished_date, duration_sec, ref_name, repo_id, repo_url",
-	},
-	"cicd_pipeline_commits": {
-		Domain:      "devops",
-		Description: "Commits that triggered pipelines",
-		Columns:     "pipeline_id, commit_sha, branch, repo_id, repo_url",
-	},
-	"cicd_releases": {
-		Domain:      "devops",
-		Description: "CI/CD releases / GitHub releases",
-		Columns:     "id, name, tag_name, commit_sha, published_at, is_draft, is_latest, is_prerelease, cicd_scope_id, repo_id",
-	},
-	// CROSSDOMAIN
-	"users": {
-		Domain:      "crossdomain",
-		Description: "Unified user identities across tools",
-		Columns:     "id, email, name",
-	},
-	"accounts": {
-		Domain:      "crossdomain",
-		Description: "Tool-specific user accounts (GitHub user, Jira user, etc.)",
-		Columns:     "id, email, full_name, user_name, avatar_url, organization, created_date, status",
-	},
-	"user_accounts": {
-		Domain:      "crossdomain",
-		Description: "Join: users ↔ accounts",
-		Columns:     "user_id, account_id",
-	},
-	"teams": {
-		Domain:      "crossdomain",
-		Description: "Organizational teams",
-		Columns:     "id, name, alias, parent_id, sorting_index",
-	},
-	"team_users": {
-		Domain:      "crossdomain",
-		Description: "Join: teams ↔ users",
-		Columns:     "team_id, user_id",
-	},
-	"pull_request_issues": {
-		Domain:      "crossdomain",
-		Description: "Links pull requests to the issues they fix",
-		Columns:     "pull_request_id, issue_id, pull_request_key, issue_key",
-	},
-	"issue_commits": {
-		Domain:      "crossdomain",
-		Description: "Links issues to related commits",
-		Columns:     "issue_id, commit_sha",
-	},
-	"project_mapping": {
-		Domain:      "crossdomain",
-		Description: "Maps DevLake projects to data scopes (repos, boards, cicd scopes)",
-		Columns:     "project_name, table, row_id",
-	},
-	// CODE QUALITY
-	"cq_projects": {
-		Domain:      "codequality",
-		Description: "SonarQube / code quality analysis projects",
-		Columns:     "id, name, qualifier, visibility, last_analysis_date, commit_sha",
-	},
-	"cq_issues": {
-		Domain:      "codequality",
-		Description: "Code quality issues / violations",
-		Columns:     "id, rule, severity, component, project_key, type, scope, status, message, debt, effort, created_date, updated_date",
-	},
-	"cq_file_metrics": {
-		Domain:      "codequality",
-		Description: "File-level code quality metrics",
-		Columns:     "id, project_key, file_name, (various metric columns)",
-	},
-	// AI
-	"ai_activities": {
-		Domain:      "ai",
-		Description: "AI coding assistant usage metrics (GitHub Copilot, etc.)",
-		Columns:     "id, provider, account_id, user_email, date, type, model, suggestions_count, acceptance_count, lines_added, lines_removed, commits_created, prs_created, input_tokens, output_tokens, estimated_cost_usd",
-	},
+var schemaRegistry = buildSchemaRegistry()
+
+var tableDescriptions = map[string]string{
+	"repos":                    "Git repositories",
+	"commits":                  "Git commits",
+	"pull_requests":            "Pull requests / merge requests",
+	"pull_request_commits":     "Join: pull requests and commits",
+	"pull_request_labels":      "Labels attached to pull requests",
+	"pull_request_reviewers":   "Reviewers assigned to pull requests",
+	"pull_request_comments":    "Comments on pull requests",
+	"refs":                     "Git branches and tags",
+	"repo_commits":             "Join: repos and commits",
+	"commit_files":             "Files changed per commit",
+	"issues":                   "Issues, tickets, stories, bugs, tasks",
+	"issue_labels":             "Labels on issues",
+	"issue_changelogs":         "History of field changes on issues",
+	"issue_worklogs":           "Time logged against issues",
+	"issue_comments":           "Comments on issues",
+	"boards":                   "Issue boards / Kanban boards / projects",
+	"board_issues":             "Join: boards and issues",
+	"sprints":                  "Agile sprints",
+	"sprint_issues":            "Join: sprints and issues",
+	"cicd_scopes":              "CI/CD project scopes",
+	"cicd_pipelines":           "CI/CD pipeline runs",
+	"cicd_tasks":               "Individual tasks/jobs within a pipeline",
+	"cicd_deployments":         "CI/CD deployments",
+	"cicd_deployment_commits":  "Deployments linked to specific commits",
+	"cicd_pipeline_commits":    "Commits that triggered pipelines",
+	"cicd_releases":            "CI/CD releases",
+	"users":                    "Unified user identities across tools",
+	"accounts":                 "Tool-specific user accounts",
+	"user_accounts":            "Join: users and accounts",
+	"user_activities":          "User activity events across tools",
+	"teams":                    "Organizational teams",
+	"team_users":               "Join: teams and users",
+	"pull_request_issues":      "Links pull requests to the issues they fix",
+	"issue_commits":            "Links issues to related commits",
+	"project_mapping":          "Maps DevLake projects to data scopes",
+	"incidents":                "Production incidents",
+	"incident_assignees":       "Assignees on incidents",
+	"cq_projects":              "SonarQube / code quality analysis projects",
+	"cq_issues":                "Code quality issues / violations",
+	"cq_file_metrics":          "File-level code quality metrics",
+	"qa_apis":                  "QA API definitions",
+	"qa_test_cases":            "QA test cases",
+	"qa_test_case_executions":  "QA test case execution results",
+	"qa_test_case_issue_links": "Links QA test cases to issues",
+	"ai_activities":            "AI coding assistant usage metrics",
 }
 
 // ── Tool definitions ─────────────────────────────────────────────────────────
@@ -304,7 +166,7 @@ func toolList() []toolDef {
 				"properties": map[string]interface{}{
 					"domain": map[string]interface{}{
 						"type":        "string",
-						"description": "Optional filter: 'code', 'ticket', 'devops', 'crossdomain', 'codequality', or 'ai'. Omit to list all tables.",
+						"description": "Optional filter: 'code', 'ticket', 'devops', 'crossdomain', 'codequality', 'qa', 'ai', or 'unknown'. Omit to list all tables.",
 					},
 				},
 			},
@@ -442,7 +304,7 @@ func runListTables(args map[string]interface{}) callToolResult {
 		}
 	}
 
-	domains := []string{"code", "ticket", "devops", "crossdomain", "codequality", "ai"}
+	domains := []string{"code", "ticket", "devops", "crossdomain", "codequality", "qa", "ai", "unknown"}
 	found := false
 	for _, domain := range domains {
 		tables, ok := byDomain[domain]
@@ -450,6 +312,7 @@ func runListTables(args map[string]interface{}) callToolResult {
 			continue
 		}
 		found = true
+		sort.Strings(tables)
 		sb.WriteString(fmt.Sprintf("## %s\n", domain))
 		for _, t := range tables {
 			sb.WriteString(fmt.Sprintf("  %-35s %s\n", t, schemaRegistry[t].Description))
@@ -559,25 +422,188 @@ func runExecuteQuery(args map[string]interface{}) callToolResult {
 
 // validateSQL ensures only read-only SELECT statements are executed.
 func validateSQL(sql string) error {
-	upper := strings.ToUpper(sql)
-
-	if !strings.HasPrefix(upper, "SELECT") && !strings.HasPrefix(upper, "WITH") {
+	normalized := normalizeSQLForValidation(sql)
+	tokens := strings.Fields(normalized)
+	if len(tokens) == 0 {
 		return fmt.Errorf("only SELECT (or WITH ... SELECT) statements are permitted")
 	}
-
-	// Block any write or DDL keywords.
-	blocked := []string{
-		"INSERT ", "UPDATE ", "DELETE ", "DROP ", "CREATE ", "ALTER ",
-		"TRUNCATE ", "RENAME ", "REPLACE ", "MERGE ", "EXEC ", "EXECUTE ",
-		"CALL ", "GRANT ", "REVOKE ", "LOAD ", "INTO OUTFILE",
-	}
-	for _, kw := range blocked {
-		if strings.Contains(upper, kw) {
-			return fmt.Errorf("statement contains disallowed keyword: %s", strings.TrimSpace(kw))
+	for _, token := range tokens {
+		if token == "INSERT" || token == "UPDATE" || token == "DELETE" || token == "DROP" ||
+			token == "CREATE" || token == "ALTER" || token == "TRUNCATE" || token == "RENAME" ||
+			token == "REPLACE" || token == "MERGE" || token == "EXEC" || token == "EXECUTE" ||
+			token == "CALL" || token == "GRANT" || token == "REVOKE" || token == "LOAD" ||
+			token == "COPY" {
+			return fmt.Errorf("statement contains disallowed keyword: %s", token)
 		}
 	}
-
+	for i := 0; i < len(tokens)-1; i++ {
+		if tokens[i] == "INTO" && tokens[i+1] == "OUTFILE" {
+			return fmt.Errorf("statement contains disallowed keyword: INTO OUTFILE")
+		}
+	}
+	if tokens[0] != "SELECT" && tokens[0] != "WITH" {
+		return fmt.Errorf("only SELECT (or WITH ... SELECT) statements are permitted")
+	}
+	if strings.ContainsRune(normalized, ';') {
+		return fmt.Errorf("multiple statements are not permitted")
+	}
 	return nil
+}
+
+func buildSchemaRegistry() map[string]tableInfo {
+	registry := make(map[string]tableInfo)
+	schemaCache := &sync.Map{}
+	for _, table := range domaininfo.GetDomainTablesInfo() {
+		parsedSchema, err := schema.Parse(table, schemaCache, schema.NamingStrategy{})
+		if err != nil {
+			panic(fmt.Sprintf("buildSchemaRegistry: failed to parse schema for %T: %v", table, err))
+		}
+		columns := make([]string, 0, len(parsedSchema.Fields))
+		seen := make(map[string]struct{}, len(parsedSchema.Fields))
+		for _, field := range parsedSchema.Fields {
+			if field.DBName == "" {
+				continue
+			}
+			if _, exists := seen[field.DBName]; exists {
+				continue
+			}
+			seen[field.DBName] = struct{}{}
+			columns = append(columns, field.DBName)
+		}
+		description := tableDescriptions[table.TableName()]
+		if description == "" {
+			description = fmt.Sprintf("Domain layer table %s", table.TableName())
+		}
+		registry[table.TableName()] = tableInfo{
+			Domain:      detectDomain(table),
+			Description: description,
+			Columns:     strings.Join(columns, ", "),
+		}
+	}
+	return registry
+}
+
+func detectDomain(table interface{}) string {
+	if table == nil {
+		return "unknown"
+	}
+	tableType := reflect.TypeOf(table)
+	if tableType.Kind() == reflect.Ptr {
+		tableType = tableType.Elem()
+	}
+	pkgPath := tableType.PkgPath()
+	switch {
+	case strings.Contains(pkgPath, "/codequality"):
+		return "codequality"
+	case strings.Contains(pkgPath, "/crossdomain"):
+		return "crossdomain"
+	case strings.Contains(pkgPath, "/devops"):
+		return "devops"
+	case strings.Contains(pkgPath, "/ticket"):
+		return "ticket"
+	case strings.Contains(pkgPath, "/qa"):
+		return "qa"
+	case strings.Contains(pkgPath, "/ai"):
+		return "ai"
+	case strings.Contains(pkgPath, "/code"):
+		return "code"
+	default:
+		return "unknown"
+	}
+}
+
+func normalizeSQLForValidation(sql string) string {
+	var sb strings.Builder
+	inSingleQuote := false
+	inDoubleQuote := false
+	inBacktick := false
+	inLineComment := false
+	inBlockComment := false
+	runes := []rune(sql)
+	for i := 0; i < len(runes); i++ {
+		ch := runes[i]
+		next := rune(0)
+		if i+1 < len(runes) {
+			next = runes[i+1]
+		}
+		if inLineComment {
+			if ch == '\n' {
+				inLineComment = false
+				sb.WriteByte(' ')
+			}
+			continue
+		}
+		if inBlockComment {
+			if ch == '*' && next == '/' {
+				inBlockComment = false
+				i++
+				sb.WriteByte(' ')
+			}
+			continue
+		}
+		if inSingleQuote {
+			if ch == '\'' {
+				if next == '\'' {
+					i++
+					continue
+				}
+				inSingleQuote = false
+				sb.WriteByte(' ')
+			}
+			continue
+		}
+		if inDoubleQuote {
+			if ch == '"' {
+				if next == '"' {
+					i++
+					continue
+				}
+				inDoubleQuote = false
+				sb.WriteByte(' ')
+			}
+			continue
+		}
+		if inBacktick {
+			if ch == '`' {
+				inBacktick = false
+				sb.WriteByte(' ')
+			}
+			continue
+		}
+		if ch == '-' && next == '-' {
+			inLineComment = true
+			i++
+			sb.WriteByte(' ')
+			continue
+		}
+		if ch == '/' && next == '*' {
+			inBlockComment = true
+			i++
+			sb.WriteByte(' ')
+			continue
+		}
+		if ch == '\'' {
+			inSingleQuote = true
+			sb.WriteByte(' ')
+			continue
+		}
+		if ch == '"' {
+			inDoubleQuote = true
+			sb.WriteByte(' ')
+			continue
+		}
+		if ch == '`' {
+			inBacktick = true
+			sb.WriteByte(' ')
+			continue
+		}
+		if unicode.IsLetter(ch) || unicode.IsDigit(ch) || ch == '_' || ch == ';' {
+			sb.WriteRune(unicode.ToUpper(ch))
+			continue
+		}
+		sb.WriteByte(' ')
+	}
+	return sb.String()
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

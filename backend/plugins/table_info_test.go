@@ -48,10 +48,12 @@ import (
 	jenkins "github.com/apache/incubator-devlake/plugins/jenkins/impl"
 	jira "github.com/apache/incubator-devlake/plugins/jira/impl"
 	linker "github.com/apache/incubator-devlake/plugins/linker/impl"
+	mcp "github.com/apache/incubator-devlake/plugins/mcp/impl"
 	notion "github.com/apache/incubator-devlake/plugins/notion/impl"
 	opsgenie "github.com/apache/incubator-devlake/plugins/opsgenie/impl"
 	org "github.com/apache/incubator-devlake/plugins/org/impl"
 	pagerduty "github.com/apache/incubator-devlake/plugins/pagerduty/impl"
+	plane "github.com/apache/incubator-devlake/plugins/plane/impl"
 	q_dev "github.com/apache/incubator-devlake/plugins/q_dev/impl"
 	refdiff "github.com/apache/incubator-devlake/plugins/refdiff/impl"
 	salesforce "github.com/apache/incubator-devlake/plugins/salesforce/impl"
@@ -95,6 +97,7 @@ func Test_GetPluginTablesInfo(t *testing.T) {
 	checker.FeedIn("notion/models", notion.Notion{}.GetTablesInfo)
 	checker.FeedIn("org", org.Org{}.GetTablesInfo)
 	checker.FeedIn("pagerduty/models", pagerduty.PagerDuty{}.GetTablesInfo)
+	checker.FeedIn("plane/models", plane.Plane{}.GetTablesInfo)
 	checker.FeedIn("refdiff/models", refdiff.RefDiff{}.GetTablesInfo)
 	checker.FeedIn("slack/models", slack.Slack{}.GetTablesInfo)
 	checker.FeedIn("sonarqube/models", sonarqube.Sonarqube{}.GetTablesInfo)
@@ -109,6 +112,7 @@ func Test_GetPluginTablesInfo(t *testing.T) {
 	checker.FeedIn("circleci/models", circleci.Circleci{}.GetTablesInfo)
 	checker.FeedIn("opsgenie/models", opsgenie.Opsgenie{}.GetTablesInfo)
 	checker.FeedIn("linker/models", linker.Linker{}.GetTablesInfo)
+	checker.FeedIn("mcp", mcp.Mcp{}.GetTablesInfo)
 	checker.FeedIn("issue_trace/models", issueTrace.IssueTrace{}.GetTablesInfo)
 	checker.FeedIn("q_dev/models", q_dev.QDev{}.GetTablesInfo)
 	checker.FeedIn("salesforce/models", salesforce.Salesforce{}.GetTablesInfo)
