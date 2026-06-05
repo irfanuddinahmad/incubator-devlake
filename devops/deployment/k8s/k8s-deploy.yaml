@@ -34,6 +34,13 @@ data:
   # grafana deployment
   GF_SERVER_ROOT_URL: http://YOURDOMAIN:30002/grafana
   GF_USERS_DEFAULT_THEME: "light"
+  GF_SMTP_ENABLED: "false"
+  GF_SMTP_HOST: ""
+  GF_SMTP_USER: ""
+  GF_SMTP_FROM_ADDRESS: ""
+  GF_SMTP_FROM_NAME: "Grafana"
+  GF_SMTP_STARTTLS_POLICY: ""
+  GF_SMTP_SKIP_VERIFY: "false"
   # for devlake deployment
   DB_URL: mysql://merico:merico@mysql:3306/lake?charset=utf8mb4&parseTime=True
   DEVLAKE_ENDPOINT: devlake.devlake.svc.cluster.local:8080
@@ -116,6 +123,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: devlake-config
+            # Create a devlake-grafana-smtp Secret with GF_SMTP_PASSWORD before enabling SMTP.
+            - secretRef:
+                name: devlake-grafana-smtp
+                optional: true
 
 ---
 apiVersion: v1
