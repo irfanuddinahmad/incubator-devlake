@@ -22,35 +22,7 @@ import PluginIcon from '@/images/plugin-icon.svg?react';
 
 import { pluginConfigs } from './register';
 import { IPluginConfig } from '@/types';
-
-export const getPluginScopeId = (plugin: string, scope: any) => {
-  switch (plugin) {
-    case 'github':
-      return `${scope.githubId}`;
-    case 'jira':
-      return `${scope.boardId}`;
-    case 'gitlab':
-      return `${scope.gitlabId}`;
-    case 'jenkins':
-      return `${scope.fullName}`;
-    case 'bitbucket':
-      return `${scope.bitbucketId}`;
-    case 'bitbucket_server':
-      return `${scope.bitbucketId}`;
-    case 'sonarqube':
-      return `${scope.projectKey}`;
-    case 'bamboo':
-      return `${scope.planKey}`;
-    case 'argocd':
-      return `${scope.name}`;
-    case 'asana':
-      return `${scope.gid}`;
-    case 'plane':
-      return `${scope.projectId}`;
-    default:
-      return `${scope.id}`;
-  }
-};
+export { getPluginScopeId } from './scope-id';
 
 export const getPluginScopeName = (plugin: string, scope: any) => {
   if (!scope) {

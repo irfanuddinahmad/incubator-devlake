@@ -18,15 +18,15 @@
 
 import { useState, useContext, useEffect, useMemo } from 'react';
 import { Flex, Button } from 'antd';
-import dayjs from 'dayjs';
 
 import API from '@/api';
 import { Markdown } from '@/components';
-import { DataScopeRemote, getPluginScopeId, getPluginScopeName } from '@/plugins';
-import { operator, formatTime } from '@/utils';
+import { DataScopeRemote, getPluginScopeName } from '@/plugins';
+import { operator } from '@/utils';
 
 import { Context } from './context';
 import * as S from './styled';
+import { buildOnboardBlueprintUpdatePayload } from './utils';
 
 export const Step3 = () => {
   const [QA, setQA] = useState('');
@@ -70,18 +70,7 @@ export const Step3 = () => {
         await API.scope.batch(plugin, connectionId, { data: scopes.map((it) => it.data) });
 
         // 3. add data scopes to the blueprint
-        await API.blueprint.update(blueprint.id, {
-          timeAfter: formatTime(dayjs().subtract(14, 'day').startOf('day').toDate(), 'YYYY-MM-DD[T]HH:mm:ssZ'),
-          connections: [
-            {
-              pluginName: plugin,
-              connectionId,
-              scopes: scopes.map((it) => ({
-                scopeId: getPluginScopeId(plugin, it.data),
-              })),
-            },
-          ],
-        });
+        await API.blueprint.update(blueprint.id, buildOnboardBlueprintUpdatePayload(plugin, connectionId, scopes));
 
         // 4. trigger this blueprint
         await API.blueprint.trigger(blueprint.id, { skipCollectors: false, fullSync: false });
