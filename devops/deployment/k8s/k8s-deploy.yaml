@@ -40,7 +40,10 @@ data:
   GF_SMTP_FROM_ADDRESS: ""
   GF_SMTP_FROM_NAME: "Grafana"
   GF_SMTP_STARTTLS_POLICY: ""
+  # Set to "true" only when using a private/self-signed SMTP certificate.
   GF_SMTP_SKIP_VERIFY: "false"
+  # GF_SMTP_PASSWORD is intentionally omitted from this ConfigMap.
+  # Inject it through the devlake-grafana-smtp Secret referenced by the Grafana Deployment.
   # for devlake deployment
   DB_URL: mysql://merico:merico@mysql:3306/lake?charset=utf8mb4&parseTime=True
   DEVLAKE_ENDPOINT: devlake.devlake.svc.cluster.local:8080
@@ -121,9 +124,11 @@ spec:
           ports:
             - containerPort: 3000
           envFrom:
+            # Non-sensitive defaults first.
             - configMapRef:
                 name: devlake-config
-            # Create a devlake-grafana-smtp Secret with GF_SMTP_PASSWORD before enabling SMTP.
+            # Secrets are listed last so same-name Secret keys override ConfigMap defaults.
+            # Create devlake-grafana-smtp with GF_SMTP_PASSWORD before enabling SMTP.
             - secretRef:
                 name: devlake-grafana-smtp
                 optional: true
