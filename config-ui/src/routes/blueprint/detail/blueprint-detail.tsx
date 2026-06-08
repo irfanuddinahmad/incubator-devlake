@@ -51,6 +51,13 @@ export const BlueprintDetail = ({ id, from }: Props) => {
     const [bpRes, pipelineRes] = await Promise.all([API.blueprint.get(id), API.blueprint.pipelines(id)]);
     return [bpRes, pipelineRes.pipelines[0]];
   }, [version]);
+  const [cachedData, setCachedData] = useState<{ id: ID; data: typeof data }>();
+
+  useEffect(() => {
+    if (ready && data) {
+      setCachedData({ id, data });
+    }
+  }, [id, ready, data]);
 
   useEffect(() => {
     if (axios.isAxiosError(error) && error.response?.status === 404) {
@@ -67,11 +74,13 @@ export const BlueprintDetail = ({ id, from }: Props) => {
     setActiveKey(activeKey);
   };
 
-  if (!ready || !data) {
+  const displayData = ready && data ? data : cachedData?.id === id ? cachedData.data : undefined;
+
+  if (!displayData) {
     return <PageLoading />;
   }
 
-  const [blueprint, lastPipeline] = data;
+  const [blueprint, lastPipeline] = displayData;
 
   return (
     <S.Wrapper>

@@ -26,6 +26,7 @@ export const list = (
     blueprints?: boolean;
     searchTerm?: string;
   },
+  signal?: AbortSignal,
 ): Promise<{
   count: number;
   scopes: Array<{
@@ -35,11 +36,19 @@ export const list = (
 }> =>
   request(`/plugins/${plugin}/connections/${connectionId}/scopes`, {
     data,
+    signal,
   });
 
-export const get = (plugin: string, connectionId: ID, scopeId: ID, payload?: { blueprints: boolean }) =>
+export const get = (
+  plugin: string,
+  connectionId: ID,
+  scopeId: ID,
+  payload?: { blueprints: boolean },
+  signal?: AbortSignal,
+) =>
   request(`/plugins/${plugin}/connections/${connectionId}/scopes/${scopeId}`, {
     data: payload,
+    signal,
   });
 
 export const remove = (plugin: string, connectionId: ID, scopeId: ID, onlyData: boolean) =>
