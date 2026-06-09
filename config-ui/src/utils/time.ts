@@ -17,12 +17,12 @@
  */
 
 import dayjs from 'dayjs';
-import weekday from 'dayjs/plugin/weekday';
 import localeData from 'dayjs/plugin/localeData';
+import LocalizedFormat from 'dayjs/plugin/localizedFormat';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import updateLocale from 'dayjs/plugin/updateLocale';
-import LocalizedFormat from 'dayjs/plugin/localizedFormat';
 import utc from 'dayjs/plugin/utc';
+import weekday from 'dayjs/plugin/weekday';
 
 const localeConfiguration = {
   relativeTime: {
@@ -50,5 +50,5 @@ dayjs.extend(LocalizedFormat);
 dayjs.extend(utc);
 dayjs.updateLocale('en', localeConfiguration);
 
-export const formatTime = (val: Date | string | null, format = 'YYYY-MM-DD HH:mm') =>
-  val ? dayjs(val).format(format) : '-';
+export const formatTime = (val: Date | string | null, format = 'YYYY-MM-DD HH:mm', options?: { utc?: boolean }) =>
+  val ? (options?.utc ? dayjs(val).utc() : dayjs(val)).format(format) : '-';

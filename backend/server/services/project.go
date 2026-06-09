@@ -19,10 +19,10 @@ package services
 
 import (
 	"fmt"
+	"strings"
+
 	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
-	"strings"
-	"time"
 
 	"github.com/apache/incubator-devlake/core/dal"
 	"github.com/apache/incubator-devlake/core/errors"
@@ -138,22 +138,7 @@ func CreateProject(projectInput *models.ApiInputProject) (*models.ApiOutputProje
 	}
 
 	// create blueprint
-	blueprint := &models.Blueprint{
-		Name:        project.Name + "-Blueprint",
-		ProjectName: project.Name,
-		Mode:        "NORMAL",
-		Enable:      true,
-		CronConfig:  "0 0 * * *",
-		IsManual:    false,
-		SyncPolicy: models.SyncPolicy{
-			TimeAfter: func() *time.Time {
-				t := time.Now().AddDate(0, -6, 0)
-				t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
-				return &t
-			}(),
-		},
-		Connections: nil,
-	}
+	blueprint := newDefaultProjectBlueprint(project.Name)
 	if projectInput.Blueprint != nil {
 		blueprint = projectInput.Blueprint
 	}
@@ -175,6 +160,21 @@ func CreateProject(projectInput *models.ApiInputProject) (*models.ApiOutputProje
 	}
 
 	return makeProjectOutput(project, false)
+}
+
+// newDefaultProjectBlueprint returns a Blueprint with no TimeAfter set, so data
+// collection starts from the full available history. Callers that need a cutoff
+// must set TimeAfter explicitly.
+func newDefaultProjectBlueprint(projectName string) *models.Blueprint {
+	return &models.Blueprint{
+		Name:        projectName + "-Blueprint",
+		ProjectName: projectName,
+		Mode:        "NORMAL",
+		Enable:      true,
+		CronConfig:  "0 0 * * *",
+		IsManual:    false,
+		Connections: nil,
+	}
 }
 
 // GetProject returns a Project

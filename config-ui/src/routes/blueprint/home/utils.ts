@@ -16,29 +16,41 @@
  *
  */
 
-export enum IBPMode {
-  ADVANCED = 'ADVANCED',
-  NORMAL = 'NORMAL',
-}
+import type { BlueprintConnectionPayload } from '../../../types/blueprint';
+import { IBPMode } from '../../../types';
 
-export type BlueprintConnectionPayload = {
-  pluginName: string;
-  connectionId: ID;
-  scopes?: Array<{
-    scopeId: string;
-  }>;
-};
-
-export interface IBlueprint {
-  id: ID;
+type BlueprintCreatePayload = {
   name: string;
-  projectName: string;
   mode: IBPMode;
   enable: boolean;
-  isManual: boolean;
   cronConfig: string;
+  isManual: boolean;
   skipOnFail: boolean;
-  plan: any;
-  timeAfter: null | string;
-  connections: BlueprintConnectionPayload[];
-}
+  connections?: BlueprintConnectionPayload[];
+  plan?: unknown[][];
+};
+
+export const buildBlueprintCreatePayload = (
+  name: string,
+  mode: IBPMode,
+  cronConfig: string,
+): BlueprintCreatePayload => {
+  const payload: BlueprintCreatePayload = {
+    name,
+    mode,
+    enable: true,
+    cronConfig,
+    isManual: false,
+    skipOnFail: true,
+  };
+
+  if (mode === IBPMode.NORMAL) {
+    payload.connections = [];
+  }
+
+  if (mode === IBPMode.ADVANCED) {
+    payload.plan = [[]];
+  }
+
+  return payload;
+};

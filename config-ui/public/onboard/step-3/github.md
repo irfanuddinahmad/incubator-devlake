@@ -23,12 +23,16 @@ For a comprehensive scope of data collection, refer to the [Supported Data Sourc
 
 ##### Q2. What time range is covered in the data collection?
 
-Data **updated** from the past 14 days is collected to expedite synchronization. The time range can be adjusted on the project details page at any point.
+DevLake collects all available GitHub history by default unless you configure a start date. The time range can be adjusted on the project details page at any point.
 
-##### Q3. Is it possible to transform the collected data?
+##### Q3. How do I backfill an existing GitHub project?
+
+Existing GitHub projects keep their configured start date. To backfill older data, open the project details page, clear the Time Range start date, and run a full sync. If the project had already synchronized with an old cutoff, DevLake may also have saved that cutoff in collector state; clear historical data for the affected data scope before rerunning if older records are still skipped.
+
+##### Q4. Is it possible to transform the collected data?
 
 Yes, data transformations can be applied by setting up a Scope Config for the selected repositories afterward.
 
-##### Q4. How often is the data synchronized?
+##### Q5. How often is the data synchronized?
 
 Data synchronization occurs daily. This frequency can be modified on the project details page as needed.

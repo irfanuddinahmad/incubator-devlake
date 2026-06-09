@@ -16,29 +16,23 @@
  *
  */
 
-export enum IBPMode {
-  ADVANCED = 'ADVANCED',
-  NORMAL = 'NORMAL',
-}
+import { deepEqual, equal } from 'node:assert/strict';
+import { test } from 'node:test';
 
-export type BlueprintConnectionPayload = {
-  pluginName: string;
-  connectionId: ID;
-  scopes?: Array<{
-    scopeId: string;
-  }>;
-};
+import { IBPMode } from '../../../types';
 
-export interface IBlueprint {
-  id: ID;
-  name: string;
-  projectName: string;
-  mode: IBPMode;
-  enable: boolean;
-  isManual: boolean;
-  cronConfig: string;
-  skipOnFail: boolean;
-  plan: any;
-  timeAfter: null | string;
-  connections: BlueprintConnectionPayload[];
-}
+import { buildBlueprintCreatePayload } from './utils';
+
+test('normal blueprint create payload does not set a default timeAfter', () => {
+  const payload = buildBlueprintCreatePayload('github history', IBPMode.NORMAL, '0 0 * * *');
+
+  equal(Object.hasOwn(payload, 'timeAfter'), false);
+  deepEqual(payload.connections, []);
+});
+
+test('advanced blueprint create payload does not set a default timeAfter', () => {
+  const payload = buildBlueprintCreatePayload('advanced history', IBPMode.ADVANCED, '0 0 * * *');
+
+  equal(Object.hasOwn(payload, 'timeAfter'), false);
+  deepEqual(payload.plan, [[]]);
+});

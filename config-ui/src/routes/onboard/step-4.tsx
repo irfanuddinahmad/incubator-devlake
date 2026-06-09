@@ -239,17 +239,17 @@ export const Step4 = () => {
   }
 
   const { scopeName } = record;
+  const syncTip =
+    plugin === 'github'
+      ? 'This may take a few minutes to hours, depending on the volume of your data and the rate limits imposed by GitHub. DevLake collects all available GitHub history by default unless you configure a start date.'
+      : 'This may take a few minutes to hours, depending on the volume of your data and the rate limits imposed by the selected tool. To speed up, only data updated from the past 14 days will be collected. However, this timeframe can be modified at any time via the project details page.';
 
   return (
     <Wrapper>
       {status === 'running' && (
         <div className="top">
           <div className="info">Syncing up data from {scopeName}...</div>
-          <div className="tip">
-            This may take a few minutes to hours, depending on the volume of your data and the rate limits imposed by
-            the selected tool. To speed up, only data updated from the past 14 days will be collected. However, this
-            timeframe can be modified at any time via the project details page.
-          </div>
+          <div className="tip">{syncTip}</div>
           <Progress type="circle" size={120} percent={percent} />
         </div>
       )}

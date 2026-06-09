@@ -20,7 +20,6 @@ import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { PlusOutlined, SettingOutlined } from '@ant-design/icons';
 import { Flex, Table, Modal, Radio, Button, Input, Tag } from 'antd';
-import dayjs from 'dayjs';
 
 import API from '@/api';
 import { PageHeader, Block, TextTooltip, IconButton } from '@/components';
@@ -30,6 +29,7 @@ import { useRefreshData } from '@/hooks';
 import { IBlueprint, IBPMode } from '@/types';
 import { formatTime, operator } from '@/utils';
 
+import { buildBlueprintCreatePayload } from './utils';
 import * as S from './styled';
 
 export const BlueprintHomePage = () => {
@@ -60,25 +60,7 @@ export const BlueprintHomePage = () => {
   };
 
   const handleCreate = async () => {
-    const payload: any = {
-      name,
-      mode,
-      enable: true,
-      cronConfig: presets[0],
-      isManual: false,
-      skipOnFail: true,
-    };
-
-    if (mode === IBPMode.NORMAL) {
-      payload.timeAfter = formatTime(dayjs().subtract(6, 'month').startOf('day').toDate(), 'YYYY-MM-DD[T]HH:mm:ssZ');
-      payload.connections = [];
-    }
-
-    if (mode === IBPMode.ADVANCED) {
-      payload.timeAfter = undefined;
-      payload.connections = undefined;
-      payload.plan = [[]];
-    }
+    const payload = buildBlueprintCreatePayload(name, mode, presets[0]);
 
     const [success] = await operator(() => API.blueprint.create(payload), {
       setOperating: setSaving,
