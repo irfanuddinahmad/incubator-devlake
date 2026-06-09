@@ -76,8 +76,10 @@ services:
       GF_SMTP_ENABLED: "${GF_SMTP_ENABLED:-false}"
       GF_SMTP_HOST: "${GF_SMTP_HOST:-}"
       GF_SMTP_USER: "${GF_SMTP_USER:-}"
-      # WARNING: do NOT put GF_SMTP_PASSWORD in the shared .env file; other services load it via env_file.
-      # Export it in your shell before starting Compose or inject it through deployment secrets for Grafana only.
+      # WARNING: Do NOT set GF_SMTP_PASSWORD in the shared .env file.
+      # Docker Compose reads .env for variable interpolation in all service definitions;
+      # any value placed there would also reach devlake/config-ui via their env_file.
+      # Export it in your shell before starting Compose or inject it through deployment secrets.
       GF_SMTP_PASSWORD: "${GF_SMTP_PASSWORD:-}"
       GF_SMTP_FROM_ADDRESS: "${GF_SMTP_FROM_ADDRESS:-}"
       GF_SMTP_FROM_NAME: "${GF_SMTP_FROM_NAME:-Grafana}"

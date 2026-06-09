@@ -40,7 +40,9 @@ data:
   GF_SMTP_FROM_ADDRESS: ""
   GF_SMTP_FROM_NAME: "Grafana"
   GF_SMTP_STARTTLS_POLICY: ""
-  # Set to "true" only when using a private/self-signed SMTP certificate.
+  # WARNING: Setting GF_SMTP_SKIP_VERIFY to "true" disables all TLS certificate
+  # validation, including chain, hostname, and expiry checks. Use only in
+  # isolated test environments; never in production.
   GF_SMTP_SKIP_VERIFY: "false"
   # GF_SMTP_PASSWORD is intentionally omitted from this ConfigMap.
   # Inject it through the devlake-grafana-smtp Secret referenced by the Grafana Deployment.
@@ -129,6 +131,9 @@ spec:
                 name: devlake-config
             # Secrets are listed last so same-name Secret keys override ConfigMap defaults.
             # Create devlake-grafana-smtp with GF_SMTP_PASSWORD before enabling SMTP.
+            # kubectl create secret generic devlake-grafana-smtp \
+            #   --namespace devlake \
+            #   --from-literal=GF_SMTP_PASSWORD='<your-smtp-password>'
             - secretRef:
                 name: devlake-grafana-smtp
                 optional: true
