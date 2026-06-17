@@ -71,8 +71,20 @@ services:
       - grafana-storage:/var/lib/grafana
       - ./grafana/dashboards:/etc/grafana/dashboards
     environment:
-      GF_SERVER_ROOT_URL: "http://localhost:4000/grafana"
+      GF_SERVER_ROOT_URL: "${GF_SERVER_ROOT_URL:-http://localhost:4000/grafana}"
       GF_USERS_DEFAULT_THEME: "light"
+      GF_SMTP_ENABLED: "${GF_SMTP_ENABLED:-false}"
+      GF_SMTP_HOST: "${GF_SMTP_HOST:-}"
+      GF_SMTP_USER: "${GF_SMTP_USER:-}"
+      # WARNING: Do NOT set GF_SMTP_PASSWORD in the shared .env file.
+      # Docker Compose reads .env for variable interpolation in all service definitions;
+      # any value placed there would also reach devlake/config-ui via their env_file.
+      # Export it in your shell before starting Compose or inject it through deployment secrets.
+      GF_SMTP_PASSWORD: "${GF_SMTP_PASSWORD:-}"
+      GF_SMTP_FROM_ADDRESS: "${GF_SMTP_FROM_ADDRESS:-}"
+      GF_SMTP_FROM_NAME: "${GF_SMTP_FROM_NAME:-Grafana}"
+      GF_SMTP_STARTTLS_POLICY: "${GF_SMTP_STARTTLS_POLICY:-}"
+      GF_SMTP_SKIP_VERIFY: "${GF_SMTP_SKIP_VERIFY:-false}"
       MYSQL_URL: mysql:3306
       MYSQL_DATABASE: lake
       MYSQL_USER: merico
