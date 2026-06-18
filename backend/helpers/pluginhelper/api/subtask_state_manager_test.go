@@ -109,12 +109,14 @@ func TestSubtaskStateManager(t *testing.T) {
 			expectedNewStateTimeAfter: &time1,
 		},
 		{
-			name:                      "Full sync - with timeAfter",
+			// FullSync with no syncPolicy.TimeAfter and a previously stored TimeAfter:
+			// the stored cutoff must NOT be restored — full sync means collect all history.
+			name:                      "Full sync - no syncPolicy.TimeAfter clears stored TimeAfter",
 			state:                     &models.SubtaskState{TimeAfter: &time1, PrevStartedAt: &time1},
 			syncPolicy:                &models.SyncPolicy{TriggerSyncPolicy: models.TriggerSyncPolicy{FullSync: true}},
 			expectedIsIncremental:     false,
-			expectedSince:             &time1,
-			expectedNewStateTimeAfter: &time1,
+			expectedSince:             nil,
+			expectedNewStateTimeAfter: nil,
 		},
 		{
 			name:                      "Full sync - with newer timeAfter",
