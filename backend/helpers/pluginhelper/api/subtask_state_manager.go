@@ -101,10 +101,10 @@ func NewSubtaskStateManager(args *SubtaskCommonArgs) (stateManager *SubtaskState
 		until:         &now,
 		config:        utils.ToJsonString(args.SubtaskConfig),
 	}
-	// fallback to the previous timeAfter if no new value, but not on FullSync:
-	// a FullSync with nil TimeAfter means "collect all history", so the stored
-	// cutoff must not be restored and silently limit the collection window.
-	if stateManager.since == nil && !syncPolicy.FullSync {
+	// fallback to the previous timeAfter if no new value, but not on FullSync and not
+	// when the subtask config changed: both cases mean "collect all history", so the
+	// stored cutoff must not be restored and silently limit the collection window.
+	if stateManager.since == nil && !syncPolicy.FullSync && !subTaskConfigHasChanged(preState, stateManager.config) {
 		stateManager.since = preState.TimeAfter
 	}
 	return

@@ -151,6 +151,18 @@ func TestSubtaskStateManager(t *testing.T) {
 			expectedSince:             nil,
 			expectedNewStateTimeAfter: nil,
 		},
+		{
+			// Config change with a previously stored TimeAfter: the stored cutoff must NOT
+			// be restored — a config-change full-refresh should collect all history so that
+			// records processed under the old config are re-collected under the new one.
+			name:                      "Full sync - config changed with stored TimeAfter",
+			state:                     &models.SubtaskState{TimeAfter: &time1, PrevStartedAt: &time1, PrevConfig: "hello"},
+			syncPolicy:                &models.SyncPolicy{},
+			config:                    "world",
+			expectedIsIncremental:     false,
+			expectedSince:             nil,
+			expectedNewStateTimeAfter: nil,
+		},
 	} {
 		started := time.Now()
 		t.Run(tc.name, func(t *testing.T) {
