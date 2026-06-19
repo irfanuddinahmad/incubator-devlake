@@ -74,8 +74,10 @@ func NewCollectorStateManager(basicRes context.BasicRes, syncPolicy *models.Sync
 		since:         syncPolicy.TimeAfter,
 		until:         &now,
 	}
-	// fallback to the previous timeAfter if no new value
-	if stateManager.since == nil {
+	// fallback to the previous timeAfter if no new value, but not on FullSync:
+	// a FullSync with nil TimeAfter means "collect all history", so the stored
+	// cutoff must not be restored and silently limit the collection window.
+	if stateManager.since == nil && !syncPolicy.FullSync {
 		stateManager.since = state.TimeAfter
 	}
 
@@ -114,10 +116,10 @@ func (c *CollectorStateManager) CloseWithUntil(until time.Time) errors.Error {
 func (c *CollectorStateManager) Close() errors.Error {
 	// update timeAfter in the database only for fullsync mode
 	if !c.isIncremental {
-		// prefer non-nil value
-		if c.syncPolicy.TimeAfter != nil {
-			c.state.TimeAfter = c.syncPolicy.TimeAfter
-		}
+		// Always write TimeAfter, even nil: clearing it ensures that subsequent
+		// incremental runs do not inherit a stale cutoff date after a full sync
+		// that was requested without an explicit TimeAfter.
+		c.state.TimeAfter = c.syncPolicy.TimeAfter
 	}
 	// always update the latest success start time
 	c.state.LatestSuccessStart = c.until
