@@ -52,8 +52,7 @@ type GraphqlQueryIssueWrapper struct {
 }
 
 type GraphqlQueryIssueDetailWrapper struct {
-	requestedIssues map[int]missingGithubIssueRef
-	RateLimit       struct {
+	RateLimit struct {
 		Cost int
 	}
 	Repository struct {
@@ -181,7 +180,13 @@ func CollectIssues(taskCtx plugin.SubTaskContext) errors.Error {
 	if err != nil {
 		return err
 	}
+	// issueUpdatedAt and requestedIssues are written in BuildQuery and read in
+	// ResponseParser for the same batch. This is safe ONLY because GetPageInfo is
+	// nil for this collector (so no concurrent NextTick goroutines are spawned) and
+	// GraphqlAsyncClient.Query serialises all calls under a mutex.
+	// Do NOT add GetPageInfo to this collector without converting these to per-call locals.
 	issueUpdatedAt := make(map[int]time.Time)
+	requestedIssues := make(map[int]missingGithubIssueRef)
 	err = apiCollector.InitGraphQLCollector(api.GraphqlCollectorArgs{
 		GraphqlClient: data.GraphqlClient,
 		Input:         iterator,
@@ -195,14 +200,14 @@ func CollectIssues(taskCtx plugin.SubTaskContext) errors.Error {
 			ownerName := strings.Split(data.Options.Name, "/")
 			inputIssues := reqData.Input.([]interface{})
 			outputIssues := []map[string]interface{}{}
-			query.requestedIssues = make(map[int]missingGithubIssueRef, len(inputIssues))
+			requestedIssues = make(map[int]missingGithubIssueRef, len(inputIssues))
 			for _, i := range inputIssues {
 				inputIssue := i.(*models.GithubIssue)
 				outputIssues = append(outputIssues, map[string]interface{}{
 					`number`: graphql.Int(inputIssue.Number),
 				})
 				issueUpdatedAt[inputIssue.Number] = inputIssue.GithubUpdatedAt
-				query.requestedIssues[inputIssue.Number] = missingGithubIssueRef{
+				requestedIssues[inputIssue.Number] = missingGithubIssueRef{
 					ConnectionId:  inputIssue.ConnectionId,
 					RepoId:        inputIssue.RepoId,
 					GithubId:      inputIssue.GithubId,
@@ -228,7 +233,7 @@ func CollectIssues(taskCtx plugin.SubTaskContext) errors.Error {
 					messages = append(messages, errors.Must1(json.Marshal(rawL)))
 				}
 			}
-			missingIssues := findMissingGithubIssues(query.requestedIssues, issues)
+			missingIssues := findMissingGithubIssues(requestedIssues, issues)
 			if len(missingIssues) > 0 {
 				err = cleanupMissingGithubIssues(db, taskCtx.GetLogger(), missingIssues)
 			}
